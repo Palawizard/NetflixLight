@@ -1,0 +1,30 @@
+{
+  "name": "netflixlight",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Palawizard/NetflixLight.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Palawizard/NetflixLight/issues"
+  },
+  "homepage": "https://github.com/Palawizard/NetflixLight#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
