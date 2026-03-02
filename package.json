@@ -1,13 +1,16 @@
 {
   "name": "netflixlight",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "type": "module",
+  "description": "Base minimale Express avec Tailwind CSS et EJS",
+  "main": "server.js",
+  "type": "commonjs",
   "scripts": {
-    "dev": "nodemon server.js",
+    "build:css": "tailwindcss -i ./src/styles/app.css -o ./public/css/app.css",
+    "watch:css": "tailwindcss -i ./src/styles/app.css -o ./public/css/app.css --watch",
+    "dev:server": "nodemon server.js",
+    "dev": "concurrently -n server,css -c green,cyan \"npm:dev:server\" \"npm:watch:css\"",
     "start": "node server.js"
-},
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Palawizard/NetflixLight.git"
@@ -15,16 +18,19 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Palawizard/NetflixLight/issues"
   },
   "homepage": "https://github.com/Palawizard/NetflixLight#readme",
   "dependencies": {
     "dotenv": "^17.3.1",
+    "ejs": "^4.0.1",
     "express": "^5.2.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@tailwindcss/cli": "^4.2.1",
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.14",
+    "tailwindcss": "^4.2.1"
   }
 }
