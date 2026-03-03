@@ -3,11 +3,9 @@ const express = require("express");
 const { config, missingTmdbVars } = require("./src/config/env");
 
 const app = express();
+const publicDir = path.join(__dirname, "public");
 
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(publicDir));
 
 app.locals.appConfig = {
   environment: config.environment,
@@ -21,15 +19,11 @@ if (missingTmdbVars.length > 0) {
 }
 
 app.get("/", (req, res) => {
-  res.render("index", {
-    title: "NetflixLight",
-  });
+  res.sendFile(path.join(publicDir, "index.html"));
 });
 
 app.get("/movies", (req, res) => {
-  res.render("movies", {
-    title: "NetflixLight",
-  });
+  res.sendFile(path.join(publicDir, "movies.html"));
 });
 
 app.listen(config.port, () => {
