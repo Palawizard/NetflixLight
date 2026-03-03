@@ -17,6 +17,7 @@ const environment =
   process.env.NODE_ENV === "production" ? "production" : "development";
 const devPort = parsePort(process.env.DEV_PORT, 3000);
 const prodPort = parsePort(process.env.PROD_PORT, 8080);
+const sqliteDbPath = process.env.SQLITE_DB_PATH || "./data/netflixlight.sqlite";
 const port = parsePort(
   process.env.PORT,
   environment === "production" ? prodPort : devPort
@@ -35,6 +36,13 @@ const config = {
     apiBaseUrl: process.env.TMDB_API_BASE_URL || "https://api.themoviedb.org/3",
     apiKey: process.env.TMDB_API_KEY || "",
     readAccessToken: process.env.TMDB_API_READ_ACCESS_TOKEN || "",
+  },
+  database: {
+    client: "sqlite",
+    driver: "better-sqlite3",
+    url: sqliteDbPath,
+    filename: path.resolve(process.cwd(), sqliteDbPath),
+    dataAccessLayer: "repository",
   },
 };
 
