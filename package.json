@@ -33,7 +33,6 @@
   "dependencies": {
     "better-sqlite3": "^12.6.2",
     "dotenv": "^17.3.1",
-    "ejs": "^4.0.1",
     "express": "^5.2.1"
   },
   "devDependencies": {
@@ -46,7 +45,6 @@
     "globals": "^17.4.0",
     "nodemon": "^3.1.14",
     "prettier": "^3.8.1",
-    "prettier-plugin-ejs": "^1.0.3",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.2.1"
   }
