@@ -11,6 +11,8 @@
     "dev": "concurrently -n server,css -c green,cyan \"npm:dev:server\" \"npm:watch:css\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:dev": "cross-env NODE_ENV=development node server.js",
+    "db:setup": "sh -c 'db_path=\"${SQLITE_DB_PATH:-./data/netflixlight.sqlite}\"; mkdir -p \"$(dirname \"$db_path\")\"; sqlite3 \"$db_path\" < ./src/data-access/sqlite/migrations/001_create_tables.sql'",
+    "db:inspect": "sh -c 'sqlite3 \"${SQLITE_DB_PATH:-./data/netflixlight.sqlite}\" \".databases\"'",
     "lint": "npm run lint:eslint && npm run format:check",
     "lint:eslint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -29,6 +31,7 @@
   },
   "homepage": "https://github.com/Palawizard/NetflixLight#readme",
   "dependencies": {
+    "better-sqlite3": "^12.6.2",
     "dotenv": "^17.3.1",
     "ejs": "^4.0.1",
     "express": "^5.2.1"
