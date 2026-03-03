@@ -9,7 +9,12 @@
     "watch:css": "tailwindcss -i ./src/styles/app.css -o ./public/css/app.css --watch",
     "dev:server": "nodemon server.js",
     "dev": "concurrently -n server,css -c green,cyan \"npm:dev:server\" \"npm:watch:css\"",
-    "start": "node server.js"
+    "start": "node server.js",
+    "lint": "npm run lint:eslint && npm run format:check",
+    "lint:eslint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
   },
   "repository": {
     "type": "git",
@@ -28,9 +33,16 @@
     "express": "^5.2.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/cli": "^4.2.1",
     "concurrently": "^9.2.1",
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.4.0",
     "nodemon": "^3.1.14",
+    "prettier": "^3.8.1",
+    "prettier-plugin-ejs": "^1.0.3",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.2.1"
   }
 }
