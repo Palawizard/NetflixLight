@@ -35,5 +35,5 @@ Planned structure:
 
 Useful scripts:
 
-- `npm run db:create`: create the local SQLite database file
+- `npm run db:setup`: create the local SQLite database file and apply `001_create_tables.sql`
 - `npm run db:inspect`: inspect the configured SQLite database
