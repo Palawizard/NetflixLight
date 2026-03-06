@@ -3,6 +3,7 @@ const express = require("express");
 const session = require("express-session");
 const { config, missingTmdbVars } = require("./src/config/env");
 const authRoutes = require("./src/routes/auth.routes");
+const tmdbRoutes = require("./src/routes/tmdb.routes");
 const { apiRequestLogger } = require("./src/middlewares/api-logger.middleware");
 const {
   apiNotFoundHandler,
@@ -30,6 +31,7 @@ app.use(
   })
 );
 app.use("/api/auth", authRoutes);
+app.use("/api/tmdb", tmdbRoutes);
 
 app.locals.appConfig = {
   environment: config.environment,
