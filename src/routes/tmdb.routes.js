@@ -6,12 +6,15 @@ const tmdbTvRoutes = require("./tmdb-tv.routes");
 const {
   parseTmdbPage,
   parseOptionalTmdbString,
+  parseRequiredTmdbString,
+  parseRequiredPositiveInt,
 } = require("./tmdb-query.utils");
 
 const router = express.Router();
 
 const ALLOWED_MEDIA_TYPES = new Set(["all", "movie", "tv", "person"]);
 const ALLOWED_TIME_WINDOWS = new Set(["day", "week"]);
+const ALLOWED_DISCOVER_TYPES = new Set(["movie", "tv"]);
 
 router.use("/movies", tmdbMoviesRoutes);
 router.use("/tv", tmdbTvRoutes);
@@ -48,6 +51,31 @@ router.get("/trending", async (req, res, next) => {
       query: {
         page,
         language,
+      },
+    });
+
+    return res.status(200).json(payload);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get("/discover", async (req, res, next) => {
+  try {
+    const type = parseRequiredTmdbString(req.query.type, "type");
+    const genreId = parseRequiredPositiveInt(req.query.genre, "genre");
+    const page = parseTmdbPage(req.query.page);
+
+    if (!ALLOWED_DISCOVER_TYPES.has(type)) {
+      return next(
+        createApiError(400, "INVALID_TYPE", "type must be one of: movie, tv")
+      );
+    }
+
+    const payload = await tmdbGet(`/discover/${type}`, {
+      query: {
+        with_genres: genreId,
+        page,
       },
     });
 
