@@ -31,8 +31,7 @@ const port = parsePort(
   process.env.PORT,
   environment === "production" ? prodPort : devPort
 );
-const bcryptSaltRounds = parseSaltRounds(
-    process.env.BCRYPT_SALT_ROUNDS, 12);
+const bcryptSaltRounds = parseSaltRounds(process.env.BCRYPT_SALT_ROUNDS, 12);
 
 const config = {
   environment,

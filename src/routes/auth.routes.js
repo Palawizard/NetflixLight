@@ -8,6 +8,11 @@ const {
   createUser,
 } = require("../data-access/repositories/user.repository");
 
+const {
+  findByToken,
+  deleteByToken,
+} = require("../data-access/repositories/session.repository");
+
 const router = express.Router();
 
 function validateRegisterPayload(payload) {
@@ -82,6 +87,20 @@ function validateRegisterPayload(payload) {
   };
 }
 
+function extractBearerToken(authorizationHeader) {
+  if (typeof authorizationHeader !== "string") {
+    return null;
+  }
+
+  const [scheme, token] = authorizationHeader.split(" ");
+
+  if (scheme !== "Bearer" || !token) {
+    return null;
+  }
+
+  return token;
+}
+
 router.post("/register", async (req, res) => {
   const validationResult = validateRegisterPayload(req.body);
 
@@ -134,6 +153,34 @@ router.post("/register", async (req, res) => {
 
     console.error(error);
 
+    return res.status(500).json({
+      error: "internal server error",
+    });
+  }
+});
+
+router.post("/logout", (req, res) => {
+  const token = extractBearerToken(req.headers.authorization);
+
+  if (!token) {
+    return res.status(401).json({
+      error: "missing or invalid token",
+    });
+  }
+
+  try {
+    const existingSession = findByToken(token);
+
+    if (!existingSession) {
+      return res.status(401).json({
+        error: "invalid token",
+      });
+    }
+
+    deleteByToken(token);
+    return res.status(204).send();
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({
       error: "internal server error",
     });
