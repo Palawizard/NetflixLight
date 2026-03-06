@@ -13,6 +13,15 @@ function parsePort(value, fallbackPort) {
   return fallbackPort;
 }
 
+function parseSaltRounds(value, fallbackValue) {
+  const parsedSaltRounds = Number.parseInt(value, 10);
+
+  if (Number.isInteger(parsedSaltRounds) && parsedSaltRounds > 0) {
+    return parsedSaltRounds;
+  }
+  return fallbackValue;
+}
+
 const environment =
   process.env.NODE_ENV === "production" ? "production" : "development";
 const devPort = parsePort(process.env.DEV_PORT, 3000);
@@ -22,12 +31,15 @@ const port = parsePort(
   process.env.PORT,
   environment === "production" ? prodPort : devPort
 );
+const bcryptSaltRounds = parseSaltRounds(
+    process.env.BCRYPT_SALT_ROUNDS, 12);
 
 const config = {
   environment,
   isDevelopment: environment === "development",
   isProduction: environment === "production",
   port,
+  bcryptSaltRounds,
   ports: {
     development: devPort,
     production: prodPort,
