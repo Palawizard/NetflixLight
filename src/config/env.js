@@ -22,6 +22,16 @@ function parseSaltRounds(value, fallbackValue) {
   return fallbackValue;
 }
 
+function parsePositiveInt(value, fallbackValue) {
+  const parsed = Number.parseInt(value, 10);
+
+  if (Number.isInteger(parsed) && parsed > 0) {
+    return parsed;
+  }
+
+  return fallbackValue;
+}
+
 const environment =
   process.env.NODE_ENV === "production" ? "production" : "development";
 const devPort = parsePort(process.env.DEV_PORT, 3000);
@@ -32,6 +42,12 @@ const port = parsePort(
   environment === "production" ? prodPort : devPort
 );
 const bcryptSaltRounds = parseSaltRounds(process.env.BCRYPT_SALT_ROUNDS, 12);
+const sessionSecret = process.env.SESSION_SECRET || "dev_session_secret";
+const sessionCookieName = process.env.SESSION_COOKIE_NAME || "netflixlight.sid";
+const sessionMaxAgeMs = parsePositiveInt(
+  process.env.SESSION_MAX_AGE_MS,
+  86400000
+);
 
 const config = {
   environment,
@@ -42,6 +58,11 @@ const config = {
   ports: {
     development: devPort,
     production: prodPort,
+  },
+  session: {
+    secret: sessionSecret,
+    cookieName: sessionCookieName,
+    maxAgeMs: sessionMaxAgeMs,
   },
   tmdb: {
     apiBaseUrl: process.env.TMDB_API_BASE_URL || "https://api.themoviedb.org/3",
