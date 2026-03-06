@@ -1,29 +1,20 @@
 const express = require("express");
 const { tmdbGet } = require("../clients/tmdb.client");
 const { createApiError } = require("../utils/api-error");
+const tmdbMoviesRoutes = require("./tmdb-movies.routes");
+const tmdbTvRoutes = require("./tmdb-tv.routes");
+const {
+  parseTmdbPage,
+  parseOptionalTmdbString,
+} = require("./tmdb-query.utils");
 
 const router = express.Router();
 
 const ALLOWED_MEDIA_TYPES = new Set(["all", "movie", "tv", "person"]);
 const ALLOWED_TIME_WINDOWS = new Set(["day", "week"]);
 
-function parsePage(pageValue) {
-  if (pageValue === undefined) {
-    return undefined;
-  }
-
-  const parsedPage = Number.parseInt(pageValue, 10);
-
-  if (!Number.isInteger(parsedPage) || parsedPage <= 0 || parsedPage > 500) {
-    throw createApiError(
-      400,
-      "INVALID_PAGE",
-      "page must be an integer between 1 and 500"
-    );
-  }
-
-  return parsedPage;
-}
+router.use("/movies", tmdbMoviesRoutes);
+router.use("/tv", tmdbTvRoutes);
 
 router.get("/trending", async (req, res, next) => {
   const mediaType = req.query.media_type || "all";
@@ -50,8 +41,8 @@ router.get("/trending", async (req, res, next) => {
   }
 
   try {
-    const page = parsePage(req.query.page);
-    const language = req.query.language;
+    const page = parseTmdbPage(req.query.page);
+    const language = parseOptionalTmdbString(req.query.language, "language");
 
     const payload = await tmdbGet(`/trending/${mediaType}/${timeWindow}`, {
       query: {
