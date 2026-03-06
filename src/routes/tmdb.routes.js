@@ -86,6 +86,39 @@ router.get("/discover", async (req, res, next) => {
   }
 });
 
+router.get("/search", async (req, res, next) => {
+  try {
+    const searchQuery = parseRequiredTmdbString(req.query.q, "q");
+    const page = parseTmdbPage(req.query.page);
+    const language = parseOptionalTmdbString(req.query.language, "language");
+
+    const payload = await tmdbGet("/search/multi", {
+      query: {
+        query: searchQuery,
+        page,
+        language,
+      },
+    });
+
+    const results = Array.isArray(payload.results) ? payload.results : [];
+    const movieAndTvResults = results.filter(
+      (item) =>
+        item && (item.media_type === "movie" || item.media_type === "tv")
+    );
+
+    return res.status(200).json({
+      ...payload,
+      results: movieAndTvResults,
+      meta: {
+        filteredMediaTypes: ["movie", "tv"],
+        unfilteredResultCount: results.length,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.get("/:type/:id", async (req, res, next) => {
   try {
     const type = parseRequiredTmdbString(req.params.type, "type");
