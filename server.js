@@ -1,5 +1,6 @@
 const path = require("path");
 const express = require("express");
+const session = require("express-session");
 const { config, missingTmdbVars } = require("./src/config/env");
 const authRoutes = require("./src/routes/auth.routes");
 
@@ -8,6 +9,20 @@ const publicDir = path.join(__dirname, "public");
 
 app.use(express.static(publicDir));
 app.use(express.json());
+app.use(
+  session({
+    name: config.session.cookieName,
+    secret: config.session.secret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: config.isProduction,
+      maxAge: config.session.maxAgeMs,
+    },
+  })
+);
 app.use("/api/auth", authRoutes);
 
 app.locals.appConfig = {

@@ -87,6 +87,53 @@ function validateRegisterPayload(payload) {
   };
 }
 
+function validateLoginPayload(payload) {
+  const errors = [];
+  const safePayload =
+    payload !== null && typeof payload === "object" ? payload : {};
+
+  const rawEmail = safePayload.email;
+  const rawPassword = safePayload.password;
+
+  let email = "";
+  let password = "";
+
+  if (typeof rawEmail !== "string") {
+    errors.push("email must be a string");
+  } else {
+    email = rawEmail.trim().toLowerCase();
+
+    if (email.length === 0) {
+      errors.push("email is required");
+    }
+  }
+
+  if (typeof rawPassword !== "string") {
+    errors.push("password must be a string");
+  } else {
+    password = rawPassword;
+
+    if (password.length === 0) {
+      errors.push("password is required");
+    }
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      email,
+      password,
+    },
+  };
+}
+
 function extractBearerToken(authorizationHeader) {
   if (typeof authorizationHeader !== "string") {
     return null;
@@ -159,7 +206,69 @@ router.post("/register", async (req, res) => {
   }
 });
 
+router.post("/login", async (req, res) => {
+  const validationResult = validateLoginPayload(req.body);
+
+  if (!validationResult.success) {
+    return res.status(400).json({
+      errors: validationResult.errors,
+    });
+  }
+
+  const { email, password } = validationResult.data;
+
+  try {
+    const user = findByEmail(email);
+
+    if (!user) {
+      return res.status(401).json({
+        error: "invalid credentials",
+      });
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password_hash);
+
+    if (!passwordMatches) {
+      return res.status(401).json({
+        error: "invalid credentials",
+      });
+    }
+
+    const safeUser = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      created_at: user.created_at,
+    };
+
+    req.session.user = safeUser;
+
+    return res.status(200).json({
+      user: safeUser,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: "internal server error",
+    });
+  }
+});
+
 router.post("/logout", (req, res) => {
+  if (req.session && req.session.user) {
+    return req.session.destroy((error) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({
+          error: "internal server error",
+        });
+      }
+
+      res.clearCookie(config.session.cookieName);
+      return res.status(204).send();
+    });
+  }
+
   const token = extractBearerToken(req.headers.authorization);
 
   if (!token) {
