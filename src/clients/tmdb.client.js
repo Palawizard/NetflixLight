@@ -2,6 +2,7 @@ const { config } = require("../config/env");
 const { ApiError, createApiError } = require("../utils/api-error");
 
 const DEFAULT_TIMEOUT_MS = 8000;
+const tmdbCache = new Map();
 
 function ensureTmdbCredentials() {
   if (config.tmdb.readAccessToken || config.tmdb.apiKey) {
@@ -50,6 +51,75 @@ function buildTmdbHeaders(extraHeaders = {}) {
   }
 
   return headers;
+}
+
+function clonePayload(payload) {
+  if (payload === undefined || payload === null) {
+    return payload;
+  }
+
+  return JSON.parse(JSON.stringify(payload));
+}
+
+function pruneExpiredCacheEntries(now = Date.now()) {
+  for (const [cacheKey, cacheValue] of tmdbCache.entries()) {
+    if (cacheValue.expiresAt <= now) {
+      tmdbCache.delete(cacheKey);
+    }
+  }
+}
+
+function evictCacheIfNeeded() {
+  const maxEntries = config.tmdb.cacheMaxEntries;
+
+  while (tmdbCache.size >= maxEntries) {
+    const firstKey = tmdbCache.keys().next().value;
+
+    if (!firstKey) {
+      return;
+    }
+
+    tmdbCache.delete(firstKey);
+  }
+}
+
+function buildCacheKey(method, url, requestBody) {
+  if (method !== "GET" || requestBody) {
+    return null;
+  }
+
+  return `${method}:${url.toString()}`;
+}
+
+function getCachedPayload(cacheKey) {
+  if (!cacheKey) {
+    return null;
+  }
+
+  const now = Date.now();
+  pruneExpiredCacheEntries(now);
+
+  const cachedEntry = tmdbCache.get(cacheKey);
+
+  if (!cachedEntry) {
+    return null;
+  }
+
+  return clonePayload(cachedEntry.payload);
+}
+
+function setCachedPayload(cacheKey, payload) {
+  if (!cacheKey) {
+    return;
+  }
+
+  pruneExpiredCacheEntries();
+  evictCacheIfNeeded();
+
+  tmdbCache.set(cacheKey, {
+    payload: clonePayload(payload),
+    expiresAt: Date.now() + config.tmdb.cacheTtlMs,
+  });
 }
 
 async function parseTmdbResponseBody(response) {
@@ -125,6 +195,12 @@ async function tmdbRequest(
   try {
     const requestBody = body ? JSON.stringify(body) : undefined;
     const requestHeaders = buildTmdbHeaders(headers);
+    const cacheKey = buildCacheKey(method, url, requestBody);
+
+    const cachedPayload = getCachedPayload(cacheKey);
+    if (cachedPayload) {
+      return cachedPayload;
+    }
 
     if (requestBody) {
       requestHeaders["Content-Type"] = "application/json";
@@ -143,6 +219,7 @@ async function tmdbRequest(
       throw mapTmdbError(response, payload);
     }
 
+    setCachedPayload(cacheKey, payload);
     return payload;
   } catch (error) {
     if (error.name === "AbortError") {

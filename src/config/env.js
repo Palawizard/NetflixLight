@@ -48,6 +48,11 @@ const sessionMaxAgeMs = parsePositiveInt(
   process.env.SESSION_MAX_AGE_MS,
   86400000
 );
+const tmdbCacheTtlMs = parsePositiveInt(process.env.TMDB_CACHE_TTL_MS, 30000);
+const tmdbCacheMaxEntries = parsePositiveInt(
+  process.env.TMDB_CACHE_MAX_ENTRIES,
+  500
+);
 
 const config = {
   environment,
@@ -68,6 +73,8 @@ const config = {
     apiBaseUrl: process.env.TMDB_API_BASE_URL || "https://api.themoviedb.org/3",
     apiKey: process.env.TMDB_API_KEY || "",
     readAccessToken: process.env.TMDB_API_READ_ACCESS_TOKEN || "",
+    cacheTtlMs: tmdbCacheTtlMs,
+    cacheMaxEntries: tmdbCacheMaxEntries,
   },
   database: {
     client: "sqlite",
