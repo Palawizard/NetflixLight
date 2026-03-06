@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const { config } = require("../config/env");
+const { requireAuth } = require("../middlewares/require-auth.middleware");
 
 const {
   findByEmail,
@@ -252,6 +253,12 @@ router.post("/login", async (req, res) => {
       error: "internal server error",
     });
   }
+});
+
+router.get("/me", requireAuth, (req, res) => {
+  return res.status(200).json({
+    user: req.authUser,
+  });
 });
 
 router.post("/logout", (req, res) => {
