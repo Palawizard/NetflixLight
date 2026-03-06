@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const { config } = require("../config/env");
 const { requireAuth } = require("../middlewares/require-auth.middleware");
+const { createApiError } = require("../utils/api-error");
 
 const {
   findByEmail,
@@ -149,29 +150,32 @@ function extractBearerToken(authorizationHeader) {
   return token;
 }
 
-router.post("/register", async (req, res) => {
+router.post("/register", async (req, res, next) => {
   const validationResult = validateRegisterPayload(req.body);
 
   if (!validationResult.success) {
-    return res.status(400).json({
-      errors: validationResult.errors,
-    });
+    return next(
+      createApiError(
+        400,
+        "VALIDATION_ERROR",
+        "Invalid registration payload",
+        validationResult.errors
+      )
+    );
   }
 
   const { email, username, password } = validationResult.data;
 
   const existingUserByEmail = findByEmail(email);
   if (existingUserByEmail) {
-    return res.status(409).json({
-      error: "email is already in use",
-    });
+    return next(createApiError(409, "EMAIL_TAKEN", "Email is already in use"));
   }
 
   const existingUserByUsername = findByUsername(username);
   if (existingUserByUsername) {
-    return res.status(409).json({
-      error: "username is already in use",
-    });
+    return next(
+      createApiError(409, "USERNAME_TAKEN", "Username is already in use")
+    );
   }
 
   const passwordHash = await bcrypt.hash(password, config.bcryptSaltRounds);
@@ -194,26 +198,25 @@ router.post("/register", async (req, res) => {
     });
   } catch (error) {
     if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
-      return res.status(409).json({
-        error: "user already exists",
-      });
+      return next(createApiError(409, "USER_EXISTS", "User already exists"));
     }
 
-    console.error(error);
-
-    return res.status(500).json({
-      error: "internal server error",
-    });
+    return next(error);
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", async (req, res, next) => {
   const validationResult = validateLoginPayload(req.body);
 
   if (!validationResult.success) {
-    return res.status(400).json({
-      errors: validationResult.errors,
-    });
+    return next(
+      createApiError(
+        400,
+        "VALIDATION_ERROR",
+        "Invalid login payload",
+        validationResult.errors
+      )
+    );
   }
 
   const { email, password } = validationResult.data;
@@ -222,17 +225,17 @@ router.post("/login", async (req, res) => {
     const user = findByEmail(email);
 
     if (!user) {
-      return res.status(401).json({
-        error: "invalid credentials",
-      });
+      return next(
+        createApiError(401, "INVALID_CREDENTIALS", "Invalid credentials")
+      );
     }
 
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
 
     if (!passwordMatches) {
-      return res.status(401).json({
-        error: "invalid credentials",
-      });
+      return next(
+        createApiError(401, "INVALID_CREDENTIALS", "Invalid credentials")
+      );
     }
 
     const safeUser = {
@@ -248,10 +251,7 @@ router.post("/login", async (req, res) => {
       user: safeUser,
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      error: "internal server error",
-    });
+    return next(error);
   }
 });
 
@@ -261,14 +261,11 @@ router.get("/me", requireAuth, (req, res) => {
   });
 });
 
-router.post("/logout", (req, res) => {
+router.post("/logout", (req, res, next) => {
   if (req.session && req.session.user) {
     return req.session.destroy((error) => {
       if (error) {
-        console.error(error);
-        return res.status(500).json({
-          error: "internal server error",
-        });
+        return next(error);
       }
 
       res.clearCookie(config.session.cookieName);
@@ -279,27 +276,26 @@ router.post("/logout", (req, res) => {
   const token = extractBearerToken(req.headers.authorization);
 
   if (!token) {
-    return res.status(401).json({
-      error: "missing or invalid token",
-    });
+    return next(
+      createApiError(
+        401,
+        "MISSING_OR_INVALID_TOKEN",
+        "Missing or invalid token"
+      )
+    );
   }
 
   try {
     const existingSession = findByToken(token);
 
     if (!existingSession) {
-      return res.status(401).json({
-        error: "invalid token",
-      });
+      return next(createApiError(401, "INVALID_TOKEN", "Invalid token"));
     }
 
     deleteByToken(token);
     return res.status(204).send();
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      error: "internal server error",
-    });
+    return next(error);
   }
 });
 

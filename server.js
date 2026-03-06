@@ -3,12 +3,18 @@ const express = require("express");
 const session = require("express-session");
 const { config, missingTmdbVars } = require("./src/config/env");
 const authRoutes = require("./src/routes/auth.routes");
+const { apiRequestLogger } = require("./src/middlewares/api-logger.middleware");
+const {
+  apiNotFoundHandler,
+  apiErrorHandler,
+} = require("./src/middlewares/api-error.middleware");
 
 const app = express();
 const publicDir = path.join(__dirname, "public");
 
 app.use(express.static(publicDir));
 app.use(express.json());
+app.use(apiRequestLogger);
 app.use(
   session({
     name: config.session.cookieName,
@@ -43,6 +49,9 @@ app.get("/", (req, res) => {
 app.get("/movies", (req, res) => {
   res.sendFile(path.join(publicDir, "movies.html"));
 });
+
+app.use(apiNotFoundHandler);
+app.use(apiErrorHandler);
 
 app.listen(config.port, () => {
   console.log(
