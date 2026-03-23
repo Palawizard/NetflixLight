@@ -48,5 +48,17 @@ CREATE TABLE IF NOT EXISTS watch_progress (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+CREATE TABLE IF NOT EXISTS watchlist_items (
+                                               user_id INTEGER NOT NULL,
+                                               media_type TEXT NOT NULL CHECK (media_type IN ('movie', 'tv')),
+    tmdb_id INTEGER NOT NULL,
+    snapshot_title TEXT NOT NULL,
+    snapshot_poster TEXT,
+    added_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, media_type, tmdb_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
 CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_video_sources_media ON video_sources(media_type, tmdb_id);
+CREATE INDEX IF NOT EXISTS idx_watchlist_items_user ON watchlist_items(user_id);
