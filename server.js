@@ -57,8 +57,14 @@ app.get("/movies", (req, res) => {
 app.use(apiNotFoundHandler);
 app.use(apiErrorHandler);
 
-app.listen(config.port, () => {
-  console.log(
-    `Server running on http://localhost:${config.port} (${config.environment})`
-  );
-});
+if (require.main === module) {
+  app.listen(config.port, () => {
+    console.log(
+      `Server running on http://localhost:${config.port} (${config.environment})`
+    );
+  });
+}
+
+module.exports = {
+  app,
+};
