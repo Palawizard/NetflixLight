@@ -5,6 +5,7 @@ const {
   addWatchlistItem,
   findWatchlistItemByUserAndMedia,
   listWatchlistItemsByUserId,
+  removeWatchlistItem,
 } = require("../data-access/repositories/watchlist.repository");
 
 const router = express.Router();
@@ -57,6 +58,24 @@ function validateWatchlistPayload(payload) {
     tmdbId,
     title,
     poster,
+  };
+}
+
+function validateWatchlistRouteParams(params) {
+  const type = typeof params.type === "string" ? params.type.trim() : "";
+  const tmdbId = Number.parseInt(params.id, 10);
+
+  if (!ALLOWED_WATCHLIST_TYPES.has(type)) {
+    throw createApiError(400, "INVALID_TYPE", "type must be one of: movie, tv");
+  }
+
+  if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
+    throw createApiError(400, "INVALID_ID", "id must be a positive integer");
+  }
+
+  return {
+    type,
+    tmdbId,
   };
 }
 
@@ -125,6 +144,31 @@ router.post("/", requireAuth, (req, res, next) => {
       );
     }
 
+    return next(error);
+  }
+});
+
+router.delete("/:type/:id", requireAuth, (req, res, next) => {
+  try {
+    const { type, tmdbId } = validateWatchlistRouteParams(req.params);
+    const result = removeWatchlistItem({
+      userId: req.authUser.id,
+      type,
+      tmdbId,
+    });
+
+    if (result.changes === 0) {
+      return next(
+        createApiError(
+          404,
+          "WATCHLIST_ITEM_NOT_FOUND",
+          "Watchlist item not found"
+        )
+      );
+    }
+
+    return res.status(204).send();
+  } catch (error) {
     return next(error);
   }
 });
