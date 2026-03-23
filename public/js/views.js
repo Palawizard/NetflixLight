@@ -1,3 +1,5 @@
+import { renderPosterGrid } from "./components/poster-card.js";
+
 function createFeatureTile({ eyebrow, title, description }) {
   return `
     <article class="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur">
@@ -40,16 +42,20 @@ function renderHomeView() {
   `;
 }
 
-function renderMoviesView() {
+function renderMoviesView(state) {
+  const moviesState = state.catalog.movies;
+
   return `
     <section class="space-y-6">
       <header class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
         <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Films</p>
         <h1 class="mt-3 text-4xl font-semibold tracking-tight">A l'affiche</h1>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Retrouve les films populaires du moment et choisis ton prochain visionnage.
+          Retrouve les films populaires du moment et garde de cote ceux qui te tentent.
         </p>
       </header>
+
+      ${renderMoviesCatalog(moviesState)}
     </section>
   `;
 }
@@ -272,4 +278,40 @@ function renderAuthFeedback(authState) {
   }
 
   return "";
+}
+
+function renderMoviesCatalog(moviesState) {
+  if (moviesState.status === "loading" || moviesState.status === "idle") {
+    return `
+      <section class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        ${Array.from({ length: 8 }, () => renderPosterSkeleton()).join("")}
+      </section>
+    `;
+  }
+
+  if (moviesState.status === "error") {
+    return `
+      <section class="rounded-[2rem] border border-rose-400/20 bg-rose-500/10 p-6 text-rose-100 shadow-xl shadow-black/20">
+        Impossible de charger les films pour le moment.
+      </section>
+    `;
+  }
+
+  if (!moviesState.items.length) {
+    return `
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 text-white/70 shadow-xl shadow-black/20">
+        Aucun film disponible pour le moment.
+      </section>
+    `;
+  }
+
+  return renderPosterGrid(moviesState.items);
+}
+
+function renderPosterSkeleton() {
+  return `
+    <article class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20">
+      <div class="aspect-[2/3] animate-pulse bg-white/10"></div>
+    </article>
+  `;
 }

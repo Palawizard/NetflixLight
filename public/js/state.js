@@ -4,6 +4,13 @@ export const appState = {
     user: null,
     redirectAfterLogin: null,
   },
+  catalog: {
+    movies: {
+      status: "idle",
+      items: [],
+      error: null,
+    },
+  },
   ui: {
     flash: null,
     authForm: {
@@ -78,5 +85,14 @@ export function setRedirectAfterLogin(pathname) {
 export function clearRedirectAfterLogin() {
   updateState((state) => {
     state.session.redirectAfterLogin = null;
+  });
+}
+
+export function setMoviesCatalogState(nextMoviesState) {
+  updateState((state) => {
+    state.catalog.movies = {
+      ...state.catalog.movies,
+      ...nextMoviesState,
+    };
   });
 }
