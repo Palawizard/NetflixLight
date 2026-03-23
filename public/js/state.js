@@ -2,6 +2,7 @@ export const appState = {
   session: {
     status: "idle",
     user: null,
+    redirectAfterLogin: null,
   },
   ui: {
     flash: null,
@@ -56,5 +57,26 @@ export function resetAuthFormState() {
       error: null,
       success: null,
     };
+  });
+}
+
+export function setSessionState(nextSessionState) {
+  updateState((state) => {
+    state.session = {
+      ...state.session,
+      ...nextSessionState,
+    };
+  });
+}
+
+export function setRedirectAfterLogin(pathname) {
+  updateState((state) => {
+    state.session.redirectAfterLogin = pathname;
+  });
+}
+
+export function clearRedirectAfterLogin() {
+  updateState((state) => {
+    state.session.redirectAfterLogin = null;
   });
 }

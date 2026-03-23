@@ -54,19 +54,23 @@ function renderMoviesView() {
   `;
 }
 
-function renderFavoritesView() {
+function renderFavoritesView(state) {
+  const username = state.session.user?.username || "utilisateur";
+
   return `
     <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
       <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
       <h1 class="mt-3 text-4xl font-semibold tracking-tight">Ma liste</h1>
       <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-        Garde ici les titres que tu veux retrouver plus tard.
+        Connecte en tant que ${username}. Retrouve ici les titres que tu veux garder de cote.
       </p>
     </section>
   `;
 }
 
-function renderProfileView() {
+function renderProfileView(state) {
+  const user = state.session.user;
+
   return `
     <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
       <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Profil</p>
@@ -74,6 +78,17 @@ function renderProfileView() {
       <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
         Retrouve ici les informations liees a ton compte.
       </p>
+
+      <dl class="mt-8 grid gap-4 sm:grid-cols-2">
+        <div class="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
+          <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Username</dt>
+          <dd class="mt-3 text-lg font-medium text-white">${user?.username || "-"}</dd>
+        </div>
+        <div class="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
+          <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Email</dt>
+          <dd class="mt-3 text-lg font-medium text-white">${user?.email || "-"}</dd>
+        </div>
+      </dl>
     </section>
   `;
 }
