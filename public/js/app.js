@@ -1,4 +1,12 @@
-import { appState, subscribeState } from "./state.js";
+import { apiRequest, formatApiError } from "./api.js";
+import {
+  appState,
+  resetAuthFormState,
+  setAuthFormState,
+  setFlashMessage,
+  subscribeState,
+  updateState,
+} from "./state.js";
 import {
   getCurrentPath,
   navigate,
@@ -95,6 +103,72 @@ document.addEventListener("click", (event) => {
   navigate(targetPath);
 });
 
+document.addEventListener("submit", async (event) => {
+  const form = event.target.closest("[data-auth-form]");
+
+  if (!form) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const mode = form.getAttribute("data-auth-form");
+  const formData = new FormData(form);
+
+  setAuthFormState({
+    pending: true,
+    error: null,
+    success: null,
+  });
+
+  try {
+    if (mode === "login") {
+      const response = await apiRequest("/api/auth/login", {
+        method: "POST",
+        body: {
+          email: formData.get("email"),
+          password: formData.get("password"),
+        },
+      });
+
+      updateState((state) => {
+        state.session.user = response.user;
+      });
+
+      resetAuthFormState();
+      setFlashMessage("Connexion reussie.");
+      navigate("/profil");
+      return;
+    }
+
+    if (mode === "register") {
+      await apiRequest("/api/auth/register", {
+        method: "POST",
+        body: {
+          username: formData.get("username"),
+          email: formData.get("email"),
+          password: formData.get("password"),
+        },
+      });
+
+      setAuthFormState({
+        pending: false,
+        error: null,
+        success: "Compte cree. Tu peux maintenant te connecter.",
+      });
+      setFlashMessage("Compte cree avec succes.");
+      navigate("/login");
+    }
+  } catch (error) {
+    setAuthFormState({
+      pending: false,
+      error: formatApiError(error),
+      success: null,
+    });
+  }
+});
+
 subscribeRoute(renderApp);
 subscribeState(renderApp);
+resetAuthFormState();
 startRouter();
