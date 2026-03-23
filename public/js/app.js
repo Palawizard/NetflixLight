@@ -1,6 +1,7 @@
 import { apiRequest, formatApiError } from "./api.js";
 import {
   appState,
+  setSessionState,
   resetAuthFormState,
   setAuthFormState,
   setFlashMessage,
@@ -16,6 +17,8 @@ import {
 import { resolveView } from "./views.js";
 
 const appElement = document.querySelector("#app");
+const protectedPaths = new Set(["/favoris", "/profil"]);
+const guestOnlyPaths = new Set(["/login", "/register"]);
 
 const navItems = [
   { path: "/", label: "Accueil" },
@@ -28,10 +31,34 @@ const navItems = [
 
 function renderApp() {
   const currentPath = getCurrentPath();
+
+  if (
+    appState.session.status === "idle" ||
+    appState.session.status === "loading"
+  ) {
+    document.title = "Chargement | NetflixLight";
+    appElement.innerHTML = renderShell(renderSessionLoading(), currentPath);
+    return;
+  }
+
+  if (!ensureRouteAccess(currentPath)) {
+    return;
+  }
+
   const currentRoute = resolveView(currentPath);
 
   document.title = `${currentRoute.title} | NetflixLight`;
-  appElement.innerHTML = `
+  appElement.innerHTML = renderShell(
+    `
+    ${renderFlash(appState.ui.flash)}
+    ${currentRoute.render(appState)}
+  `,
+    currentPath
+  );
+}
+
+function renderShell(content, currentPath) {
+  return `
     <div class="min-h-screen">
       <header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
         <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-5">
@@ -42,17 +69,35 @@ function renderApp() {
           >
             NetflixLight
           </button>
-          <nav class="flex flex-wrap items-center justify-end gap-2">
+          <div class="flex flex-wrap items-center justify-end gap-3">
+            ${renderSessionBadge()}
+            <nav class="flex flex-wrap items-center justify-end gap-2">
             ${navItems.map((item) => renderNavLink(item, currentPath)).join("")}
-          </nav>
+            </nav>
+          </div>
         </div>
       </header>
 
       <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
-        ${renderFlash(appState.ui.flash)}
-        ${currentRoute.render(appState)}
+        ${content}
       </main>
     </div>
+  `;
+}
+
+function renderSessionBadge() {
+  if (appState.session.status !== "authenticated" || !appState.session.user) {
+    return `
+      <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.2em] text-white/50">
+        Visiteur
+      </span>
+    `;
+  }
+
+  return `
+    <span class="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs uppercase tracking-[0.2em] text-emerald-100">
+      ${appState.session.user.username}
+    </span>
   `;
 }
 
@@ -85,6 +130,65 @@ function renderFlash(flashMessage) {
       ${flashMessage}
     </div>
   `;
+}
+
+function renderSessionLoading() {
+  return `
+    <section class="grid min-h-[60vh] place-items-center">
+      <div class="max-w-xl rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.35em] text-amber-300">Session</p>
+        <h1 class="mt-4 text-4xl font-semibold tracking-tight">Un instant</h1>
+        <p class="mt-4 text-base leading-8 text-white/70">
+          On prepare ton espace.
+        </p>
+      </div>
+    </section>
+  `;
+}
+
+function ensureRouteAccess(currentPath) {
+  const isAuthenticated =
+    appState.session.status === "authenticated" &&
+    Boolean(appState.session.user);
+
+  if (!isAuthenticated && protectedPaths.has(currentPath)) {
+    appState.session.redirectAfterLogin = currentPath;
+    appState.ui.flash = "Connecte-toi pour acceder a cette page.";
+    navigate("/login");
+    return false;
+  }
+
+  if (isAuthenticated && guestOnlyPaths.has(currentPath)) {
+    navigate("/profil");
+    return false;
+  }
+
+  return true;
+}
+
+async function initializeSession() {
+  setSessionState({
+    status: "loading",
+    user: null,
+  });
+
+  try {
+    const response = await apiRequest("/api/auth/me");
+
+    setSessionState({
+      status: "authenticated",
+      user: response.user,
+    });
+  } catch (error) {
+    if (error.status !== 401) {
+      setFlashMessage("Impossible de charger ton espace.");
+    }
+
+    setSessionState({
+      status: "guest",
+      user: null,
+    });
+  }
 }
 
 document.addEventListener("click", (event) => {
@@ -131,13 +235,17 @@ document.addEventListener("submit", async (event) => {
         },
       });
 
+      const nextPath = appState.session.redirectAfterLogin || "/profil";
+
       updateState((state) => {
+        state.session.status = "authenticated";
         state.session.user = response.user;
+        state.session.redirectAfterLogin = null;
       });
 
       resetAuthFormState();
       setFlashMessage("Connexion reussie.");
-      navigate("/profil");
+      navigate(nextPath);
       return;
     }
 
@@ -171,4 +279,5 @@ document.addEventListener("submit", async (event) => {
 subscribeRoute(renderApp);
 subscribeState(renderApp);
 resetAuthFormState();
+initializeSession();
 startRouter();
