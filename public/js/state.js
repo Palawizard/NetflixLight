@@ -5,6 +5,11 @@ export const appState = {
   },
   ui: {
     flash: null,
+    authForm: {
+      pending: false,
+      error: null,
+      success: null,
+    },
   },
 };
 
@@ -32,5 +37,24 @@ export function setFlashMessage(message) {
 export function clearFlashMessage() {
   updateState((state) => {
     state.ui.flash = null;
+  });
+}
+
+export function setAuthFormState(nextAuthFormState) {
+  updateState((state) => {
+    state.ui.authForm = {
+      ...state.ui.authForm,
+      ...nextAuthFormState,
+    };
+  });
+}
+
+export function resetAuthFormState() {
+  updateState((state) => {
+    state.ui.authForm = {
+      pending: false,
+      error: null,
+      success: null,
+    };
   });
 }
