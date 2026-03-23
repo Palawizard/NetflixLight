@@ -15,5 +15,13 @@ module.exports = [
       globals: globals.node,
     },
   },
+  {
+    files: ["public/**/*.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: globals.browser,
+    },
+  },
   eslintConfigPrettier,
 ];
