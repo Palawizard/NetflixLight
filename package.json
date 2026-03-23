@@ -14,6 +14,7 @@
     "db:setup": "sh -c 'db_path=\"${SQLITE_DB_PATH:-./data/netflixlight.sqlite}\"; mkdir -p \"$(dirname \"$db_path\")\"; sqlite3 \"$db_path\" < ./src/data-access/sqlite/migrations/001_create_tables.sql'",
     "db:inspect": "sh -c 'sqlite3 \"${SQLITE_DB_PATH:-./data/netflixlight.sqlite}\" \".databases\"'",
     "lint": "npm run lint:eslint && npm run format:check",
+    "test:watchlist": "node --test tests/watchlist.api.test.js",
     "lint:eslint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
@@ -48,6 +49,7 @@
     "nodemon": "^3.1.14",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
+    "supertest": "^7.2.2",
     "tailwindcss": "^4.2.1"
   }
 }
