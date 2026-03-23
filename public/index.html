@@ -3,20 +3,53 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NetflixLight</title>
+    <title>NetflixLight SPA</title>
     <link rel="stylesheet" href="/css/app.css" />
   </head>
   <body class="min-h-screen bg-neutral-950 text-white">
-    <main class="grid min-h-screen place-items-center px-6">
-      <section
-        class="w-full max-w-2xl rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-12"
-      >
-        <h1
-          class="mx-auto max-w-2xl text-center text-4xl font-semibold tracking-tight sm:text-6xl"
+    <div
+      class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(244,63,94,0.16),_transparent_28%),linear-gradient(180deg,_#0a0a0a,_#171717)]"
+    >
+      <header class="border-b border-white/10 bg-black/20 backdrop-blur">
+        <div
+          class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5"
         >
-          NetflixLight
-        </h1>
-      </section>
-    </main>
+          <a
+            href="/"
+            data-link
+            class="text-xl font-semibold tracking-[0.2em] text-rose-400 uppercase"
+          >
+            NetflixLight
+          </a>
+          <nav class="flex items-center gap-2 text-sm text-white/80">
+            <a
+              href="/"
+              data-link
+              class="rounded-full px-4 py-2 transition hover:bg-white/10 hover:text-white"
+            >
+              Accueil
+            </a>
+            <a
+              href="/movies"
+              data-link
+              class="rounded-full px-4 py-2 transition hover:bg-white/10 hover:text-white"
+            >
+              Films
+            </a>
+            <a
+              href="/watchlist"
+              data-link
+              class="rounded-full px-4 py-2 transition hover:bg-white/10 hover:text-white"
+            >
+              Watchlist
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <main id="app" class="mx-auto max-w-6xl px-6 py-10"></main>
+    </div>
+
+    <script src="/js/app.js" defer></script>
   </body>
 </html>

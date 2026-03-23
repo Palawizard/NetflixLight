@@ -13,6 +13,7 @@ const {
 
 const app = express();
 const publicDir = path.join(__dirname, "public");
+const indexFilePath = path.join(publicDir, "index.html");
 
 app.use(express.static(publicDir));
 app.use(express.json());
@@ -46,12 +47,12 @@ if (missingTmdbVars.length > 0) {
   );
 }
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(publicDir, "index.html"));
-});
+app.get(/^\/(?!api(?:\/|$)).*/, (req, res, next) => {
+  if (path.extname(req.path)) {
+    return next();
+  }
 
-app.get("/movies", (req, res) => {
-  res.sendFile(path.join(publicDir, "movies.html"));
+  return res.sendFile(indexFilePath);
 });
 
 app.use(apiNotFoundHandler);
