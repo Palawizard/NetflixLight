@@ -2,6 +2,7 @@ import { apiRequest, formatApiError } from "./api.js";
 import {
   appState,
   setSessionState,
+  setMoviesCatalogState,
   resetAuthFormState,
   setAuthFormState,
   setFlashMessage,
@@ -191,6 +192,43 @@ async function initializeSession() {
   }
 }
 
+async function loadMoviesCatalog() {
+  if (
+    appState.catalog.movies.status === "loading" ||
+    appState.catalog.movies.status === "success"
+  ) {
+    return;
+  }
+
+  setMoviesCatalogState({
+    status: "loading",
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(
+      "/api/tmdb/movies/popular?language=fr-FR"
+    );
+
+    setMoviesCatalogState({
+      status: "success",
+      items: Array.isArray(response.results) ? response.results : [],
+      error: null,
+    });
+  } catch (error) {
+    setMoviesCatalogState({
+      status: "error",
+      error: formatApiError(error),
+    });
+  }
+}
+
+function handleRouteEffects(currentPath) {
+  if (currentPath === "/films") {
+    loadMoviesCatalog();
+  }
+}
+
 document.addEventListener("click", (event) => {
   const trigger = event.target.closest("[data-nav-path]");
 
@@ -277,6 +315,7 @@ document.addEventListener("submit", async (event) => {
 });
 
 subscribeRoute(renderApp);
+subscribeRoute(handleRouteEffects);
 subscribeState(renderApp);
 resetAuthFormState();
 initializeSession();
