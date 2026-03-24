@@ -689,6 +689,12 @@
   .text-rose-100 {
     color: var(--color-rose-100);
   }
+  .text-rose-100\/90 {
+    color: color-mix(in srgb, oklch(94.1% 0.03 12.58) 90%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-rose-100) 90%, transparent);
+    }
+  }
   .text-rose-300 {
     color: var(--color-rose-300);
   }
