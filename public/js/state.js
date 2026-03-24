@@ -1,3 +1,11 @@
+function createCatalogSectionState() {
+  return {
+    status: "idle",
+    items: [],
+    error: null,
+  };
+}
+
 export const appState = {
   session: {
     status: "idle",
@@ -10,10 +18,14 @@ export const appState = {
     error: null,
   },
   catalog: {
+    home: {
+      trending: createCatalogSectionState(),
+      moviesPopular: createCatalogSectionState(),
+      tvPopular: createCatalogSectionState(),
+      topRated: createCatalogSectionState(),
+    },
     movies: {
-      status: "idle",
-      items: [],
-      error: null,
+      ...createCatalogSectionState(),
     },
   },
   ui: {
@@ -98,6 +110,15 @@ export function setMoviesCatalogState(nextMoviesState) {
     state.catalog.movies = {
       ...state.catalog.movies,
       ...nextMoviesState,
+    };
+  });
+}
+
+export function setHomeCatalogState(sectionKey, nextSectionState) {
+  updateState((state) => {
+    state.catalog.home[sectionKey] = {
+      ...state.catalog.home[sectionKey],
+      ...nextSectionState,
     };
   });
 }

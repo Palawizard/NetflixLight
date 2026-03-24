@@ -14,6 +14,7 @@ function renderHomeView(state) {
   return `
     <section class="space-y-8">
       ${renderHomeHero(state.hero)}
+      ${renderHomeCarousels(state.catalog.home)}
 
       <div class="grid gap-5 lg:grid-cols-2">
         ${createFeatureTile({
@@ -415,4 +416,44 @@ function renderDetailPlaceholder(type, id) {
       </p>
     </section>
   `;
+}
+
+function renderHomeCarousels(homeCatalogState) {
+  return `
+    <div class="space-y-8">
+      ${renderOptionalCarousel(homeCatalogState.trending, {
+        id: "home-trending",
+        title: "Tendances",
+      })}
+      ${renderOptionalCarousel(homeCatalogState.moviesPopular, {
+        id: "home-movies-popular",
+        title: "Films populaires",
+      })}
+      ${renderOptionalCarousel(homeCatalogState.tvPopular, {
+        id: "home-tv-popular",
+        title: "Series populaires",
+      })}
+      ${renderOptionalCarousel(homeCatalogState.topRated, {
+        id: "home-top-rated",
+        title: "Mieux notes",
+      })}
+    </div>
+  `;
+}
+
+function renderOptionalCarousel(sectionState, { id, title }) {
+  if (
+    !sectionState ||
+    sectionState.status !== "success" ||
+    !Array.isArray(sectionState.items) ||
+    sectionState.items.length === 0
+  ) {
+    return "";
+  }
+
+  return renderCarousel({
+    id,
+    title,
+    items: sectionState.items,
+  });
 }

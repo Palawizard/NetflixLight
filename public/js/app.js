@@ -2,6 +2,7 @@ import { apiRequest, formatApiError } from "./api.js";
 import { initializeCarousels, scrollCarousel } from "./components/carousel.js";
 import {
   appState,
+  setHomeCatalogState,
   setSessionState,
   setMoviesCatalogState,
   setHeroState,
@@ -226,6 +227,56 @@ async function loadMoviesCatalog() {
   }
 }
 
+async function loadHomeCatalogSection(sectionKey, endpoint) {
+  const sectionState = appState.catalog.home[sectionKey];
+
+  if (
+    !sectionState ||
+    sectionState.status === "loading" ||
+    sectionState.status === "success"
+  ) {
+    return;
+  }
+
+  setHomeCatalogState(sectionKey, {
+    status: "loading",
+    items: [],
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(endpoint);
+
+    setHomeCatalogState(sectionKey, {
+      status: "success",
+      items: Array.isArray(response.results) ? response.results : [],
+      error: null,
+    });
+  } catch (error) {
+    setHomeCatalogState(sectionKey, {
+      status: "error",
+      items: [],
+      error: formatApiError(error),
+    });
+  }
+}
+
+function loadHomeCarousels() {
+  loadHomeCatalogSection(
+    "trending",
+    "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
+  );
+  loadHomeCatalogSection(
+    "moviesPopular",
+    "/api/tmdb/movies/popular?language=fr-FR"
+  );
+  loadHomeCatalogSection("tvPopular", "/api/tmdb/tv/popular?language=fr-FR");
+  loadHomeCatalogSection(
+    "topRated",
+    "/api/tmdb/movies/top-rated?language=fr-FR"
+  );
+}
+
 async function loadHomeHero() {
   if (
     appState.hero.status === "loading" ||
@@ -285,6 +336,7 @@ async function loadHomeHero() {
 function handleRouteEffects(currentPath) {
   if (currentPath === "/") {
     loadHomeHero();
+    loadHomeCarousels();
   }
 
   if (currentPath === "/films") {
