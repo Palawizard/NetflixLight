@@ -151,13 +151,13 @@ router.post("/", requireAuth, (req, res, next) => {
 router.delete("/:type/:id", requireAuth, (req, res, next) => {
   try {
     const { type, tmdbId } = validateWatchlistRouteParams(req.params);
-    const result = removeWatchlistItem({
+    const { changes } = removeWatchlistItem({
       userId: req.authUser.id,
       type,
       tmdbId,
     });
 
-    if (result.changes === 0) {
+    if (changes === 0) {
       return next(
         createApiError(
           404,

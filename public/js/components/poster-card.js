@@ -1,13 +1,22 @@
+/**
+ * @typedef {object} TmdbMediaItem
+ * @property {number} [id]
+ * @property {"movie" | "tv" | "person"} [media_type]
+ * @property {string} [title]
+ * @property {string} [name]
+ * @property {number} [vote_average]
+ * @property {string} [release_date]
+ * @property {string} [first_air_date]
+ * @property {string} [poster_path]
+ * @property {string} [backdrop_path]
+ * @property {string} [overview]
+ */
+
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-export function renderPosterGrid(items) {
-  return `
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      ${items.map((item) => renderPosterCard(item)).join("")}
-    </div>
-  `;
-}
-
+/**
+ * @param {TmdbMediaItem} item
+ */
 export function renderPosterCard(item) {
   const title = escapeHtml(item.title || item.name || "Titre inconnu");
   const rating = formatRating(item.vote_average);
@@ -29,7 +38,7 @@ export function renderPosterCard(item) {
 
   return `
     <article class="group overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-white/20">
-      <div class="relative aspect-[2/3] overflow-hidden bg-black/40">
+      <div class="relative aspect-2/3 overflow-hidden bg-black/40">
         ${posterMarkup}
         <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent opacity-90 transition duration-300 group-hover:opacity-100"></div>
 

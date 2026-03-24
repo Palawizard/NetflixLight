@@ -1,5 +1,18 @@
 import { renderCarousel } from "./components/carousel.js";
 
+/**
+ * @typedef {object} TmdbMediaItem
+ * @property {number} [id]
+ * @property {"movie" | "tv" | "person"} [media_type]
+ * @property {string} [title]
+ * @property {string} [name]
+ * @property {string} [overview]
+ * @property {string} [release_date]
+ * @property {string} [first_air_date]
+ * @property {string} [backdrop_path]
+ * @property {string} [poster_path]
+ */
+
 function createFeatureTile({ eyebrow, title, description }) {
   return `
     <article class="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur">
@@ -38,7 +51,7 @@ function renderMoviesView(state) {
 
   return `
     <section class="space-y-6">
-      <header class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+      <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
         <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Films</p>
         <h1 class="mt-3 text-4xl font-semibold tracking-tight">A l'affiche</h1>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
@@ -56,7 +69,7 @@ function renderFavoritesView(state) {
   const username = state.session.user?.username || "utilisateur";
 
   return `
-    <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+    <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
       <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
       <h1 class="mt-3 text-4xl font-semibold tracking-tight">Ma liste</h1>
       <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
@@ -70,7 +83,7 @@ function renderProfileView(state) {
   const user = state.session.user;
 
   return `
-    <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+    <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
       <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Profil</p>
       <h1 class="mt-3 text-4xl font-semibold tracking-tight">Mon compte</h1>
       <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
@@ -78,11 +91,11 @@ function renderProfileView(state) {
       </p>
 
       <dl class="mt-8 grid gap-4 sm:grid-cols-2">
-        <div class="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
+        <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
           <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Username</dt>
           <dd class="mt-3 text-lg font-medium text-white">${user?.username || "-"}</dd>
         </div>
-        <div class="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
+        <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
           <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Email</dt>
           <dd class="mt-3 text-lg font-medium text-white">${user?.email || "-"}</dd>
         </div>
@@ -95,7 +108,7 @@ function renderLoginView(state) {
   const authState = state.ui.authForm;
 
   return `
-    <section class="mx-auto w-full max-w-xl rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur sm:p-10">
+    <section class="mx-auto w-full max-w-xl rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur sm:p-10">
       <p class="text-sm uppercase tracking-[0.3em] text-violet-300">Connexion</p>
       <h1 class="mt-3 text-4xl font-semibold tracking-tight">Connexion</h1>
       <p class="mt-4 text-base leading-8 text-white/70">
@@ -143,7 +156,7 @@ function renderRegisterView(state) {
   const authState = state.ui.authForm;
 
   return `
-    <section class="mx-auto w-full max-w-xl rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur sm:p-10">
+    <section class="mx-auto w-full max-w-xl rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur sm:p-10">
       <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300">Inscription</p>
       <h1 class="mt-3 text-4xl font-semibold tracking-tight">Inscription</h1>
       <p class="mt-4 text-base leading-8 text-white/70">
@@ -201,7 +214,7 @@ function renderRegisterView(state) {
 function renderNotFoundView(pathname) {
   return `
     <section class="grid min-h-[60vh] place-items-center">
-      <div class="max-w-2xl rounded-[2rem] border border-rose-400/20 bg-rose-500/10 p-10 text-center shadow-2xl shadow-black/30 backdrop-blur">
+      <div class="max-w-2xl rounded-4xl border border-rose-400/20 bg-rose-500/10 p-10 text-center shadow-2xl shadow-black/30 backdrop-blur">
         <p class="text-sm uppercase tracking-[0.35em] text-rose-300">404</p>
         <h1 class="mt-4 text-5xl font-semibold tracking-tight">Page introuvable</h1>
         <p class="mt-5 text-base leading-8 text-white/70">
@@ -294,7 +307,7 @@ function renderMoviesCatalog(moviesState) {
 function renderHomeHero(heroState) {
   if (heroState.status === "loading" || heroState.status === "idle") {
     return `
-      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
         <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
         <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
           Chargement...
@@ -305,7 +318,7 @@ function renderHomeHero(heroState) {
 
   if (heroState.status === "error") {
     return `
-      <section class="rounded-[2rem] border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
+      <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
         <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
         <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
           Impossible de charger la selection
@@ -326,7 +339,7 @@ function renderHomeHero(heroState) {
 
   if (!heroState.item) {
     return `
-      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
         <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
         <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
           Regarde ce qui te tente ce soir.
@@ -338,6 +351,7 @@ function renderHomeHero(heroState) {
     `;
   }
 
+  /** @type {TmdbMediaItem} */
   const item = heroState.item;
   const title = item.title || item.name || "Titre inconnu";
   const overview =
@@ -348,7 +362,7 @@ function renderHomeHero(heroState) {
   const detailPath = `/${mediaType}/${item.id}`;
 
   return `
-    <section class="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/30">
+    <section class="relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
       <div class="absolute inset-0">
         <img
           src="https://image.tmdb.org/t/p/original${backdropPath}"
@@ -358,7 +372,7 @@ function renderHomeHero(heroState) {
       </div>
 
       <div class="absolute inset-0 bg-linear-to-r from-black via-black/75 to-black/20"></div>
-      <div class="relative z-10 flex min-h-[28rem] items-end p-8 sm:p-10">
+      <div class="relative z-10 flex min-h-112 items-end p-8 sm:p-10">
         <div class="max-w-2xl">
           <p class="text-sm uppercase tracking-[0.35em] text-rose-300">
             ${mediaType === "movie" ? "Film" : "Serie"}${year ? ` • ${year}` : ""}
@@ -372,33 +386,33 @@ function renderHomeHero(heroState) {
             ${overview}
           </p>
 
-      <div class="mt-8 flex flex-wrap gap-3">
-        <button
-          type="button"
-          data-nav-path="${detailPath}"
+          <div class="mt-8 flex flex-wrap gap-3">
+            <button
+              type="button"
+              data-nav-path="${detailPath}"
               class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
             >
               Voir le detail
             </button>
 
-        <button
-          type="button"
-          data-refresh-hero
-          class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
-        >
-          Changer
-        </button>
-        <button
-          type="button"
-          data-retry-hero
-          class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
-        >
-          Recharger
-        </button>
+            <button
+              type="button"
+              data-refresh-hero
+              class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+            >
+              Changer
+            </button>
+            <button
+              type="button"
+              data-retry-hero
+              class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+            >
+              Recharger
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
   `;
 }
 
@@ -502,7 +516,7 @@ function renderCarouselSkeleton(title) {
           { length: 5 },
           () => `
           <article class="w-[16rem] shrink-0 overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20 sm:w-[18rem]">
-            <div class="aspect-[2/3] animate-pulse bg-white/10"></div>
+            <div class="aspect-2/3 animate-pulse bg-white/10"></div>
           </article>
         `
         ).join("")}

@@ -1,6 +1,7 @@
 const { ApiError, createApiError } = require("../utils/api-error");
 
-function apiNotFoundHandler(req, res, next) {
+/** @type {import("express").RequestHandler} */
+const apiNotFoundHandler = (req, res, next) => {
   if (!req.path.startsWith("/api")) {
     return next();
   }
@@ -12,9 +13,10 @@ function apiNotFoundHandler(req, res, next) {
       `Route not found: ${req.method} ${req.path}`
     )
   );
-}
+};
 
-function apiErrorHandler(err, req, res, next) {
+/** @type {import("express").ErrorRequestHandler} */
+const apiErrorHandler = (err, req, res, next) => {
   if (!req.path.startsWith("/api")) {
     return next(err);
   }
@@ -55,7 +57,7 @@ function apiErrorHandler(err, req, res, next) {
   }
 
   return res.status(status).json(payload);
-}
+};
 
 module.exports = {
   apiNotFoundHandler,

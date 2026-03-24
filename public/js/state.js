@@ -64,12 +64,6 @@ export function setFlashMessage(message) {
   });
 }
 
-export function clearFlashMessage() {
-  updateState((state) => {
-    state.ui.flash = null;
-  });
-}
-
 export function setAuthFormState(nextAuthFormState) {
   updateState((state) => {
     state.ui.authForm = {
@@ -95,18 +89,6 @@ export function setSessionState(nextSessionState) {
       ...state.session,
       ...nextSessionState,
     };
-  });
-}
-
-export function setRedirectAfterLogin(pathname) {
-  updateState((state) => {
-    state.session.redirectAfterLogin = pathname;
-  });
-}
-
-export function clearRedirectAfterLogin() {
-  updateState((state) => {
-    state.session.redirectAfterLogin = null;
   });
 }
 

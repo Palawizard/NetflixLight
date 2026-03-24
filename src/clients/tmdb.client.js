@@ -1,5 +1,5 @@
 const { config } = require("../config/env");
-const { ApiError, createApiError } = require("../utils/api-error");
+const { createApiError } = require("../utils/api-error");
 
 const DEFAULT_TIMEOUT_MS = 8000;
 const tmdbCache = new Map();
@@ -188,52 +188,50 @@ async function tmdbRequest(
 
   const url = buildTmdbUrl(endpointPath, query);
   const controller = new AbortController();
+  const requestBody = body ? JSON.stringify(body) : undefined;
+  const requestHeaders = buildTmdbHeaders(headers);
+  const cacheKey = buildCacheKey(method, url, requestBody);
   const timeoutId = setTimeout(() => {
     controller.abort();
   }, timeoutMs);
 
+  const cachedPayload = getCachedPayload(cacheKey);
+  if (cachedPayload) {
+    return cachedPayload;
+  }
+
+  if (requestBody) {
+    requestHeaders["Content-Type"] = "application/json";
+  }
+
+  /** @type {Response} */
+  let response;
+
   try {
-    const requestBody = body ? JSON.stringify(body) : undefined;
-    const requestHeaders = buildTmdbHeaders(headers);
-    const cacheKey = buildCacheKey(method, url, requestBody);
-
-    const cachedPayload = getCachedPayload(cacheKey);
-    if (cachedPayload) {
-      return cachedPayload;
-    }
-
-    if (requestBody) {
-      requestHeaders["Content-Type"] = "application/json";
-    }
-
-    const response = await fetch(url, {
+    response = await fetch(url, {
       method,
       headers: requestHeaders,
       body: requestBody,
       signal: controller.signal,
     });
-
-    const payload = await parseTmdbResponseBody(response);
-
-    if (!response.ok) {
-      throw mapTmdbError(response, payload);
-    }
-
-    setCachedPayload(cacheKey, payload);
-    return payload;
   } catch (error) {
     if (error.name === "AbortError") {
       throw createApiError(504, "TMDB_TIMEOUT", "TMDB request timeout");
-    }
-
-    if (error instanceof ApiError) {
-      throw error;
     }
 
     throw createApiError(502, "TMDB_UNREACHABLE", "Unable to reach TMDB");
   } finally {
     clearTimeout(timeoutId);
   }
+
+  const payload = await parseTmdbResponseBody(response);
+
+  if (!response.ok) {
+    throw mapTmdbError(response, payload);
+  }
+
+  setCachedPayload(cacheKey, payload);
+  return payload;
 }
 
 async function tmdbGet(endpointPath, { query, headers, timeoutMs } = {}) {
@@ -246,6 +244,5 @@ async function tmdbGet(endpointPath, { query, headers, timeoutMs } = {}) {
 }
 
 module.exports = {
-  tmdbRequest,
   tmdbGet,
 };
