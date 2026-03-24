@@ -3,6 +3,7 @@ import {
   appState,
   setSessionState,
   setMoviesCatalogState,
+  setHeroState,
   resetAuthFormState,
   setAuthFormState,
   setFlashMessage,
@@ -223,13 +224,84 @@ async function loadMoviesCatalog() {
   }
 }
 
+async function loadHomeHero() {
+  if (
+    appState.hero.status === "loading" ||
+    appState.hero.status === "success"
+  ) {
+    return;
+  }
+
+  setHeroState({
+    status: "loading",
+    item: null,
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(
+      "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
+    );
+
+    const results = Array.isArray(response.results) ? response.results : [];
+    const eligibleItems = results.filter((item) => {
+      const mediaType = item.media_type;
+
+      return (
+        (mediaType === "movie" || mediaType === "tv") &&
+        item.id &&
+        (item.backdrop_path || item.poster_path)
+      );
+    });
+
+    if (eligibleItems.length === 0) {
+      setHeroState({
+        status: "error",
+        item: null,
+        error: "Aucun titre disponible.",
+      });
+      return;
+    }
+
+    const randomIndex = Math.floor(Math.random() * eligibleItems.length);
+    const randomItem = eligibleItems[randomIndex];
+
+    setHeroState({
+      status: "success",
+      item: randomItem,
+      error: null,
+    });
+  } catch (error) {
+    setHeroState({
+      status: "error",
+      item: null,
+      error: formatApiError(error),
+    });
+  }
+}
+
 function handleRouteEffects(currentPath) {
+  if (currentPath === "/") {
+    loadHomeHero();
+  }
+
   if (currentPath === "/films") {
     loadMoviesCatalog();
   }
 }
 
 document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-refresh-hero]")) {
+    setHeroState({
+      status: "idle",
+      item: null,
+      error: null,
+    });
+
+    loadHomeHero();
+    return;
+  }
+
   const trigger = event.target.closest("[data-nav-path]");
 
   if (!trigger) {

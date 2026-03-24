@@ -10,32 +10,21 @@ function createFeatureTile({ eyebrow, title, description }) {
   `;
 }
 
-function renderHomeView() {
+function renderHomeView(state) {
   return `
-    <section class="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-      <article class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
-        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">NetflixLight</p>
-        <h1 class="mt-4 max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
-          Regarde ce qui te tente ce soir.
-        </h1>
-        <p class="mt-6 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
-          Parcours les films du moment, garde tes envies de cote et retrouve
-          rapidement ce que tu veux voir.
-        </p>
-      </article>
+    <section class="space-y-8">
+      ${renderHomeHero(state.hero)}
 
-      <div class="grid gap-5">
+      <div class="grid gap-5 lg:grid-cols-2">
         ${createFeatureTile({
           eyebrow: "A la une",
           title: "Les titres du moment",
-          description:
-            "Une selection simple a parcourir quand tu veux lancer quelque chose sans perdre de temps.",
+          description: "Retrouve rapidement ce qui fait parler en ce moment.",
         })}
         ${createFeatureTile({
           eyebrow: "Ma liste",
           title: "Tout garder sous la main",
-          description:
-            "Ajoute les films qui t'interessent et retrouve-les facilement dans ton espace.",
+          description: "Ajoute les titres que tu veux retrouver plus tard.",
         })}
       </div>
     </section>
@@ -254,6 +243,17 @@ export function resolveView(pathname) {
     return route;
   }
 
+  const detailMatch = pathname.match(/^\/(movie|tv)\/(\d+)$/);
+
+  if (detailMatch) {
+    const [, type, id] = detailMatch;
+
+    return {
+      title: "Detail",
+      render: () => renderDetailPlaceholder(type, id),
+    };
+  }
+
   return {
     title: "404",
     render: () => renderNotFoundView(pathname),
@@ -313,5 +313,102 @@ function renderPosterSkeleton() {
     <article class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20">
       <div class="aspect-[2/3] animate-pulse bg-white/10"></div>
     </article>
+  `;
+}
+
+function renderHomeHero(heroState) {
+  if (heroState.status === "loading" || heroState.status === "idle") {
+    return `
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
+        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
+        <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+          Chargement...
+        </h1>
+      </section>
+    `;
+  }
+
+  if (heroState.status === "error" || !heroState.item) {
+    return `
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
+        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
+        <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+          Regarde ce qui te tente ce soir.
+        </h1>
+        <p class="mt-6 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
+          Parcours les films du moment et trouve ton prochain visionnage.
+        </p>
+      </section>
+    `;
+  }
+
+  const item = heroState.item;
+  const title = item.title || item.name || "Titre inconnu";
+  const overview =
+    item.overview || "Decouvre ce titre dans la selection du moment.";
+  const year = (item.release_date || item.first_air_date || "").slice(0, 4);
+  const mediaType = item.media_type;
+  const backdropPath = item.backdrop_path || item.poster_path;
+  const detailPath = `/${mediaType}/${item.id}`;
+
+  return `
+    <section class="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/30">
+      <div class="absolute inset-0">
+        <img
+          src="https://image.tmdb.org/t/p/original${backdropPath}"
+          alt="${title}"
+          class="h-full w-full object-cover"
+        />
+      </div>
+
+      <div class="absolute inset-0 bg-linear-to-r from-black via-black/75 to-black/20"></div>
+      <div class="relative z-10 flex min-h-[28rem] items-end p-8 sm:p-10">
+        <div class="max-w-2xl">
+          <p class="text-sm uppercase tracking-[0.35em] text-rose-300">
+            ${mediaType === "movie" ? "Film" : "Serie"}${year ? ` • ${year}` : ""}
+          </p>
+
+          <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+            ${title}
+          </h1>
+
+          <p class="mt-6 max-w-2xl text-base leading-8 text-white/80 sm:text-lg">
+            ${overview}
+          </p>
+
+          <div class="mt-8 flex flex-wrap gap-3">
+            <button
+              type="button"
+              data-nav-path="${detailPath}"
+              class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+            >
+              Voir le detail
+            </button>
+
+            <button
+              type="button"
+              data-refresh-hero
+              class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+            >
+              Changer
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderDetailPlaceholder(type, id) {
+  return `
+    <section class="space-y-4">
+      <p class="text-sm uppercase tracking-[0.3em] text-rose-300">Detail</p>
+      <h1 class="text-4xl font-semibold tracking-tight">
+        ${type === "movie" ? "Film" : "Serie"} #${id}
+      </h1>
+      <p class="text-white/70">
+        La page detail sera branchee ensuite sur l'endpoint TMDB.
+      </p>
+    </section>
   `;
 }

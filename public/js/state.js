@@ -4,6 +4,11 @@ export const appState = {
     user: null,
     redirectAfterLogin: null,
   },
+  hero: {
+    status: "idle",
+    item: null,
+    error: null,
+  },
   catalog: {
     movies: {
       status: "idle",
@@ -93,6 +98,15 @@ export function setMoviesCatalogState(nextMoviesState) {
     state.catalog.movies = {
       ...state.catalog.movies,
       ...nextMoviesState,
+    };
+  });
+}
+
+export function setHeroState(nextHeroState) {
+  updateState((state) => {
+    state.hero = {
+      ...state.hero,
+      ...nextHeroState,
     };
   });
 }
