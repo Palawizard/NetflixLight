@@ -320,6 +320,48 @@ function loadGenreCarousels() {
   loadGenreCatalogSection("horror", 27);
 }
 
+function retryCatalogSection(retryKey) {
+  switch (retryKey) {
+    case "home-trending":
+      loadHomeCatalogSection(
+        "trending",
+        "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
+      );
+      return;
+    case "home-movies-popular":
+      loadHomeCatalogSection(
+        "moviesPopular",
+        "/api/tmdb/movies/popular?language=fr-FR"
+      );
+      return;
+    case "home-tv-popular":
+      loadHomeCatalogSection(
+        "tvPopular",
+        "/api/tmdb/tv/popular?language=fr-FR"
+      );
+      return;
+    case "home-top-rated":
+      loadHomeCatalogSection(
+        "topRated",
+        "/api/tmdb/movies/top-rated?language=fr-FR"
+      );
+      return;
+    case "movies-popular":
+      loadMoviesCatalog();
+      return;
+    case "genre-action":
+      loadGenreCatalogSection("action", 28);
+      return;
+    case "genre-comedy":
+      loadGenreCatalogSection("comedy", 35);
+      return;
+    case "genre-horror":
+      loadGenreCatalogSection("horror", 27);
+      return;
+    default:
+  }
+}
+
 async function loadHomeHero() {
   if (
     appState.hero.status === "loading" ||
@@ -389,6 +431,25 @@ function handleRouteEffects(currentPath) {
 }
 
 document.addEventListener("click", (event) => {
+  const retryHeroButton = event.target.closest("[data-retry-hero]");
+
+  if (retryHeroButton) {
+    setHeroState({
+      status: "idle",
+      item: null,
+      error: null,
+    });
+    loadHomeHero();
+    return;
+  }
+
+  const retrySectionButton = event.target.closest("[data-retry-section]");
+
+  if (retrySectionButton) {
+    retryCatalogSection(retrySectionButton.getAttribute("data-retry-section"));
+    return;
+  }
+
   const previousButton = event.target.closest("[data-carousel-prev]");
 
   if (previousButton) {

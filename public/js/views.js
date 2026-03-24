@@ -284,43 +284,11 @@ function renderAuthFeedback(authState) {
 }
 
 function renderMoviesCatalog(moviesState) {
-  if (moviesState.status === "loading" || moviesState.status === "idle") {
-    return `
-      <section class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        ${Array.from({ length: 8 }, () => renderPosterSkeleton()).join("")}
-      </section>
-    `;
-  }
-
-  if (moviesState.status === "error") {
-    return `
-      <section class="rounded-[2rem] border border-rose-400/20 bg-rose-500/10 p-6 text-rose-100 shadow-xl shadow-black/20">
-        Impossible de charger les films pour le moment.
-      </section>
-    `;
-  }
-
-  if (!moviesState.items.length) {
-    return `
-      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 text-white/70 shadow-xl shadow-black/20">
-        Aucun film disponible pour le moment.
-      </section>
-    `;
-  }
-
-  return renderCarousel({
+  return renderCatalogCarouselSection(moviesState, {
     id: "movies-popular",
     title: "Films populaires",
-    items: moviesState.items,
+    retryKey: "movies-popular",
   });
-}
-
-function renderPosterSkeleton() {
-  return `
-    <article class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20">
-      <div class="aspect-[2/3] animate-pulse bg-white/10"></div>
-    </article>
-  `;
 }
 
 function renderHomeHero(heroState) {
@@ -335,7 +303,28 @@ function renderHomeHero(heroState) {
     `;
   }
 
-  if (heroState.status === "error" || !heroState.item) {
+  if (heroState.status === "error") {
+    return `
+      <section class="rounded-[2rem] border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
+        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
+        <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+          Impossible de charger la selection
+        </h1>
+        <p class="mt-6 max-w-2xl text-base leading-8 text-rose-100/90 sm:text-lg">
+          ${heroState.error || "Une erreur est survenue."}
+        </p>
+        <button
+          type="button"
+          data-retry-hero
+          class="mt-8 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+        >
+          Reessayer
+        </button>
+      </section>
+    `;
+  }
+
+  if (!heroState.item) {
     return `
       <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
         <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
@@ -383,26 +372,33 @@ function renderHomeHero(heroState) {
             ${overview}
           </p>
 
-          <div class="mt-8 flex flex-wrap gap-3">
-            <button
-              type="button"
-              data-nav-path="${detailPath}"
+      <div class="mt-8 flex flex-wrap gap-3">
+        <button
+          type="button"
+          data-nav-path="${detailPath}"
               class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
             >
               Voir le detail
             </button>
 
-            <button
-              type="button"
-              data-refresh-hero
-              class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
-            >
-              Changer
-            </button>
-          </div>
-        </div>
+        <button
+          type="button"
+          data-refresh-hero
+          class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+        >
+          Changer
+        </button>
+        <button
+          type="button"
+          data-retry-hero
+          class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+        >
+          Recharger
+        </button>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
   `;
 }
 
@@ -423,34 +419,67 @@ function renderDetailPlaceholder(type, id) {
 function renderHomeCarousels(homeCatalogState) {
   return `
     <div class="space-y-8">
-      ${renderOptionalCarousel(homeCatalogState.trending, {
+      ${renderCatalogCarouselSection(homeCatalogState.trending, {
         id: "home-trending",
         title: "Tendances",
+        retryKey: "home-trending",
       })}
-      ${renderOptionalCarousel(homeCatalogState.moviesPopular, {
+      ${renderCatalogCarouselSection(homeCatalogState.moviesPopular, {
         id: "home-movies-popular",
         title: "Films populaires",
+        retryKey: "home-movies-popular",
       })}
-      ${renderOptionalCarousel(homeCatalogState.tvPopular, {
+      ${renderCatalogCarouselSection(homeCatalogState.tvPopular, {
         id: "home-tv-popular",
         title: "Series populaires",
+        retryKey: "home-tv-popular",
       })}
-      ${renderOptionalCarousel(homeCatalogState.topRated, {
+      ${renderCatalogCarouselSection(homeCatalogState.topRated, {
         id: "home-top-rated",
         title: "Mieux notes",
+        retryKey: "home-top-rated",
       })}
     </div>
   `;
 }
 
-function renderOptionalCarousel(sectionState, { id, title }) {
-  if (
-    !sectionState ||
-    sectionState.status !== "success" ||
-    !Array.isArray(sectionState.items) ||
-    sectionState.items.length === 0
-  ) {
-    return "";
+function renderGenreCarousels(genreState) {
+  return `
+    <div class="space-y-8">
+      ${renderCatalogCarouselSection(genreState.action, {
+        id: "genre-action",
+        title: "Action",
+        retryKey: "genre-action",
+      })}
+      ${renderCatalogCarouselSection(genreState.comedy, {
+        id: "genre-comedy",
+        title: "Comedie",
+        retryKey: "genre-comedy",
+      })}
+      ${renderCatalogCarouselSection(genreState.horror, {
+        id: "genre-horror",
+        title: "Horreur",
+        retryKey: "genre-horror",
+      })}
+    </div>
+  `;
+}
+
+function renderCatalogCarouselSection(sectionState, { id, title, retryKey }) {
+  if (!sectionState || sectionState.status === "idle") {
+    return renderCarouselSkeleton(title);
+  }
+
+  if (sectionState.status === "loading") {
+    return renderCarouselSkeleton(title);
+  }
+
+  if (sectionState.status === "error") {
+    return renderCarouselError(title, retryKey, sectionState.error);
+  }
+
+  if (!Array.isArray(sectionState.items) || sectionState.items.length === 0) {
+    return renderCarouselEmpty(title);
   }
 
   return renderCarousel({
@@ -460,21 +489,63 @@ function renderOptionalCarousel(sectionState, { id, title }) {
   });
 }
 
-function renderGenreCarousels(genreState) {
+function renderCarouselSkeleton(title) {
   return `
-    <div class="space-y-8">
-      ${renderOptionalCarousel(genreState.action, {
-        id: "genre-action",
-        title: "Action",
-      })}
-      ${renderOptionalCarousel(genreState.comedy, {
-        id: "genre-comedy",
-        title: "Comedie",
-      })}
-      ${renderOptionalCarousel(genreState.horror, {
-        id: "genre-horror",
-        title: "Horreur",
-      })}
-    </div>
+    <section class="space-y-4">
+      <div>
+        <p class="text-sm uppercase tracking-[0.3em] text-white/40">Selection</p>
+        <h2 class="text-2xl font-semibold tracking-tight text-white">${title}</h2>
+      </div>
+
+      <div class="flex gap-5 overflow-hidden pb-4">
+        ${Array.from(
+          { length: 5 },
+          () => `
+          <article class="w-[16rem] shrink-0 overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20 sm:w-[18rem]">
+            <div class="aspect-[2/3] animate-pulse bg-white/10"></div>
+          </article>
+        `
+        ).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderCarouselError(title, retryKey, errorMessage) {
+  return `
+    <section class="space-y-4">
+      <div>
+        <p class="text-sm uppercase tracking-[0.3em] text-white/40">Selection</p>
+        <h2 class="text-2xl font-semibold tracking-tight text-white">${title}</h2>
+      </div>
+
+      <div class="rounded-[1.75rem] border border-rose-400/20 bg-rose-500/10 p-6 text-rose-100 shadow-xl shadow-black/20">
+        <p class="text-sm text-rose-100/90">
+          ${errorMessage || "Impossible de charger cette section pour le moment."}
+        </p>
+        <button
+          type="button"
+          data-retry-section="${retryKey}"
+          class="mt-4 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+        >
+          Reessayer
+        </button>
+      </div>
+    </section>
+  `;
+}
+
+function renderCarouselEmpty(title) {
+  return `
+    <section class="space-y-4">
+      <div>
+        <p class="text-sm uppercase tracking-[0.3em] text-white/40">Selection</p>
+        <h2 class="text-2xl font-semibold tracking-tight text-white">${title}</h2>
+      </div>
+
+      <div class="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 text-white/70 shadow-xl shadow-black/20">
+        Aucun titre disponible pour le moment.
+      </div>
+    </section>
   `;
 }
