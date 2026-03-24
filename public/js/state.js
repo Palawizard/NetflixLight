@@ -27,6 +27,11 @@ export const appState = {
     movies: {
       ...createCatalogSectionState(),
     },
+    genres: {
+      action: createCatalogSectionState(),
+      comedy: createCatalogSectionState(),
+      horror: createCatalogSectionState(),
+    },
   },
   ui: {
     flash: null,
@@ -118,6 +123,15 @@ export function setHomeCatalogState(sectionKey, nextSectionState) {
   updateState((state) => {
     state.catalog.home[sectionKey] = {
       ...state.catalog.home[sectionKey],
+      ...nextSectionState,
+    };
+  });
+}
+
+export function setGenreCatalogState(sectionKey, nextSectionState) {
+  updateState((state) => {
+    state.catalog.genres[sectionKey] = {
+      ...state.catalog.genres[sectionKey],
       ...nextSectionState,
     };
   });
