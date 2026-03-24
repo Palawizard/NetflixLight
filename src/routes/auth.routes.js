@@ -17,6 +17,15 @@ const {
 
 const router = express.Router();
 
+/**
+ * @typedef {object} UserRow
+ * @property {number} id
+ * @property {string} email
+ * @property {string} username
+ * @property {string} password_hash
+ * @property {string} created_at
+ */
+
 function validateRegisterPayload(payload) {
   const errors = [];
   const safePayload =
@@ -222,6 +231,7 @@ router.post("/login", async (req, res, next) => {
   const { email, password } = validationResult.data;
 
   try {
+    /** @type {UserRow | undefined} */
     const user = findByEmail(email);
 
     if (!user) {

@@ -22,7 +22,7 @@ const migrationSql = fs.readFileSync(
     __dirname,
     "../src/data-access/sqlite/migrations/001_create_tables.sql"
   ),
-  "utf8"
+  { encoding: "utf8" }
 );
 
 const db = new Database(dbPath);
@@ -43,6 +43,7 @@ test("watchlist flow works for authenticated user", async () => {
     VALUES (?, ?, ?);`
   ).run("watchlist@example.com", "watchlist-user", passwordHash);
 
+  /** @type {import("supertest").Agent} */
   const agent = request.agent(app);
 
   const loginResponse = await agent.post("/api/auth/login").send({

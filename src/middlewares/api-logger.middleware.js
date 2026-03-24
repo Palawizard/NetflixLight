@@ -1,4 +1,5 @@
-function apiRequestLogger(req, res, next) {
+/** @type {import("express").RequestHandler} */
+const apiRequestLogger = (req, res, next) => {
   if (!req.path.startsWith("/api")) {
     return next();
   }
@@ -13,7 +14,7 @@ function apiRequestLogger(req, res, next) {
   });
 
   return next();
-}
+};
 
 module.exports = {
   apiRequestLogger,

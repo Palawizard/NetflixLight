@@ -1,3 +1,15 @@
+/**
+ * @typedef {object} WatchlistRow
+ * @property {number} tmdb_id
+ * @property {"movie" | "tv"} media_type
+ * @property {string} added_at
+ * @property {string} snapshot_title
+ * @property {string | null} snapshot_poster
+ */
+
+/**
+ * @param {WatchlistRow | null | undefined} row
+ */
 function toWatchlistItem(row) {
   if (!row) {
     return null;

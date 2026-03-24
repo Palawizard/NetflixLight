@@ -21,6 +21,20 @@ import {
 } from "./router.js";
 import { resolveView } from "./views.js";
 
+/**
+ * @typedef {object} TmdbMediaItem
+ * @property {number} [id]
+ * @property {"movie" | "tv" | "person"} [media_type]
+ * @property {string} [title]
+ * @property {string} [name]
+ * @property {number} [vote_average]
+ * @property {string} [release_date]
+ * @property {string} [first_air_date]
+ * @property {string} [poster_path]
+ * @property {string} [backdrop_path]
+ * @property {string} [overview]
+ */
+
 const appElement = document.querySelector("#app");
 const protectedPaths = new Set(["/favoris", "/profil"]);
 const guestOnlyPaths = new Set(["/login", "/register"]);
@@ -141,7 +155,7 @@ function renderFlash(flashMessage) {
 function renderSessionLoading() {
   return `
     <section class="grid min-h-[60vh] place-items-center">
-      <div class="max-w-xl rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center shadow-xl shadow-black/20 backdrop-blur">
+      <div class="max-w-xl rounded-4xl border border-white/10 bg-white/5 p-8 text-center shadow-xl shadow-black/20 backdrop-blur">
         <p class="text-sm uppercase tracking-[0.35em] text-amber-300">Session</p>
         <h1 class="mt-4 text-4xl font-semibold tracking-tight">Un instant</h1>
         <p class="mt-4 text-base leading-8 text-white/70">
@@ -263,16 +277,19 @@ async function loadHomeCatalogSection(sectionKey, endpoint) {
 }
 
 function loadHomeCarousels() {
-  loadHomeCatalogSection(
+  void loadHomeCatalogSection(
     "trending",
     "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
   );
-  loadHomeCatalogSection(
+  void loadHomeCatalogSection(
     "moviesPopular",
     "/api/tmdb/movies/popular?language=fr-FR"
   );
-  loadHomeCatalogSection("tvPopular", "/api/tmdb/tv/popular?language=fr-FR");
-  loadHomeCatalogSection(
+  void loadHomeCatalogSection(
+    "tvPopular",
+    "/api/tmdb/tv/popular?language=fr-FR"
+  );
+  void loadHomeCatalogSection(
     "topRated",
     "/api/tmdb/movies/top-rated?language=fr-FR"
   );
@@ -315,48 +332,48 @@ async function loadGenreCatalogSection(sectionKey, genreId) {
 }
 
 function loadGenreCarousels() {
-  loadGenreCatalogSection("action", 28);
-  loadGenreCatalogSection("comedy", 35);
-  loadGenreCatalogSection("horror", 27);
+  void loadGenreCatalogSection("action", 28);
+  void loadGenreCatalogSection("comedy", 35);
+  void loadGenreCatalogSection("horror", 27);
 }
 
 function retryCatalogSection(retryKey) {
   switch (retryKey) {
     case "home-trending":
-      loadHomeCatalogSection(
+      void loadHomeCatalogSection(
         "trending",
         "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
       );
       return;
     case "home-movies-popular":
-      loadHomeCatalogSection(
+      void loadHomeCatalogSection(
         "moviesPopular",
         "/api/tmdb/movies/popular?language=fr-FR"
       );
       return;
     case "home-tv-popular":
-      loadHomeCatalogSection(
+      void loadHomeCatalogSection(
         "tvPopular",
         "/api/tmdb/tv/popular?language=fr-FR"
       );
       return;
     case "home-top-rated":
-      loadHomeCatalogSection(
+      void loadHomeCatalogSection(
         "topRated",
         "/api/tmdb/movies/top-rated?language=fr-FR"
       );
       return;
     case "movies-popular":
-      loadMoviesCatalog();
+      void loadMoviesCatalog();
       return;
     case "genre-action":
-      loadGenreCatalogSection("action", 28);
+      void loadGenreCatalogSection("action", 28);
       return;
     case "genre-comedy":
-      loadGenreCatalogSection("comedy", 35);
+      void loadGenreCatalogSection("comedy", 35);
       return;
     case "genre-horror":
-      loadGenreCatalogSection("horror", 27);
+      void loadGenreCatalogSection("horror", 27);
       return;
     default:
   }
@@ -381,6 +398,7 @@ async function loadHomeHero() {
       "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
     );
 
+    /** @type {TmdbMediaItem[]} */
     const results = Array.isArray(response.results) ? response.results : [];
     const eligibleItems = results.filter((item) => {
       const mediaType = item.media_type;
@@ -420,12 +438,12 @@ async function loadHomeHero() {
 
 function handleRouteEffects(currentPath) {
   if (currentPath === "/") {
-    loadHomeHero();
+    void loadHomeHero();
     loadHomeCarousels();
   }
 
   if (currentPath === "/films") {
-    loadMoviesCatalog();
+    void loadMoviesCatalog();
     loadGenreCarousels();
   }
 }
@@ -439,7 +457,7 @@ document.addEventListener("click", (event) => {
       item: null,
       error: null,
     });
-    loadHomeHero();
+    void loadHomeHero();
     return;
   }
 
@@ -479,7 +497,7 @@ document.addEventListener("click", (event) => {
       error: null,
     });
 
-    loadHomeHero();
+    void loadHomeHero();
     return;
   }
 
@@ -571,5 +589,5 @@ subscribeRoute(renderApp);
 subscribeRoute(handleRouteEffects);
 subscribeState(renderApp);
 resetAuthFormState();
-initializeSession();
+void initializeSession();
 startRouter();

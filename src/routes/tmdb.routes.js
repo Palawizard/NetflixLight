@@ -22,7 +22,7 @@ router.use("/tv", tmdbTvRoutes);
 
 router.get("/trending", async (req, res, next) => {
   const mediaType = req.query.media_type || "all";
-  const timeWindow = req.query.time_window || "day";
+  const timeWindow = req.query["time_window"] || "day";
 
   if (!ALLOWED_MEDIA_TYPES.has(mediaType)) {
     return next(
@@ -64,7 +64,7 @@ router.get("/trending", async (req, res, next) => {
 router.get("/discover", async (req, res, next) => {
   try {
     const type = parseRequiredTmdbString(req.query.type, "type");
-    const genreId = parseRequiredPositiveInt(req.query.genre, "genre");
+    const genreId = parseRequiredPositiveInt(req.query["genre"], "genre");
     const page = parseTmdbPage(req.query.page);
 
     if (!ALLOWED_DISCOVER_TYPES.has(type)) {

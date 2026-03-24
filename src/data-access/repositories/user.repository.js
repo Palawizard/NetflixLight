@@ -37,12 +37,11 @@ function createUser({ email, username, passwordHash }) {
   );
 
   const result = statement.run(email, username, passwordHash);
-  return findById(result.lastInsertRowid);
+  return findById(Number(result.lastInsertRowid));
 }
 
 module.exports = {
   findByEmail,
   findByUsername,
-  findById,
   createUser,
 };
