@@ -34,6 +34,7 @@ function renderHomeView(state) {
 
 function renderMoviesView(state) {
   const moviesState = state.catalog.movies;
+  const genreState = state.catalog.genres;
 
   return `
     <section class="space-y-6">
@@ -46,6 +47,7 @@ function renderMoviesView(state) {
       </header>
 
       ${renderMoviesCatalog(moviesState)}
+      ${renderGenreCarousels(genreState)}
     </section>
   `;
 }
@@ -456,4 +458,23 @@ function renderOptionalCarousel(sectionState, { id, title }) {
     title,
     items: sectionState.items,
   });
+}
+
+function renderGenreCarousels(genreState) {
+  return `
+    <div class="space-y-8">
+      ${renderOptionalCarousel(genreState.action, {
+        id: "genre-action",
+        title: "Action",
+      })}
+      ${renderOptionalCarousel(genreState.comedy, {
+        id: "genre-comedy",
+        title: "Comedie",
+      })}
+      ${renderOptionalCarousel(genreState.horror, {
+        id: "genre-horror",
+        title: "Horreur",
+      })}
+    </div>
+  `;
 }

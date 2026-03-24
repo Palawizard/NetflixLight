@@ -2,6 +2,7 @@ import { apiRequest, formatApiError } from "./api.js";
 import { initializeCarousels, scrollCarousel } from "./components/carousel.js";
 import {
   appState,
+  setGenreCatalogState,
   setHomeCatalogState,
   setSessionState,
   setMoviesCatalogState,
@@ -277,6 +278,48 @@ function loadHomeCarousels() {
   );
 }
 
+async function loadGenreCatalogSection(sectionKey, genreId) {
+  const sectionState = appState.catalog.genres[sectionKey];
+
+  if (
+    !sectionState ||
+    sectionState.status === "loading" ||
+    sectionState.status === "success"
+  ) {
+    return;
+  }
+
+  setGenreCatalogState(sectionKey, {
+    status: "loading",
+    items: [],
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(
+      `/api/tmdb/discover?type=movie&genre=${genreId}&page=1`
+    );
+
+    setGenreCatalogState(sectionKey, {
+      status: "success",
+      items: Array.isArray(response.results) ? response.results : [],
+      error: null,
+    });
+  } catch (error) {
+    setGenreCatalogState(sectionKey, {
+      status: "error",
+      items: [],
+      error: formatApiError(error),
+    });
+  }
+}
+
+function loadGenreCarousels() {
+  loadGenreCatalogSection("action", 28);
+  loadGenreCatalogSection("comedy", 35);
+  loadGenreCatalogSection("horror", 27);
+}
+
 async function loadHomeHero() {
   if (
     appState.hero.status === "loading" ||
@@ -341,6 +384,7 @@ function handleRouteEffects(currentPath) {
 
   if (currentPath === "/films") {
     loadMoviesCatalog();
+    loadGenreCarousels();
   }
 }
 
