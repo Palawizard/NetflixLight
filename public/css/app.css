@@ -290,6 +290,9 @@
   .min-h-screen {
     min-height: 100vh;
   }
+  .w-\[16rem\] {
+    width: 16rem;
+  }
   .w-full {
     width: 100%;
   }
@@ -308,12 +311,18 @@
   .flex-1 {
     flex: 1;
   }
+  .shrink-0 {
+    flex-shrink: 0;
+  }
   .translate-y-2 {
     --tw-translate-y: calc(var(--spacing) * 2);
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
   .animate-pulse {
     animation: var(--animate-pulse);
+  }
+  .cursor-grabbing {
+    cursor: grabbing;
   }
   .flex-col {
     flex-direction: column;
@@ -391,6 +400,12 @@
   }
   .overflow-hidden {
     overflow: hidden;
+  }
+  .overflow-x-auto {
+    overflow-x: auto;
+  }
+  .scroll-smooth {
+    scroll-behavior: smooth;
   }
   .rounded-2xl {
     border-radius: var(--radius-2xl);
@@ -583,6 +598,9 @@
   .py-10 {
     padding-block: calc(var(--spacing) * 10);
   }
+  .pb-4 {
+    padding-bottom: calc(var(--spacing) * 4);
+  }
   .text-center {
     text-align: center;
   }
@@ -765,6 +783,9 @@
     --tw-outline-style: none;
     outline-style: none;
   }
+  .\[scrollbar-width\:none\] {
+    scrollbar-width: none;
+  }
   .group-hover\:translate-y-0 {
     &:is(:where(.group):hover *) {
       @media (hover: hover) {
@@ -883,6 +904,11 @@
       opacity: 60%;
     }
   }
+  .sm\:w-\[18rem\] {
+    @media (width >= 40rem) {
+      width: 18rem;
+    }
+  }
   .sm\:grid-cols-2 {
     @media (width >= 40rem) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -923,6 +949,11 @@
   .xl\:grid-cols-4 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .\[\&\:\:-webkit-scrollbar\]\:hidden {
+    &::-webkit-scrollbar {
+      display: none;
     }
   }
 }

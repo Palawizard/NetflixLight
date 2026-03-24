@@ -1,4 +1,4 @@
-import { renderPosterGrid } from "./components/poster-card.js";
+import { renderCarousel } from "./components/carousel.js";
 
 function createFeatureTile({ eyebrow, title, description }) {
   return `
@@ -305,7 +305,11 @@ function renderMoviesCatalog(moviesState) {
     `;
   }
 
-  return renderPosterGrid(moviesState.items);
+  return renderCarousel({
+    id: "movies-popular",
+    title: "Films populaires",
+    items: moviesState.items,
+  });
 }
 
 function renderPosterSkeleton() {
