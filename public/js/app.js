@@ -1,4 +1,5 @@
 import { apiRequest, formatApiError } from "./api.js";
+import { initializeCarousels, scrollCarousel } from "./components/carousel.js";
 import {
   appState,
   setSessionState,
@@ -57,6 +58,7 @@ function renderApp() {
   `,
     currentPath
   );
+  initializeCarousels(appElement);
 }
 
 function renderShell(content, currentPath) {
@@ -291,6 +293,28 @@ function handleRouteEffects(currentPath) {
 }
 
 document.addEventListener("click", (event) => {
+  const previousButton = event.target.closest("[data-carousel-prev]");
+
+  if (previousButton) {
+    scrollCarousel(
+      appElement,
+      previousButton.getAttribute("data-carousel-prev"),
+      "prev"
+    );
+    return;
+  }
+
+  const nextButton = event.target.closest("[data-carousel-next]");
+
+  if (nextButton) {
+    scrollCarousel(
+      appElement,
+      nextButton.getAttribute("data-carousel-next"),
+      "next"
+    );
+    return;
+  }
+
   if (event.target.closest("[data-refresh-hero]")) {
     setHeroState({
       status: "idle",
