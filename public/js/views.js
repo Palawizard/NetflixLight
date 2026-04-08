@@ -610,17 +610,22 @@ function renderFavoriteToggle(state, item, type) {
     state.session.status === "authenticated" && Boolean(state.session.user);
   const tmdbId = item.id;
   const watchlistKey = createFavoriteKey(type, tmdbId);
+  const isHydratingWatchlist =
+    isAuthenticated &&
+    (state.watchlist.status === "idle" || state.watchlist.status === "loading");
   const isFavorite = Boolean(state.watchlist.itemKeys[watchlistKey]);
   const isPending = Boolean(state.watchlist.pendingKeys[watchlistKey]);
   const lastAction =
     state.watchlist.lastAction?.key === watchlistKey
       ? state.watchlist.lastAction
       : null;
-  const buttonLabel = isPending
-    ? "Mise a jour..."
-    : isFavorite
-      ? "Retirer des favoris"
-      : "Ajouter aux favoris";
+  const buttonLabel = isHydratingWatchlist
+    ? "Verification..."
+    : isPending
+      ? "Mise a jour..."
+      : isFavorite
+        ? "Retirer des favoris"
+        : "Ajouter aux favoris";
   const buttonClass = isFavorite
     ? "bg-rose-500 text-white hover:bg-rose-400"
     : "bg-white text-neutral-950 hover:bg-white/90";
@@ -631,7 +636,7 @@ function renderFavoriteToggle(state, item, type) {
         type="button"
         data-toggle-favorite
         class="rounded-full px-5 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${buttonClass}"
-        ${isPending ? "disabled" : ""}
+        ${isPending || isHydratingWatchlist ? "disabled" : ""}
       >
         ${buttonLabel}
       </button>
@@ -644,6 +649,9 @@ function renderFavoriteToggle(state, item, type) {
       }">
         ${
           lastAction?.message ||
+          (isHydratingWatchlist
+            ? "On verifie si ce titre est deja dans tes favoris."
+            : null) ||
           (isAuthenticated
             ? "Ajoute ce titre a ta liste ou retire-le en un clic."
             : "Connecte-toi pour enregistrer ce titre dans tes favoris.")
