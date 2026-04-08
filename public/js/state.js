@@ -16,6 +16,17 @@ function createDetailState() {
   };
 }
 
+function createWatchlistState() {
+  return {
+    status: "idle",
+    items: [],
+    itemKeys: {},
+    pendingKeys: {},
+    lastAction: null,
+    error: null,
+  };
+}
+
 export const appState = {
   session: {
     status: "idle",
@@ -28,6 +39,7 @@ export const appState = {
     error: null,
   },
   detail: createDetailState(),
+  watchlist: createWatchlistState(),
   catalog: {
     home: {
       trending: createCatalogSectionState(),
@@ -145,5 +157,20 @@ export function setDetailState(nextDetailState) {
       ...state.detail,
       ...nextDetailState,
     };
+  });
+}
+
+export function setWatchlistState(nextWatchlistState) {
+  updateState((state) => {
+    state.watchlist = {
+      ...state.watchlist,
+      ...nextWatchlistState,
+    };
+  });
+}
+
+export function resetWatchlistState() {
+  updateState((state) => {
+    state.watchlist = createWatchlistState();
   });
 }

@@ -11,6 +11,8 @@ import {
   setAuthFormState,
   setFlashMessage,
   setDetailState,
+  setWatchlistState,
+  resetWatchlistState,
   subscribeState,
   updateState,
 } from "./state.js";
@@ -221,6 +223,7 @@ async function initializeSession() {
       status: "authenticated",
       user: response.user,
     });
+    void loadWatchlist();
   } catch (error) {
     if (error.status !== 401) {
       setFlashMessage("Impossible de charger ton espace.");
@@ -229,6 +232,245 @@ async function initializeSession() {
     setSessionState({
       status: "guest",
       user: null,
+    });
+    resetWatchlistState();
+  }
+}
+
+function createWatchlistKey(type, tmdbId) {
+  return `${type}:${tmdbId}`;
+}
+
+function buildWatchlistKeyMap(items) {
+  return Object.fromEntries(
+    items.map((item) => [createWatchlistKey(item.type, item.tmdbId), true])
+  );
+}
+
+async function loadWatchlist({ force = false } = {}) {
+  if (appState.session.status !== "authenticated" || !appState.session.user) {
+    resetWatchlistState();
+    return;
+  }
+
+  const watchlistState = appState.watchlist;
+
+  if (
+    !force &&
+    (watchlistState.status === "loading" || watchlistState.status === "success")
+  ) {
+    return;
+  }
+
+  setWatchlistState({
+    status: "loading",
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest("/api/watchlist");
+    const items = Array.isArray(response.items) ? response.items : [];
+
+    setWatchlistState({
+      status: "success",
+      items,
+      itemKeys: buildWatchlistKeyMap(items),
+      pendingKeys: {},
+      lastAction: null,
+      error: null,
+    });
+  } catch (error) {
+    if (error.status === 401) {
+      setSessionState({
+        status: "guest",
+        user: null,
+      });
+      resetWatchlistState();
+      return;
+    }
+
+    setWatchlistState({
+      status: "error",
+      error: formatApiError(error),
+    });
+  }
+}
+
+function buildWatchlistSnapshotItem(item, type) {
+  return {
+    tmdbId: item.id,
+    type,
+    addedAt: new Date().toISOString(),
+    snapshot: {
+      title: item.title || item.name || "Titre inconnu",
+      poster: item.poster_path || item.backdrop_path || null,
+    },
+  };
+}
+
+async function toggleFavoriteFromDetail() {
+  if (
+    appState.session.status !== "authenticated" ||
+    !appState.session.user ||
+    appState.detail.status !== "success" ||
+    !appState.detail.item ||
+    !appState.detail.type ||
+    !appState.detail.id
+  ) {
+    const currentPath = getCurrentPath();
+
+    setFlashMessage("Connecte-toi pour gerer tes favoris.");
+    updateState((state) => {
+      state.session.redirectAfterLogin = currentPath;
+    });
+    navigate("/login");
+    return;
+  }
+
+  const { type, id, item } = appState.detail;
+  const watchlistKey = createWatchlistKey(type, id);
+  const isFavorite = Boolean(appState.watchlist.itemKeys[watchlistKey]);
+  const isPending = Boolean(appState.watchlist.pendingKeys[watchlistKey]);
+
+  if (isPending) {
+    return;
+  }
+
+  const optimisticItem = buildWatchlistSnapshotItem(item, type);
+
+  if (isFavorite) {
+    updateState((state) => {
+      state.watchlist.items = state.watchlist.items.filter(
+        (watchlistItem) =>
+          createWatchlistKey(watchlistItem.type, watchlistItem.tmdbId) !==
+          watchlistKey
+      );
+      delete state.watchlist.itemKeys[watchlistKey];
+      state.watchlist.pendingKeys[watchlistKey] = true;
+      state.watchlist.lastAction = {
+        key: watchlistKey,
+        tone: "neutral",
+        message: "Retrait des favoris...",
+      };
+      state.watchlist.error = null;
+    });
+
+    try {
+      await apiRequest(`/api/watchlist/${type}/${id}`, {
+        method: "DELETE",
+      });
+
+      updateState((state) => {
+        delete state.watchlist.pendingKeys[watchlistKey];
+        state.watchlist.lastAction = {
+          key: watchlistKey,
+          tone: "success",
+          message: "Retire des favoris.",
+        };
+      });
+    } catch (error) {
+      if (error.status === 404) {
+        updateState((state) => {
+          delete state.watchlist.pendingKeys[watchlistKey];
+          state.watchlist.lastAction = {
+            key: watchlistKey,
+            tone: "success",
+            message: "Retire des favoris.",
+          };
+        });
+        return;
+      }
+
+      updateState((state) => {
+        state.watchlist.items = [
+          optimisticItem,
+          ...state.watchlist.items.filter(
+            (watchlistItem) =>
+              createWatchlistKey(watchlistItem.type, watchlistItem.tmdbId) !==
+              watchlistKey
+          ),
+        ];
+        state.watchlist.itemKeys[watchlistKey] = true;
+        delete state.watchlist.pendingKeys[watchlistKey];
+        state.watchlist.lastAction = {
+          key: watchlistKey,
+          tone: "error",
+          message: formatApiError(error),
+        };
+      });
+    }
+
+    return;
+  }
+
+  updateState((state) => {
+    state.watchlist.items = [optimisticItem, ...state.watchlist.items];
+    state.watchlist.itemKeys[watchlistKey] = true;
+    state.watchlist.pendingKeys[watchlistKey] = true;
+    state.watchlist.lastAction = {
+      key: watchlistKey,
+      tone: "neutral",
+      message: "Ajout aux favoris...",
+    };
+    state.watchlist.error = null;
+  });
+
+  try {
+    const response = await apiRequest("/api/watchlist", {
+      method: "POST",
+      body: {
+        tmdbId: id,
+        type,
+        title: optimisticItem.snapshot.title,
+        poster: optimisticItem.snapshot.poster,
+      },
+    });
+
+    updateState((state) => {
+      const savedItem = response?.item || optimisticItem;
+      state.watchlist.items = [
+        savedItem,
+        ...state.watchlist.items.filter(
+          (watchlistItem) =>
+            createWatchlistKey(watchlistItem.type, watchlistItem.tmdbId) !==
+            watchlistKey
+        ),
+      ];
+      state.watchlist.itemKeys[watchlistKey] = true;
+      delete state.watchlist.pendingKeys[watchlistKey];
+      state.watchlist.lastAction = {
+        key: watchlistKey,
+        tone: "success",
+        message: "Ajoute aux favoris.",
+      };
+    });
+  } catch (error) {
+    if (error.status === 409) {
+      updateState((state) => {
+        state.watchlist.itemKeys[watchlistKey] = true;
+        delete state.watchlist.pendingKeys[watchlistKey];
+        state.watchlist.lastAction = {
+          key: watchlistKey,
+          tone: "success",
+          message: "Deja present dans les favoris.",
+        };
+      });
+      return;
+    }
+
+    updateState((state) => {
+      state.watchlist.items = state.watchlist.items.filter(
+        (watchlistItem) =>
+          createWatchlistKey(watchlistItem.type, watchlistItem.tmdbId) !==
+          watchlistKey
+      );
+      delete state.watchlist.itemKeys[watchlistKey];
+      delete state.watchlist.pendingKeys[watchlistKey];
+      state.watchlist.lastAction = {
+        key: watchlistKey,
+        tone: "error",
+        message: formatApiError(error),
+      };
     });
   }
 }
@@ -583,6 +825,13 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const favoriteToggleButton = event.target.closest("[data-toggle-favorite]");
+
+  if (favoriteToggleButton) {
+    void toggleFavoriteFromDetail();
+    return;
+  }
+
   const previousButton = event.target.closest("[data-carousel-prev]");
 
   if (previousButton) {
@@ -667,6 +916,7 @@ document.addEventListener("submit", async (event) => {
         state.session.redirectAfterLogin = null;
       });
 
+      await loadWatchlist({ force: true });
       resetAuthFormState();
       setFlashMessage("Connexion reussie.");
       navigate(nextPath);
