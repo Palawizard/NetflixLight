@@ -1,5 +1,7 @@
 import { renderCarousel } from "./components/carousel.js";
 
+const TMDB_PROFILE_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w300";
+
 /**
  * @typedef {object} TmdbMediaItem
  * @property {number} [id]
@@ -15,6 +17,14 @@ import { renderCarousel } from "./components/carousel.js";
  * @property {number} [runtime]
  * @property {number} [number_of_seasons]
  * @property {{ name?: string }[]} [genres]
+ * @property {{ cast?: TmdbCastMember[] }} [credits]
+ *
+ * @typedef {object} TmdbCastMember
+ * @property {number} [id]
+ * @property {string} [name]
+ * @property {string} [character]
+ * @property {string} [profile_path]
+ * @property {number} [order]
  */
 
 function createFeatureTile({ eyebrow, title, description }) {
@@ -507,6 +517,7 @@ function renderDetailContent(item, type) {
   const returnLabel =
     type === "movie" ? "Retour aux films" : "Retour a l'accueil";
   const genres = getGenreNames(item.genres);
+  const mainCast = getMainCast(item.credits?.cast);
 
   return `
     <section class="space-y-8">
@@ -583,6 +594,8 @@ function renderDetailContent(item, type) {
           </div>
         </aside>
       </div>
+
+      ${renderMainCastSection(mainCast)}
     </section>
   `;
 }
@@ -736,6 +749,95 @@ function renderDetailFact(label, value) {
       <p class="mt-3 text-lg font-medium text-white">${escapeHtml(value)}</p>
     </div>
   `;
+}
+
+function renderMainCastSection(cast) {
+  if (!Array.isArray(cast) || cast.length === 0) {
+    return `
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300">Casting</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+          Casting principal
+        </h2>
+        <p class="mt-5 text-base leading-8 text-white/70">
+          Les informations de casting ne sont pas disponibles pour ce titre.
+        </p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="space-y-6">
+      <div class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300">Casting</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+          Casting principal
+        </h2>
+        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+          Retrouve les interpretes principaux et les personnages qu'ils incarnent.
+        </p>
+      </div>
+
+      <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        ${cast.map((member) => renderCastCard(member)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderCastCard(member) {
+  const actorName = escapeHtml(member.name || "Nom inconnu");
+  const characterName = escapeHtml(
+    member.character || "Personnage non renseigne"
+  );
+  const photoMarkup = member.profile_path
+    ? `
+      <img
+        src="${TMDB_PROFILE_IMAGE_BASE_URL}${member.profile_path}"
+        alt="${actorName}"
+        loading="lazy"
+        class="h-full w-full object-cover"
+      />
+    `
+    : `
+      <div class="flex h-full items-center justify-center bg-linear-to-br from-white/10 via-white/5 to-black/40 px-6 text-center text-sm uppercase tracking-[0.3em] text-white/40">
+        ${actorName}
+      </div>
+    `;
+
+  return `
+    <article class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20">
+      <div class="aspect-[4/5] overflow-hidden bg-black/30">
+        ${photoMarkup}
+      </div>
+      <div class="space-y-2 p-5">
+        <h3 class="text-lg font-semibold text-white">${actorName}</h3>
+        <p class="text-sm uppercase tracking-[0.25em] text-white/35">Personnage</p>
+        <p class="text-sm leading-7 text-white/75">${characterName}</p>
+      </div>
+    </article>
+  `;
+}
+
+function getMainCast(cast) {
+  if (!Array.isArray(cast)) {
+    return [];
+  }
+
+  return cast
+    .filter((member) => member && typeof member.name === "string")
+    .slice()
+    .sort((leftMember, rightMember) => {
+      const leftOrder = Number.isInteger(leftMember.order)
+        ? leftMember.order
+        : Number.MAX_SAFE_INTEGER;
+      const rightOrder = Number.isInteger(rightMember.order)
+        ? rightMember.order
+        : Number.MAX_SAFE_INTEGER;
+
+      return leftOrder - rightOrder;
+    })
+    .slice(0, 8);
 }
 
 function getGenreNames(genres) {
