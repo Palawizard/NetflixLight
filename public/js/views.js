@@ -907,6 +907,20 @@ function getSimilarItems(similarResults, mediaType, currentItemId) {
     .filter(
       (item) => item && Number.isInteger(item.id) && item.id !== currentItemId
     )
+    .sort((leftItem, rightItem) => {
+      const leftHasArtwork = Boolean(
+        leftItem?.poster_path || leftItem?.backdrop_path
+      );
+      const rightHasArtwork = Boolean(
+        rightItem?.poster_path || rightItem?.backdrop_path
+      );
+
+      if (leftHasArtwork === rightHasArtwork) {
+        return 0;
+      }
+
+      return leftHasArtwork ? -1 : 1;
+    })
     .map((item) => ({
       ...item,
       media_type: mediaType,
