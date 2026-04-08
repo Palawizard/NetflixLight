@@ -219,6 +219,10 @@ async function initializeSession() {
   try {
     const response = await apiRequest("/api/auth/me");
 
+    setWatchlistState({
+      status: "loading",
+      error: null,
+    });
     setSessionState({
       status: "authenticated",
       user: response.user,
@@ -331,8 +335,11 @@ async function toggleFavoriteFromDetail() {
   const watchlistKey = createWatchlistKey(type, id);
   const isFavorite = Boolean(appState.watchlist.itemKeys[watchlistKey]);
   const isPending = Boolean(appState.watchlist.pendingKeys[watchlistKey]);
+  const isHydratingWatchlist =
+    appState.watchlist.status === "idle" ||
+    appState.watchlist.status === "loading";
 
-  if (isPending) {
+  if (isPending || isHydratingWatchlist) {
     return;
   }
 
@@ -772,6 +779,14 @@ async function loadDetailPage(pathname) {
 }
 
 function handleRouteEffects(currentPath) {
+  if (
+    appState.session.status === "authenticated" &&
+    (appState.watchlist.status === "idle" ||
+      appState.watchlist.status === "error")
+  ) {
+    void loadWatchlist();
+  }
+
   if (currentPath === "/") {
     void loadHomeHero();
     loadHomeCarousels();
