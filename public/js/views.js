@@ -18,6 +18,7 @@ const TMDB_PROFILE_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w300";
  * @property {number} [number_of_seasons]
  * @property {{ name?: string }[]} [genres]
  * @property {{ cast?: TmdbCastMember[] }} [credits]
+ * @property {{ results?: TmdbMediaItem[] }} [similar]
  *
  * @typedef {object} TmdbCastMember
  * @property {number} [id]
@@ -518,6 +519,7 @@ function renderDetailContent(item, type) {
     type === "movie" ? "Retour aux films" : "Retour a l'accueil";
   const genres = getGenreNames(item.genres);
   const mainCast = getMainCast(item.credits?.cast);
+  const similarItems = getSimilarItems(item.similar?.results, type, item.id);
 
   return `
     <section class="space-y-8">
@@ -595,6 +597,7 @@ function renderDetailContent(item, type) {
         </aside>
       </div>
 
+      ${renderSimilarContentSection(similarItems, type, item.id)}
       ${renderMainCastSection(mainCast)}
     </section>
   `;
@@ -751,6 +754,47 @@ function renderDetailFact(label, value) {
   `;
 }
 
+function renderSimilarContentSection(similarItems, type, itemId) {
+  const sectionTitle =
+    type === "movie" ? "Films similaires" : "Series similaires";
+
+  if (!Array.isArray(similarItems) || similarItems.length === 0) {
+    return `
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">A voir aussi</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+          ${sectionTitle}
+        </h2>
+        <p class="mt-5 text-base leading-8 text-white/70">
+          Aucun contenu similaire n'est disponible pour ce ${
+            type === "movie" ? "film" : "titre"
+          }.
+        </p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="space-y-6">
+      <div class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">A voir aussi</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+          ${sectionTitle}
+        </h2>
+        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+          Continue avec des titres proches et ouvre leur fiche detail directement depuis le carrousel.
+        </p>
+      </div>
+
+      ${renderCarousel({
+        id: `detail-similar-${type}-${itemId}`,
+        title: sectionTitle,
+        items: similarItems,
+      })}
+    </section>
+  `;
+}
+
 function renderMainCastSection(cast) {
   if (!Array.isArray(cast) || cast.length === 0) {
     return `
@@ -850,6 +894,32 @@ function getMainCast(cast) {
       return true;
     })
     .slice(0, 8);
+}
+
+function getSimilarItems(similarResults, mediaType, currentItemId) {
+  if (!Array.isArray(similarResults)) {
+    return [];
+  }
+
+  const seenSimilarIds = new Set();
+
+  return similarResults
+    .filter(
+      (item) => item && Number.isInteger(item.id) && item.id !== currentItemId
+    )
+    .map((item) => ({
+      ...item,
+      media_type: mediaType,
+    }))
+    .filter((item) => {
+      if (seenSimilarIds.has(item.id)) {
+        return false;
+      }
+
+      seenSimilarIds.add(item.id);
+      return true;
+    })
+    .slice(0, 12);
 }
 
 function formatCharacterName(characterName) {
