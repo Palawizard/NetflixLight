@@ -451,7 +451,7 @@ function renderDetailView(state, type, id) {
     return renderDetailLoading();
   }
 
-  return renderDetailContent(detailState.item, type);
+  return renderDetailContent(state, detailState.item, type);
 }
 
 function renderDetailLoading() {
@@ -506,7 +506,7 @@ function renderDetailError(type, id, errorMessage) {
   `;
 }
 
-function renderDetailContent(item, type) {
+function renderDetailContent(state, item, type) {
   const title = escapeHtml(item.title || item.name || "Titre inconnu");
   const overview = escapeHtml(
     item.overview || "Aucun synopsis n'est disponible pour ce titre."
@@ -566,6 +566,8 @@ function renderDetailContent(item, type) {
               ${overview}
             </p>
 
+            ${renderFavoriteToggle(state, item, type)}
+
             <div class="mt-8 flex flex-wrap gap-3">
               ${renderDetailBadge(dateLabel, formatLongDate(item.release_date || item.first_air_date))}
               ${renderDetailBadge(durationLabel, type === "movie" ? formatRuntime(item.runtime) : formatSeasonCount(item.number_of_seasons))}
@@ -600,6 +602,54 @@ function renderDetailContent(item, type) {
       ${renderSimilarContentSection(similarItems, type, item.id)}
       ${renderMainCastSection(mainCast)}
     </section>
+  `;
+}
+
+function renderFavoriteToggle(state, item, type) {
+  const isAuthenticated =
+    state.session.status === "authenticated" && Boolean(state.session.user);
+  const tmdbId = item.id;
+  const watchlistKey = createFavoriteKey(type, tmdbId);
+  const isFavorite = Boolean(state.watchlist.itemKeys[watchlistKey]);
+  const isPending = Boolean(state.watchlist.pendingKeys[watchlistKey]);
+  const lastAction =
+    state.watchlist.lastAction?.key === watchlistKey
+      ? state.watchlist.lastAction
+      : null;
+  const buttonLabel = isPending
+    ? "Mise a jour..."
+    : isFavorite
+      ? "Retirer des favoris"
+      : "Ajouter aux favoris";
+  const buttonClass = isFavorite
+    ? "bg-rose-500 text-white hover:bg-rose-400"
+    : "bg-white text-neutral-950 hover:bg-white/90";
+
+  return `
+    <div class="mt-8 space-y-3">
+      <button
+        type="button"
+        data-toggle-favorite
+        class="rounded-full px-5 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${buttonClass}"
+        ${isPending ? "disabled" : ""}
+      >
+        ${buttonLabel}
+      </button>
+      <p class="text-sm ${
+        lastAction?.tone === "error"
+          ? "text-rose-200"
+          : lastAction?.tone === "success"
+            ? "text-emerald-200"
+            : "text-white/65"
+      }">
+        ${
+          lastAction?.message ||
+          (isAuthenticated
+            ? "Ajoute ce titre a ta liste ou retire-le en un clic."
+            : "Connecte-toi pour enregistrer ce titre dans tes favoris.")
+        }
+      </p>
+    </div>
   `;
 }
 
@@ -752,6 +802,10 @@ function renderDetailFact(label, value) {
       <p class="mt-3 text-lg font-medium text-white">${escapeHtml(value)}</p>
     </div>
   `;
+}
+
+function createFavoriteKey(type, tmdbId) {
+  return `${type}:${tmdbId}`;
 }
 
 function renderSimilarContentSection(similarItems, type, itemId) {
