@@ -369,8 +369,27 @@ async function toggleFavoriteFromDetail() {
         };
       });
     } catch (error) {
+      if (error.status === 404) {
+        updateState((state) => {
+          delete state.watchlist.pendingKeys[watchlistKey];
+          state.watchlist.lastAction = {
+            key: watchlistKey,
+            tone: "success",
+            message: "Retire des favoris.",
+          };
+        });
+        return;
+      }
+
       updateState((state) => {
-        state.watchlist.items = [optimisticItem, ...state.watchlist.items];
+        state.watchlist.items = [
+          optimisticItem,
+          ...state.watchlist.items.filter(
+            (watchlistItem) =>
+              createWatchlistKey(watchlistItem.type, watchlistItem.tmdbId) !==
+              watchlistKey
+          ),
+        ];
         state.watchlist.itemKeys[watchlistKey] = true;
         delete state.watchlist.pendingKeys[watchlistKey];
         state.watchlist.lastAction = {
@@ -426,6 +445,19 @@ async function toggleFavoriteFromDetail() {
       };
     });
   } catch (error) {
+    if (error.status === 409) {
+      updateState((state) => {
+        state.watchlist.itemKeys[watchlistKey] = true;
+        delete state.watchlist.pendingKeys[watchlistKey];
+        state.watchlist.lastAction = {
+          key: watchlistKey,
+          tone: "success",
+          message: "Deja present dans les favoris.",
+        };
+      });
+      return;
+    }
+
     updateState((state) => {
       state.watchlist.items = state.watchlist.items.filter(
         (watchlistItem) =>
