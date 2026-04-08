@@ -787,9 +787,7 @@ function renderMainCastSection(cast) {
 
 function renderCastCard(member) {
   const actorName = escapeHtml(member.name || "Nom inconnu");
-  const characterName = escapeHtml(
-    member.character || "Personnage non renseigne"
-  );
+  const characterName = escapeHtml(formatCharacterName(member.character));
   const photoMarkup = member.profile_path
     ? `
       <img
@@ -824,6 +822,8 @@ function getMainCast(cast) {
     return [];
   }
 
+  const seenCastMembers = new Set();
+
   return cast
     .filter((member) => member && typeof member.name === "string")
     .slice()
@@ -837,7 +837,33 @@ function getMainCast(cast) {
 
       return leftOrder - rightOrder;
     })
+    .filter((member) => {
+      const castKey = Number.isInteger(member.id)
+        ? `id:${member.id}`
+        : `name:${member.name.trim().toLowerCase()}`;
+
+      if (seenCastMembers.has(castKey)) {
+        return false;
+      }
+
+      seenCastMembers.add(castKey);
+      return true;
+    })
     .slice(0, 8);
+}
+
+function formatCharacterName(characterName) {
+  if (typeof characterName !== "string") {
+    return "Personnage non renseigne";
+  }
+
+  const normalizedCharacterName = characterName.trim();
+
+  if (!normalizedCharacterName) {
+    return "Personnage non renseigne";
+  }
+
+  return normalizedCharacterName;
 }
 
 function getGenreNames(genres) {
