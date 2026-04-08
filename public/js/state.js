@@ -6,6 +6,16 @@ function createCatalogSectionState() {
   };
 }
 
+function createDetailState() {
+  return {
+    status: "idle",
+    type: null,
+    id: null,
+    item: null,
+    error: null,
+  };
+}
+
 export const appState = {
   session: {
     status: "idle",
@@ -17,6 +27,7 @@ export const appState = {
     item: null,
     error: null,
   },
+  detail: createDetailState(),
   catalog: {
     home: {
       trending: createCatalogSectionState(),
@@ -124,6 +135,15 @@ export function setHeroState(nextHeroState) {
     state.hero = {
       ...state.hero,
       ...nextHeroState,
+    };
+  });
+}
+
+export function setDetailState(nextDetailState) {
+  updateState((state) => {
+    state.detail = {
+      ...state.detail,
+      ...nextDetailState,
     };
   });
 }

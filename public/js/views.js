@@ -11,6 +11,10 @@ import { renderCarousel } from "./components/carousel.js";
  * @property {string} [first_air_date]
  * @property {string} [backdrop_path]
  * @property {string} [poster_path]
+ * @property {number} [vote_average]
+ * @property {number} [runtime]
+ * @property {number} [number_of_seasons]
+ * @property {{ name?: string }[]} [genres]
  */
 
 function createFeatureTile({ eyebrow, title, description }) {
@@ -266,7 +270,7 @@ export function resolveView(pathname) {
 
     return {
       title: "Detail",
-      render: () => renderDetailPlaceholder(type, id),
+      render: (state) => renderDetailView(state, type, Number.parseInt(id, 10)),
     };
   }
 
@@ -416,16 +420,169 @@ function renderHomeHero(heroState) {
   `;
 }
 
-function renderDetailPlaceholder(type, id) {
+function renderDetailView(state, type, id) {
+  const detailState = state.detail;
+  const isMatchingDetail = detailState.type === type && detailState.id === id;
+
+  if (
+    !isMatchingDetail ||
+    detailState.status === "idle" ||
+    detailState.status === "loading"
+  ) {
+    return renderDetailLoading();
+  }
+
+  if (detailState.status === "error") {
+    return renderDetailError(type, id, detailState.error);
+  }
+
+  if (!detailState.item) {
+    return renderDetailLoading();
+  }
+
+  return renderDetailContent(detailState.item, type);
+}
+
+function renderDetailLoading() {
   return `
-    <section class="space-y-4">
-      <p class="text-sm uppercase tracking-[0.3em] text-rose-300">Detail</p>
-      <h1 class="text-4xl font-semibold tracking-tight">
-        ${type === "movie" ? "Film" : "Serie"} #${id}
+    <section class="space-y-6">
+      <div class="h-10 w-40 animate-pulse rounded-full bg-white/10"></div>
+
+      <article class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30">
+        <div class="h-88 animate-pulse bg-white/10"></div>
+        <div class="space-y-5 p-8 sm:p-10">
+          <div class="h-4 w-32 animate-pulse rounded-full bg-white/10"></div>
+          <div class="h-12 w-full max-w-xl animate-pulse rounded-2xl bg-white/10"></div>
+          <div class="h-24 w-full animate-pulse rounded-3xl bg-white/10"></div>
+        </div>
+      </article>
+    </section>
+  `;
+}
+
+function renderDetailError(type, id, errorMessage) {
+  const detailPath = `/${type}/${id}`;
+  const returnPath = type === "movie" ? "/films" : "/";
+  const returnLabel =
+    type === "movie" ? "Retour aux films" : "Retour a l'accueil";
+
+  return `
+    <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
+      <p class="text-sm uppercase tracking-[0.35em] text-rose-300">Detail</p>
+      <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+        Impossible de charger ce ${type === "movie" ? "film" : "contenu"}
       </h1>
-      <p class="text-white/70">
-        La page detail sera branchee ensuite sur l'endpoint TMDB.
+      <p class="mt-5 max-w-2xl text-base leading-8 text-rose-100/90">
+        ${errorMessage || "Une erreur est survenue pendant le chargement."}
       </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <button
+          type="button"
+          data-retry-detail="${detailPath}"
+          class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+        >
+          Reessayer
+        </button>
+        <button
+          type="button"
+          data-nav-path="${returnPath}"
+          class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+        >
+          ${returnLabel}
+        </button>
+      </div>
+    </section>
+  `;
+}
+
+function renderDetailContent(item, type) {
+  const title = escapeHtml(item.title || item.name || "Titre inconnu");
+  const overview = escapeHtml(
+    item.overview || "Aucun synopsis n'est disponible pour ce titre."
+  );
+  const backdropPath = item.backdrop_path || item.poster_path;
+  const dateLabel = type === "movie" ? "Date de sortie" : "Premiere diffusion";
+  const durationLabel = type === "movie" ? "Duree" : "Saisons";
+  const returnPath = type === "movie" ? "/films" : "/";
+  const returnLabel =
+    type === "movie" ? "Retour aux films" : "Retour a l'accueil";
+  const genres = getGenreNames(item.genres);
+
+  return `
+    <section class="space-y-8">
+      <button
+        type="button"
+        data-nav-path="${returnPath}"
+        class="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+      >
+        ${returnLabel}
+      </button>
+
+      <article class="relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
+        <div class="absolute inset-0">
+          ${
+            backdropPath
+              ? `
+                <img
+                  src="https://image.tmdb.org/t/p/original${backdropPath}"
+                  alt="${title}"
+                  class="h-full w-full object-cover"
+                />
+              `
+              : '<div class="h-full w-full bg-linear-to-br from-rose-500/30 via-black to-black"></div>'
+          }
+        </div>
+        <div class="absolute inset-0 bg-linear-to-r from-black via-black/78 to-black/35"></div>
+
+        <div class="relative z-10 flex min-h-120 items-end p-8 sm:p-10">
+          <div class="max-w-3xl">
+            <div class="flex flex-wrap gap-3">
+              <span class="rounded-full bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-rose-200">
+                ${type === "movie" ? "Film" : "Serie"}
+              </span>
+              <span class="rounded-full bg-amber-400/15 px-4 py-2 text-sm font-medium text-amber-200">
+                Note ${formatVoteAverage(item.vote_average)}
+              </span>
+            </div>
+
+            <h1 class="mt-5 text-4xl font-semibold tracking-tight text-white sm:text-6xl">
+              ${title}
+            </h1>
+
+            <p class="mt-6 max-w-2xl text-base leading-8 text-white/80 sm:text-lg">
+              ${overview}
+            </p>
+
+            <div class="mt-8 flex flex-wrap gap-3">
+              ${renderDetailBadge(dateLabel, formatLongDate(item.release_date || item.first_air_date))}
+              ${renderDetailBadge(durationLabel, type === "movie" ? formatRuntime(item.runtime) : formatSeasonCount(item.number_of_seasons))}
+              ${renderDetailBadge("Genres", formatGenreSummary(genres))}
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,1fr)]">
+        <article class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+          <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Synopsis</p>
+          <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+            L'histoire
+          </h2>
+          <p class="mt-5 text-base leading-8 text-white/75">
+            ${overview}
+          </p>
+        </article>
+
+        <aside class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+          <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Infos</p>
+          <div class="mt-6 space-y-5">
+            ${renderDetailFact(dateLabel, formatLongDate(item.release_date || item.first_air_date))}
+            ${renderDetailFact(durationLabel, type === "movie" ? formatRuntime(item.runtime) : formatSeasonCount(item.number_of_seasons))}
+            ${renderDetailFact("Genres", formatGenreSummary(genres))}
+            ${renderDetailFact("Note moyenne", formatVoteAverage(item.vote_average))}
+          </div>
+        </aside>
+      </div>
     </section>
   `;
 }
@@ -562,4 +719,113 @@ function renderCarouselEmpty(title) {
       </div>
     </section>
   `;
+}
+
+function renderDetailBadge(label, value) {
+  return `
+    <span class="rounded-full bg-white/10 px-4 py-2 text-sm text-white/80">
+      <span class="font-medium text-white">${label}:</span> ${escapeHtml(value)}
+    </span>
+  `;
+}
+
+function renderDetailFact(label, value) {
+  return `
+    <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+      <p class="text-xs uppercase tracking-[0.3em] text-white/40">${escapeHtml(label)}</p>
+      <p class="mt-3 text-lg font-medium text-white">${escapeHtml(value)}</p>
+    </div>
+  `;
+}
+
+function getGenreNames(genres) {
+  if (!Array.isArray(genres)) {
+    return [];
+  }
+
+  return genres
+    .map((genre) => (typeof genre?.name === "string" ? genre.name.trim() : ""))
+    .filter(Boolean);
+}
+
+function formatGenreSummary(genres) {
+  if (!Array.isArray(genres) || genres.length === 0) {
+    return "Genres indisponibles";
+  }
+
+  return genres.join(", ");
+}
+
+function formatLongDate(dateString) {
+  if (typeof dateString !== "string" || !dateString.trim()) {
+    return "Date inconnue";
+  }
+
+  const dateParts = dateString
+    .split("-")
+    .map((part) => Number.parseInt(part, 10));
+
+  if (
+    dateParts.length !== 3 ||
+    dateParts.some((part) => !Number.isInteger(part))
+  ) {
+    return "Date inconnue";
+  }
+
+  const [year, month, day] = dateParts;
+  const date = new Date(year, month - 1, day);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date inconnue";
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatRuntime(runtime) {
+  if (!Number.isInteger(runtime) || runtime <= 0) {
+    return "Duree inconnue";
+  }
+
+  const hours = Math.floor(runtime / 60);
+  const minutes = runtime % 60;
+
+  if (hours === 0) {
+    return `${minutes} min`;
+  }
+
+  if (minutes === 0) {
+    return `${hours} h`;
+  }
+
+  return `${hours} h ${minutes} min`;
+}
+
+function formatSeasonCount(numberOfSeasons) {
+  if (!Number.isInteger(numberOfSeasons) || numberOfSeasons <= 0) {
+    return "Nombre de saisons inconnu";
+  }
+
+  return `${numberOfSeasons} ${numberOfSeasons === 1 ? "saison" : "saisons"}`;
+}
+
+function formatVoteAverage(voteAverage) {
+  if (typeof voteAverage !== "number" || Number.isNaN(voteAverage)) {
+    return "indisponible";
+  }
+
+  return `${voteAverage.toFixed(1)}/10`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }

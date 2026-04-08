@@ -10,6 +10,7 @@ import {
   resetAuthFormState,
   setAuthFormState,
   setFlashMessage,
+  setDetailState,
   subscribeState,
   updateState,
 } from "./state.js";
@@ -38,6 +39,7 @@ import { resolveView } from "./views.js";
 const appElement = document.querySelector("#app");
 const protectedPaths = new Set(["/favoris", "/profil"]);
 const guestOnlyPaths = new Set(["/login", "/register"]);
+let currentDetailRequestId = 0;
 
 const navItems = [
   { path: "/", label: "Accueil" },
@@ -66,7 +68,7 @@ function renderApp() {
 
   const currentRoute = resolveView(currentPath);
 
-  document.title = `${currentRoute.title} | NetflixLight`;
+  document.title = getDocumentTitle(currentPath, currentRoute);
   appElement.innerHTML = renderShell(
     `
     ${renderFlash(appState.ui.flash)}
@@ -75,6 +77,26 @@ function renderApp() {
     currentPath
   );
   initializeCarousels(appElement);
+}
+
+function getDocumentTitle(currentPath, currentRoute) {
+  const detailRoute = parseDetailPath(currentPath);
+
+  if (detailRoute) {
+    const detailState = appState.detail;
+    const isMatchingDetail =
+      detailState.type === detailRoute.type &&
+      detailState.id === detailRoute.id;
+    const detailTitle = isMatchingDetail
+      ? detailState.item?.title || detailState.item?.name
+      : null;
+
+    if (detailTitle) {
+      return `${detailTitle} | NetflixLight`;
+    }
+  }
+
+  return `${currentRoute.title} | NetflixLight`;
 }
 
 function renderShell(content, currentPath) {
@@ -436,6 +458,77 @@ async function loadHomeHero() {
   }
 }
 
+function parseDetailPath(pathname) {
+  const detailMatch = pathname.match(/^\/(movie|tv)\/(\d+)$/);
+
+  if (!detailMatch) {
+    return null;
+  }
+
+  return {
+    type: detailMatch[1],
+    id: Number.parseInt(detailMatch[2], 10),
+  };
+}
+
+async function loadDetailPage(pathname) {
+  const detailRoute = parseDetailPath(pathname);
+
+  if (!detailRoute) {
+    return;
+  }
+
+  const { type, id } = detailRoute;
+  const detailState = appState.detail;
+
+  if (
+    detailState.type === type &&
+    detailState.id === id &&
+    (detailState.status === "loading" || detailState.status === "success")
+  ) {
+    return;
+  }
+
+  const requestId = currentDetailRequestId + 1;
+  currentDetailRequestId = requestId;
+
+  setDetailState({
+    status: "loading",
+    type,
+    id,
+    item: null,
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(`/api/tmdb/${type}/${id}?language=fr-FR`);
+
+    if (requestId !== currentDetailRequestId) {
+      return;
+    }
+
+    setDetailState({
+      status: "success",
+      type,
+      id,
+      item: response,
+      error: null,
+    });
+  } catch (error) {
+    if (requestId !== currentDetailRequestId) {
+      return;
+    }
+
+    setDetailState({
+      status: "error",
+      type,
+      id,
+      item: null,
+      error: formatApiError(error),
+    });
+  }
+}
+
 function handleRouteEffects(currentPath) {
   if (currentPath === "/") {
     void loadHomeHero();
@@ -445,6 +538,10 @@ function handleRouteEffects(currentPath) {
   if (currentPath === "/films") {
     void loadMoviesCatalog();
     loadGenreCarousels();
+  }
+
+  if (parseDetailPath(currentPath)) {
+    void loadDetailPage(currentPath);
   }
 }
 
@@ -465,6 +562,24 @@ document.addEventListener("click", (event) => {
 
   if (retrySectionButton) {
     retryCatalogSection(retrySectionButton.getAttribute("data-retry-section"));
+    return;
+  }
+
+  const retryDetailButton = event.target.closest("[data-retry-detail]");
+
+  if (retryDetailButton) {
+    const detailPath = retryDetailButton.getAttribute("data-retry-detail");
+
+    if (detailPath) {
+      setDetailState({
+        status: "idle",
+        type: null,
+        id: null,
+        item: null,
+        error: null,
+      });
+      void loadDetailPage(detailPath);
+    }
     return;
   }
 
