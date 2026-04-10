@@ -47,7 +47,7 @@ function renderHomeView(state) {
 
       <div class="grid gap-5 lg:grid-cols-2">
         ${createFeatureTile({
-          eyebrow: "A la une",
+          eyebrow: "À la une",
           title: "Les titres du moment",
           description: "Retrouve rapidement ce qui fait parler en ce moment.",
         })}
@@ -69,9 +69,9 @@ function renderMoviesView(state) {
     <section class="space-y-6">
       <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
         <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Films</p>
-        <h1 class="mt-3 text-4xl font-semibold tracking-tight">A l'affiche</h1>
+        <h1 class="mt-3 text-4xl font-semibold tracking-tight">À l'affiche</h1>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Retrouve les films populaires du moment et garde de cote ceux qui te tentent.
+          Retrouve les films populaires du moment et garde de côté ceux qui te tentent.
         </p>
       </header>
 
@@ -89,7 +89,7 @@ function renderFavoritesView(state) {
       <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
       <h1 class="mt-3 text-4xl font-semibold tracking-tight">Ma liste</h1>
       <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-        Connecte en tant que ${username}. Retrouve ici les titres que tu veux garder de cote.
+        Connecté en tant que ${username}. Retrouve ici les titres que tu veux garder de côté.
       </p>
     </section>
   `;
@@ -103,12 +103,12 @@ function renderProfileView(state) {
       <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Profil</p>
       <h1 class="mt-3 text-4xl font-semibold tracking-tight">Mon compte</h1>
       <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-        Retrouve ici les informations liees a ton compte.
+        Retrouve ici les informations liées à ton compte.
       </p>
 
       <dl class="mt-8 grid gap-4 sm:grid-cols-2">
         <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
-          <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Username</dt>
+          <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Pseudo</dt>
           <dd class="mt-3 text-lg font-medium text-white">${user?.username || "-"}</dd>
         </div>
         <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
@@ -176,14 +176,14 @@ function renderRegisterView(state) {
       <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300">Inscription</p>
       <h1 class="mt-3 text-4xl font-semibold tracking-tight">Inscription</h1>
       <p class="mt-4 text-base leading-8 text-white/70">
-        Cree ton compte pour enregistrer tes envies et y revenir quand tu veux.
+        Crée ton compte pour enregistrer tes envies et y revenir quand tu veux.
       </p>
 
       ${renderAuthFeedback(authState)}
 
       <form data-auth-form="register" class="mt-8 space-y-5">
         <label class="block space-y-2">
-          <span class="text-sm font-medium text-white/80">Username</span>
+          <span class="text-sm font-medium text-white/80">Pseudo</span>
           <input
             type="text"
             name="username"
@@ -220,7 +220,7 @@ function renderRegisterView(state) {
           class="inline-flex rounded-full bg-fuchsia-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
           ${authState.pending ? "disabled" : ""}
         >
-          ${authState.pending ? "Creation..." : "Creer un compte"}
+          ${authState.pending ? "Création..." : "Créer un compte"}
         </button>
       </form>
     </section>
@@ -285,7 +285,7 @@ export function resolveView(pathname) {
     const [, type, id] = detailMatch;
 
     return {
-      title: "Detail",
+      title: "Détail",
       render: (state) => renderDetailView(state, type, Number.parseInt(id, 10)),
     };
   }
@@ -329,8 +329,8 @@ function renderSearchView(state) {
   const hasQuery = Boolean(searchState.query);
   const totalResultsLabel =
     searchState.totalResults > 0
-      ? `${searchState.totalResults} resultat${searchState.totalResults > 1 ? "s" : ""}`
-      : "Resultats";
+      ? `${searchState.totalResults} résultat${searchState.totalResults > 1 ? "s" : ""}`
+      : "Résultats";
 
   return `
     <section class="space-y-6">
@@ -339,15 +339,15 @@ function renderSearchView(state) {
         <h1 class="mt-3 text-4xl font-semibold tracking-tight">
           ${
             hasQuery
-              ? `Resultats pour "${escapeHtml(searchState.query)}"`
+              ? `Résultats pour "${escapeHtml(searchState.query)}"`
               : "Trouve ton prochain visionnage"
           }
         </h1>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
           ${
             hasQuery
-              ? "Parcours les films et series correspondants puis ouvre leur fiche detail."
-              : "Utilise la barre de recherche du header pour chercher un film ou une serie depuis n'importe quelle page."
+              ? "Parcours les films et séries correspondants puis ouvre leur fiche détail."
+              : "Utilise la barre de recherche du header pour chercher un film ou une série depuis n'importe quelle page."
           }
         </p>
         ${
@@ -381,7 +381,7 @@ function renderHomeHero(heroState) {
   if (heroState.status === "loading" || heroState.status === "idle") {
     return `
       <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
-        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
+        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
         <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
           Chargement...
         </h1>
@@ -392,9 +392,9 @@ function renderHomeHero(heroState) {
   if (heroState.status === "error") {
     return `
       <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
-        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
+        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
         <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
-          Impossible de charger la selection
+          Impossible de charger la sélection
         </h1>
         <p class="mt-6 max-w-2xl text-base leading-8 text-rose-100/90 sm:text-lg">
           ${heroState.error || "Une erreur est survenue."}
@@ -404,7 +404,7 @@ function renderHomeHero(heroState) {
           data-retry-hero
           class="mt-8 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
         >
-          Reessayer
+          Réessayer
         </button>
       </section>
     `;
@@ -413,7 +413,7 @@ function renderHomeHero(heroState) {
   if (!heroState.item) {
     return `
       <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
-        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">A la une</p>
+        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
         <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
           Regarde ce qui te tente ce soir.
         </h1>
@@ -428,7 +428,7 @@ function renderHomeHero(heroState) {
   const item = heroState.item;
   const title = item.title || item.name || "Titre inconnu";
   const overview =
-    item.overview || "Decouvre ce titre dans la selection du moment.";
+    item.overview || "Découvre ce titre dans la sélection du moment.";
   const year = (item.release_date || item.first_air_date || "").slice(0, 4);
   const mediaType = item.media_type;
   const backdropPath = item.backdrop_path || item.poster_path;
@@ -448,7 +448,7 @@ function renderHomeHero(heroState) {
       <div class="relative z-10 flex min-h-112 items-end p-8 sm:p-10">
         <div class="max-w-2xl">
           <p class="text-sm uppercase tracking-[0.35em] text-rose-300">
-            ${mediaType === "movie" ? "Film" : "Serie"}${year ? ` • ${year}` : ""}
+            ${mediaType === "movie" ? "Film" : "Série"}${year ? ` • ${year}` : ""}
           </p>
 
           <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
@@ -465,22 +465,15 @@ function renderHomeHero(heroState) {
               data-nav-path="${detailPath}"
               class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
             >
-              Voir le detail
+              Voir le détail
             </button>
 
-            <button
-              type="button"
-              data-refresh-hero
-              class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
-            >
-              Changer
-            </button>
             <button
               type="button"
               data-retry-hero
               class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
             >
-              Recharger
+              Changer
             </button>
           </div>
         </div>
@@ -533,11 +526,11 @@ function renderDetailError(type, id, errorMessage) {
   const detailPath = `/${type}/${id}`;
   const returnPath = type === "movie" ? "/films" : "/";
   const returnLabel =
-    type === "movie" ? "Retour aux films" : "Retour a l'accueil";
+    type === "movie" ? "Retour aux films" : "Retour à l'accueil";
 
   return `
     <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
-      <p class="text-sm uppercase tracking-[0.35em] text-rose-300">Detail</p>
+      <p class="text-sm uppercase tracking-[0.35em] text-rose-300">Détail</p>
       <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
         Impossible de charger ce ${type === "movie" ? "film" : "contenu"}
       </h1>
@@ -550,7 +543,7 @@ function renderDetailError(type, id, errorMessage) {
           data-retry-detail="${detailPath}"
           class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
         >
-          Reessayer
+          Réessayer
         </button>
         <button
           type="button"
@@ -570,11 +563,11 @@ function renderDetailContent(state, item, type) {
     item.overview || "Aucun synopsis n'est disponible pour ce titre."
   );
   const backdropPath = item.backdrop_path || item.poster_path;
-  const dateLabel = type === "movie" ? "Date de sortie" : "Premiere diffusion";
-  const durationLabel = type === "movie" ? "Duree" : "Saisons";
+  const dateLabel = type === "movie" ? "Date de sortie" : "Première diffusion";
+  const durationLabel = type === "movie" ? "Durée" : "Saisons";
   const returnPath = type === "movie" ? "/films" : "/";
   const returnLabel =
-    type === "movie" ? "Retour aux films" : "Retour a l'accueil";
+    type === "movie" ? "Retour aux films" : "Retour à l'accueil";
   const genres = getGenreNames(item.genres);
   const mainCast = getMainCast(item.credits?.cast);
   const similarItems = getSimilarItems(item.similar?.results, type, item.id);
@@ -609,7 +602,7 @@ function renderDetailContent(state, item, type) {
           <div class="max-w-3xl">
             <div class="flex flex-wrap gap-3">
               <span class="rounded-full bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-rose-200">
-                ${type === "movie" ? "Film" : "Serie"}
+                ${type === "movie" ? "Film" : "Série"}
               </span>
               <span class="rounded-full bg-amber-400/15 px-4 py-2 text-sm font-medium text-amber-200">
                 Note ${formatVoteAverage(item.vote_average)}
@@ -678,9 +671,9 @@ function renderFavoriteToggle(state, item, type) {
       ? state.watchlist.lastAction
       : null;
   const buttonLabel = isHydratingWatchlist
-    ? "Verification..."
+    ? "Vérification..."
     : isPending
-      ? "Mise a jour..."
+      ? "Mise à jour..."
       : isFavorite
         ? "Retirer des favoris"
         : "Ajouter aux favoris";
@@ -708,10 +701,10 @@ function renderFavoriteToggle(state, item, type) {
         ${
           lastAction?.message ||
           (isHydratingWatchlist
-            ? "On verifie si ce titre est deja dans tes favoris."
+            ? "On vérifie si ce titre est déjà dans tes favoris."
             : null) ||
           (isAuthenticated
-            ? "Ajoute ce titre a ta liste ou retire-le en un clic."
+            ? "Ajoute ce titre à ta liste ou retire-le en un clic."
             : "Connecte-toi pour enregistrer ce titre dans tes favoris.")
         }
       </p>
@@ -734,12 +727,12 @@ function renderHomeCarousels(homeCatalogState) {
       })}
       ${renderCatalogCarouselSection(homeCatalogState.tvPopular, {
         id: "home-tv-popular",
-        title: "Series populaires",
+        title: "Séries populaires",
         retryKey: "home-tv-popular",
       })}
       ${renderCatalogCarouselSection(homeCatalogState.topRated, {
         id: "home-top-rated",
-        title: "Mieux notes",
+        title: "Mieux notés",
         retryKey: "home-top-rated",
       })}
     </div>
@@ -756,7 +749,7 @@ function renderGenreCarousels(genreState) {
       })}
       ${renderCatalogCarouselSection(genreState.comedy, {
         id: "genre-comedy",
-        title: "Comedie",
+        title: "Comédie",
         retryKey: "genre-comedy",
       })}
       ${renderCatalogCarouselSection(genreState.horror, {
@@ -796,7 +789,7 @@ function renderCarouselSkeleton(title) {
   return `
     <section class="space-y-4">
       <div>
-        <p class="text-sm uppercase tracking-[0.3em] text-white/40">Selection</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-white/40">Sélection</p>
         <h2 class="text-2xl font-semibold tracking-tight text-white">${title}</h2>
       </div>
 
@@ -818,7 +811,7 @@ function renderCarouselError(title, retryKey, errorMessage) {
   return `
     <section class="space-y-4">
       <div>
-        <p class="text-sm uppercase tracking-[0.3em] text-white/40">Selection</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-white/40">Sélection</p>
         <h2 class="text-2xl font-semibold tracking-tight text-white">${title}</h2>
       </div>
 
@@ -831,7 +824,7 @@ function renderCarouselError(title, retryKey, errorMessage) {
           data-retry-section="${retryKey}"
           class="mt-4 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
         >
-          Reessayer
+          Réessayer
         </button>
       </div>
     </section>
@@ -842,7 +835,7 @@ function renderCarouselEmpty(title) {
   return `
     <section class="space-y-4">
       <div>
-        <p class="text-sm uppercase tracking-[0.3em] text-white/40">Selection</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-white/40">Sélection</p>
         <h2 class="text-2xl font-semibold tracking-tight text-white">${title}</h2>
       </div>
 
@@ -857,7 +850,7 @@ function renderSearchResults(searchState) {
   if (!searchState.query) {
     return `
       <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
-        Lance une recherche pour voir apparaitre les resultats ici.
+        Lance une recherche pour voir apparaître les résultats ici.
       </section>
     `;
   }
@@ -883,7 +876,7 @@ function renderSearchResults(searchState) {
     return `
       <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 text-rose-100 shadow-xl shadow-black/20">
         <p class="text-base leading-8">
-          ${searchState.error || "Impossible de charger les resultats pour le moment."}
+          ${searchState.error || "Impossible de charger les résultats pour le moment."}
         </p>
       </section>
     `;
@@ -892,7 +885,7 @@ function renderSearchResults(searchState) {
   if (!Array.isArray(searchState.items) || searchState.items.length === 0) {
     return `
       <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
-        Aucun resultat pour "${escapeHtml(searchState.query)}".
+        Aucun résultat pour "${escapeHtml(searchState.query)}".
       </section>
     `;
   }
@@ -900,7 +893,7 @@ function renderSearchResults(searchState) {
   return `
     <section class="space-y-4">
       <p class="text-sm uppercase tracking-[0.3em] text-white/40">
-        ${searchState.items.length} resultat${searchState.items.length > 1 ? "s" : ""} sur cette page
+        ${searchState.items.length} résultat${searchState.items.length > 1 ? "s" : ""} sur cette page
       </p>
       <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         ${searchState.items
@@ -934,7 +927,7 @@ function renderSearchPagination(searchState) {
   return `
     <div class="flex flex-col gap-3 rounded-4xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <p class="text-sm text-white/65">
-        Navigation entre les pages de resultats.
+        Navigation entre les pages de résultats.
       </p>
       <div class="flex flex-wrap items-center gap-3">
         <button
@@ -947,7 +940,7 @@ function renderSearchPagination(searchState) {
           }"
           ${canGoPrevious ? "" : "disabled"}
         >
-          Page precedente
+          Page précédente
         </button>
         <span class="rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm text-white/70">
           ${searchState.page} / ${searchState.totalPages}
@@ -992,12 +985,12 @@ function createFavoriteKey(type, tmdbId) {
 
 function renderSimilarContentSection(similarItems, type, itemId) {
   const sectionTitle =
-    type === "movie" ? "Films similaires" : "Series similaires";
+    type === "movie" ? "Films similaires" : "Séries similaires";
 
   if (!Array.isArray(similarItems) || similarItems.length === 0) {
     return `
       <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">A voir aussi</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">À voir aussi</p>
         <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
           ${sectionTitle}
         </h2>
@@ -1013,12 +1006,12 @@ function renderSimilarContentSection(similarItems, type, itemId) {
   return `
     <section class="space-y-6">
       <div class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">A voir aussi</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">À voir aussi</p>
         <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
           ${sectionTitle}
         </h2>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Continue avec des titres proches et ouvre leur fiche detail directement depuis le carrousel.
+          Continue avec des titres proches et ouvre leur fiche détail directement depuis le carrousel.
         </p>
       </div>
 
@@ -1054,7 +1047,7 @@ function renderMainCastSection(cast) {
           Casting principal
         </h2>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Retrouve les interpretes principaux et les personnages qu'ils incarnent.
+          Retrouve les interprètes principaux et les personnages qu'ils incarnent.
         </p>
       </div>
 
@@ -1174,13 +1167,13 @@ function getSimilarItems(similarResults, mediaType, currentItemId) {
 
 function formatCharacterName(characterName) {
   if (typeof characterName !== "string") {
-    return "Personnage non renseigne";
+    return "Personnage non renseigné";
   }
 
   const normalizedCharacterName = characterName.trim();
 
   if (!normalizedCharacterName) {
-    return "Personnage non renseigne";
+    return "Personnage non renseigné";
   }
 
   return normalizedCharacterName;
@@ -1236,7 +1229,7 @@ function formatLongDate(dateString) {
 
 function formatRuntime(runtime) {
   if (!Number.isInteger(runtime) || runtime <= 0) {
-    return "Duree inconnue";
+    return "Durée inconnue";
   }
 
   const hours = Math.floor(runtime / 60);

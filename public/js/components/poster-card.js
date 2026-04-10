@@ -108,7 +108,7 @@ function getDetailPath(item) {
 
 function getReleaseYear(dateString) {
   if (typeof dateString !== "string" || dateString.length < 4) {
-    return "Annee inconnue";
+    return "Année inconnue";
   }
 
   return dateString.slice(0, 4);
