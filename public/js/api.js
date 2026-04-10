@@ -1,4 +1,7 @@
-export async function apiRequest(pathname, { method = "GET", body } = {}) {
+export async function apiRequest(
+  pathname,
+  { method = "GET", body, signal } = {}
+) {
   const response = await fetch(pathname, {
     method,
     headers: body
@@ -8,6 +11,7 @@ export async function apiRequest(pathname, { method = "GET", body } = {}) {
       : undefined,
     body: body ? JSON.stringify(body) : undefined,
     credentials: "same-origin",
+    signal,
   });
 
   const isJsonResponse =
