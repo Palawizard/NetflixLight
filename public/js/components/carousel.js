@@ -58,11 +58,27 @@ export function initializeCarousels(container) {
     track.dataset.carouselReady = "true";
 
     let isDragging = false;
+    let didDrag = false;
     let startX = 0;
     let startScrollLeft = 0;
+    let activePointerId = null;
 
     track.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+
+      if (
+        event.target.closest(
+          "[data-nav-path], button, a, input, select, textarea"
+        )
+      ) {
+        return;
+      }
+
       isDragging = true;
+      didDrag = false;
+      activePointerId = event.pointerId;
       startX = event.clientX;
       startScrollLeft = track.scrollLeft;
       track.setPointerCapture(event.pointerId);
@@ -75,15 +91,19 @@ export function initializeCarousels(container) {
       }
 
       const deltaX = event.clientX - startX;
+      if (Math.abs(deltaX) > 6) {
+        didDrag = true;
+      }
       track.scrollLeft = startScrollLeft - deltaX;
     });
 
     const stopDragging = (event) => {
-      if (!isDragging) {
+      if (!isDragging || event.pointerId !== activePointerId) {
         return;
       }
 
       isDragging = false;
+      activePointerId = null;
       track.classList.remove("cursor-grabbing");
 
       if (
@@ -97,6 +117,17 @@ export function initializeCarousels(container) {
     track.addEventListener("pointerup", stopDragging);
     track.addEventListener("pointercancel", stopDragging);
     track.addEventListener("pointerleave", stopDragging);
+    track.addEventListener(
+      "click",
+      (event) => {
+        if (didDrag) {
+          event.preventDefault();
+          event.stopPropagation();
+          didDrag = false;
+        }
+      },
+      true
+    );
   });
 }
 
