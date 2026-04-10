@@ -208,6 +208,17 @@ function getCurrentSearchQuery() {
   return getCurrentSearchParams().get("q")?.trim() || "";
 }
 
+function getCurrentSearchPage() {
+  const rawPage = getCurrentSearchParams().get("page");
+  const parsedPage = Number.parseInt(rawPage || "1", 10);
+
+  if (!Number.isInteger(parsedPage) || parsedPage <= 0) {
+    return 1;
+  }
+
+  return parsedPage;
+}
+
 function renderNavLink(item, currentPath) {
   const isActive = item.path === currentPath;
 
@@ -594,9 +605,11 @@ function normalizeSearchResults(results) {
     }));
 }
 
-async function loadSearchResults(searchQuery) {
+async function loadSearchResults(searchQuery, page = 1) {
   const normalizedQuery =
     typeof searchQuery === "string" ? searchQuery.trim() : "";
+  const normalizedPage =
+    Number.isInteger(page) && page > 0 ? page : Number.parseInt(page, 10) || 1;
 
   clearSearchDebounce();
 
@@ -608,14 +621,16 @@ async function loadSearchResults(searchQuery) {
 
   if (
     appState.search.status === "loading" &&
-    appState.search.query === normalizedQuery
+    appState.search.query === normalizedQuery &&
+    appState.search.page === normalizedPage
   ) {
     return;
   }
 
   if (
     appState.search.status === "success" &&
-    appState.search.query === normalizedQuery
+    appState.search.query === normalizedQuery &&
+    appState.search.page === normalizedPage
   ) {
     return;
   }
@@ -623,6 +638,9 @@ async function loadSearchResults(searchQuery) {
   setSearchState({
     status: "loading",
     query: normalizedQuery,
+    page: normalizedPage,
+    totalPages: 0,
+    totalResults: 0,
     items: [],
     error: null,
   });
@@ -634,7 +652,7 @@ async function loadSearchResults(searchQuery) {
 
   try {
     const response = await apiRequest(
-      `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&language=fr-FR`,
+      `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&page=${normalizedPage}&language=fr-FR`,
       {
         signal: currentSearchAbortController.signal,
       }
@@ -648,6 +666,18 @@ async function loadSearchResults(searchQuery) {
     setSearchState({
       status: "success",
       query: normalizedQuery,
+      page:
+        Number.isInteger(response?.page) && response.page > 0
+          ? response.page
+          : normalizedPage,
+      totalPages:
+        Number.isInteger(response?.total_pages) && response.total_pages > 0
+          ? response.total_pages
+          : 0,
+      totalResults:
+        Number.isInteger(response?.total_results) && response.total_results >= 0
+          ? response.total_results
+          : normalizeSearchResults(response?.results).length,
       items: normalizeSearchResults(response?.results),
       error: null,
     });
@@ -664,6 +694,9 @@ async function loadSearchResults(searchQuery) {
     setSearchState({
       status: "error",
       query: normalizedQuery,
+      page: normalizedPage,
+      totalPages: 0,
+      totalResults: 0,
       items: [],
       error: formatApiError(error),
     });
@@ -959,7 +992,7 @@ function handleRouteEffects(currentPath) {
   }
 
   if (currentPath === "/recherche") {
-    void loadSearchResults(getCurrentSearchQuery());
+    void loadSearchResults(getCurrentSearchQuery(), getCurrentSearchPage());
     return;
   }
 
@@ -1012,6 +1045,23 @@ document.addEventListener("click", (event) => {
 
   if (favoriteToggleButton) {
     void toggleFavoriteFromDetail();
+    return;
+  }
+
+  const searchPageButton = event.target.closest("[data-search-page]");
+
+  if (searchPageButton) {
+    const nextPage = Number.parseInt(
+      searchPageButton.getAttribute("data-search-page") || "",
+      10
+    );
+    const currentQuery = getCurrentSearchQuery();
+
+    if (currentQuery && Number.isInteger(nextPage) && nextPage > 0) {
+      navigate(
+        `/recherche?q=${encodeURIComponent(currentQuery)}&page=${nextPage}`
+      );
+    }
     return;
   }
 
@@ -1082,7 +1132,7 @@ document.addEventListener("input", (event) => {
       return;
     }
 
-    navigate(`/recherche?q=${encodeURIComponent(searchQuery)}`);
+    navigate(`/recherche?q=${encodeURIComponent(searchQuery)}&page=1`);
   }, SEARCH_DEBOUNCE_MS);
 });
 
@@ -1104,7 +1154,7 @@ document.addEventListener("submit", async (event) => {
       return;
     }
 
-    navigate(`/recherche?q=${encodeURIComponent(searchQuery)}`);
+    navigate(`/recherche?q=${encodeURIComponent(searchQuery)}&page=1`);
     return;
   }
 
