@@ -327,6 +327,10 @@ function renderMoviesCatalog(moviesState) {
 function renderSearchView(state) {
   const searchState = state.search;
   const hasQuery = Boolean(searchState.query);
+  const totalResultsLabel =
+    searchState.totalResults > 0
+      ? `${searchState.totalResults} resultat${searchState.totalResults > 1 ? "s" : ""}`
+      : "Resultats";
 
   return `
     <section class="space-y-6">
@@ -346,6 +350,26 @@ function renderSearchView(state) {
               : "Utilise la barre de recherche du header pour chercher un film ou une serie depuis n'importe quelle page."
           }
         </p>
+        ${
+          hasQuery
+            ? `
+              <div class="mt-6 flex flex-wrap items-center gap-3 text-sm text-white/55">
+                <span class="rounded-full border border-white/10 bg-black/20 px-4 py-2">
+                  ${totalResultsLabel}
+                </span>
+                ${
+                  searchState.totalPages > 0
+                    ? `
+                      <span class="rounded-full border border-white/10 bg-black/20 px-4 py-2">
+                        Page ${searchState.page} / ${searchState.totalPages}
+                      </span>
+                    `
+                    : ""
+                }
+              </div>
+            `
+            : ""
+        }
       </header>
 
       ${renderSearchResults(searchState)}
@@ -876,7 +900,7 @@ function renderSearchResults(searchState) {
   return `
     <section class="space-y-4">
       <p class="text-sm uppercase tracking-[0.3em] text-white/40">
-        ${searchState.items.length} resultat${searchState.items.length > 1 ? "s" : ""}
+        ${searchState.items.length} resultat${searchState.items.length > 1 ? "s" : ""} sur cette page
       </p>
       <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         ${searchState.items
@@ -889,7 +913,59 @@ function renderSearchResults(searchState) {
           )
           .join("")}
       </div>
+      ${renderSearchPagination(searchState)}
     </section>
+  `;
+}
+
+function renderSearchPagination(searchState) {
+  if (
+    !Number.isInteger(searchState.totalPages) ||
+    searchState.totalPages <= 1 ||
+    !Number.isInteger(searchState.page) ||
+    searchState.page <= 0
+  ) {
+    return "";
+  }
+
+  const canGoPrevious = searchState.page > 1;
+  const canGoNext = searchState.page < searchState.totalPages;
+
+  return `
+    <div class="flex flex-col gap-3 rounded-4xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-sm text-white/65">
+        Navigation entre les pages de resultats.
+      </p>
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          data-search-page="${searchState.page - 1}"
+          class="rounded-full border border-white/10 px-4 py-2 text-sm font-medium transition ${
+            canGoPrevious
+              ? "bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
+              : "bg-white/5 text-white/35"
+          }"
+          ${canGoPrevious ? "" : "disabled"}
+        >
+          Page precedente
+        </button>
+        <span class="rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm text-white/70">
+          ${searchState.page} / ${searchState.totalPages}
+        </span>
+        <button
+          type="button"
+          data-search-page="${searchState.page + 1}"
+          class="rounded-full border border-white/10 px-4 py-2 text-sm font-medium transition ${
+            canGoNext
+              ? "bg-white text-neutral-950 hover:bg-white/90"
+              : "bg-white/5 text-white/35"
+          }"
+          ${canGoNext ? "" : "disabled"}
+        >
+          Page suivante
+        </button>
+      </div>
+    </div>
   `;
 }
 
