@@ -1,4 +1,5 @@
 import { renderCarousel } from "./components/carousel.js";
+import { renderPosterCard } from "./components/poster-card.js";
 
 const TMDB_PROFILE_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w300";
 
@@ -245,6 +246,10 @@ export const routeViews = {
     title: "Accueil",
     render: renderHomeView,
   },
+  "/recherche": {
+    title: "Recherche",
+    render: renderSearchView,
+  },
   "/films": {
     title: "Films",
     render: renderMoviesView,
@@ -317,6 +322,35 @@ function renderMoviesCatalog(moviesState) {
     title: "Films populaires",
     retryKey: "movies-popular",
   });
+}
+
+function renderSearchView(state) {
+  const searchState = state.search;
+  const hasQuery = Boolean(searchState.query);
+
+  return `
+    <section class="space-y-6">
+      <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Recherche</p>
+        <h1 class="mt-3 text-4xl font-semibold tracking-tight">
+          ${
+            hasQuery
+              ? `Resultats pour "${escapeHtml(searchState.query)}"`
+              : "Trouve ton prochain visionnage"
+          }
+        </h1>
+        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+          ${
+            hasQuery
+              ? "Parcours les films et series correspondants puis ouvre leur fiche detail."
+              : "Utilise la barre de recherche du header pour chercher un film ou une serie depuis n'importe quelle page."
+          }
+        </p>
+      </header>
+
+      ${renderSearchResults(searchState)}
+    </section>
+  `;
 }
 
 function renderHomeHero(heroState) {
@@ -790,6 +824,70 @@ function renderCarouselEmpty(title) {
 
       <div class="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 text-white/70 shadow-xl shadow-black/20">
         Aucun titre disponible pour le moment.
+      </div>
+    </section>
+  `;
+}
+
+function renderSearchResults(searchState) {
+  if (!searchState.query) {
+    return `
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
+        Lance une recherche pour voir apparaitre les resultats ici.
+      </section>
+    `;
+  }
+
+  if (searchState.status === "loading" || searchState.status === "idle") {
+    return `
+      <section class="space-y-4">
+        <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          ${Array.from(
+            { length: 8 },
+            () => `
+              <article class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20">
+                <div class="aspect-2/3 animate-pulse bg-white/10"></div>
+              </article>
+            `
+          ).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  if (searchState.status === "error") {
+    return `
+      <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 text-rose-100 shadow-xl shadow-black/20">
+        <p class="text-base leading-8">
+          ${searchState.error || "Impossible de charger les resultats pour le moment."}
+        </p>
+      </section>
+    `;
+  }
+
+  if (!Array.isArray(searchState.items) || searchState.items.length === 0) {
+    return `
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
+        Aucun resultat pour "${escapeHtml(searchState.query)}".
+      </section>
+    `;
+  }
+
+  return `
+    <section class="space-y-4">
+      <p class="text-sm uppercase tracking-[0.3em] text-white/40">
+        ${searchState.items.length} resultat${searchState.items.length > 1 ? "s" : ""}
+      </p>
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        ${searchState.items
+          .map(
+            (item) => `
+              <div>
+                ${renderPosterCard(item)}
+              </div>
+            `
+          )
+          .join("")}
       </div>
     </section>
   `;
