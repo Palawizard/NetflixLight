@@ -27,6 +27,15 @@ function createWatchlistState() {
   };
 }
 
+function createSearchState() {
+  return {
+    status: "idle",
+    query: "",
+    items: [],
+    error: null,
+  };
+}
+
 export const appState = {
   session: {
     status: "idle",
@@ -40,6 +49,7 @@ export const appState = {
   },
   detail: createDetailState(),
   watchlist: createWatchlistState(),
+  search: createSearchState(),
   catalog: {
     home: {
       trending: createCatalogSectionState(),
@@ -172,5 +182,20 @@ export function setWatchlistState(nextWatchlistState) {
 export function resetWatchlistState() {
   updateState((state) => {
     state.watchlist = createWatchlistState();
+  });
+}
+
+export function setSearchState(nextSearchState) {
+  updateState((state) => {
+    state.search = {
+      ...state.search,
+      ...nextSearchState,
+    };
+  });
+}
+
+export function resetSearchState() {
+  updateState((state) => {
+    state.search = createSearchState();
   });
 }
