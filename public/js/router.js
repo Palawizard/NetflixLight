@@ -1,19 +1,32 @@
 const listeners = new Set();
 
+function parseHashLocation(hashValue = window.location.hash) {
+  const normalizedHash = hashValue.replace(/^#/, "");
+  const rawLocation = normalizedHash || "/";
+  const locationWithSlash = rawLocation.startsWith("/")
+    ? rawLocation
+    : `/${rawLocation}`;
+  const [pathname, rawSearch = ""] = locationWithSlash.split("?");
+
+  return {
+    pathname: pathname || "/",
+    searchParams: new URLSearchParams(rawSearch),
+  };
+}
+
 export function getCurrentPath() {
-  const hashValue = window.location.hash.replace(/^#/, "");
+  return parseHashLocation().pathname;
+}
 
-  if (!hashValue) {
-    return "/";
-  }
-
-  return hashValue.startsWith("/") ? hashValue : `/${hashValue}`;
+export function getCurrentSearchParams() {
+  return parseHashLocation().searchParams;
 }
 
 export function navigate(path) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const currentHashValue = window.location.hash.replace(/^#/, "") || "/";
 
-  if (getCurrentPath() === normalizedPath) {
+  if (currentHashValue === normalizedPath) {
     notifyRouteChange();
     return;
   }
@@ -39,8 +52,8 @@ export function startRouter() {
 }
 
 function notifyRouteChange() {
-  const currentPath = getCurrentPath();
-  listeners.forEach((listener) => listener(currentPath));
+  const currentLocation = parseHashLocation();
+  listeners.forEach((listener) => listener(currentLocation.pathname));
 }
 
 window.addEventListener("hashchange", notifyRouteChange);

@@ -13,11 +13,14 @@ import {
   setDetailState,
   setWatchlistState,
   resetWatchlistState,
+  setSearchState,
+  resetSearchState,
   subscribeState,
   updateState,
 } from "./state.js";
 import {
   getCurrentPath,
+  getCurrentSearchParams,
   navigate,
   startRouter,
   subscribeRoute,
@@ -82,6 +85,10 @@ function renderApp() {
 }
 
 function getDocumentTitle(currentPath, currentRoute) {
+  if (currentPath === "/recherche" && appState.search.query) {
+    return `Recherche: ${appState.search.query} | NetflixLight`;
+  }
+
   const detailRoute = parseDetailPath(currentPath);
 
   if (detailRoute) {
@@ -102,19 +109,25 @@ function getDocumentTitle(currentPath, currentRoute) {
 }
 
 function renderShell(content, currentPath) {
+  const currentSearchQuery = getCurrentSearchQuery();
+
   return `
     <div class="min-h-screen">
       <header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
-        <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-5">
-          <button
-            type="button"
-            data-nav-path="/"
-            class="text-left text-lg font-semibold uppercase tracking-[0.25em] text-rose-400 transition hover:text-rose-300"
-          >
-            NetflixLight
-          </button>
-          <div class="flex flex-wrap items-center justify-end gap-3">
+        <div class="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex items-center justify-between gap-4">
+            <button
+              type="button"
+              data-nav-path="/"
+              class="text-left text-lg font-semibold uppercase tracking-[0.25em] text-rose-400 transition hover:text-rose-300"
+            >
+              NetflixLight
+            </button>
             ${renderSessionBadge()}
+          </div>
+
+          <div class="flex flex-1 flex-col gap-4 lg:flex-row lg:items-center lg:justify-end">
+            ${renderSearchForm(currentSearchQuery)}
             <nav class="flex flex-wrap items-center justify-end gap-2">
             ${navItems.map((item) => renderNavLink(item, currentPath)).join("")}
             </nav>
@@ -126,6 +139,30 @@ function renderShell(content, currentPath) {
         ${content}
       </main>
     </div>
+  `;
+}
+
+function renderSearchForm(currentQuery) {
+  return `
+    <form data-search-form class="w-full lg:max-w-md">
+      <label class="sr-only" for="global-search">Rechercher un film ou une serie</label>
+      <div class="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur">
+        <input
+          id="global-search"
+          type="search"
+          name="query"
+          value="${escapeHtml(currentQuery)}"
+          placeholder="Rechercher un film ou une serie"
+          class="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/40"
+        />
+        <button
+          type="submit"
+          class="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+        >
+          Rechercher
+        </button>
+      </div>
+    </form>
   `;
 }
 
@@ -143,6 +180,10 @@ function renderSessionBadge() {
       ${appState.session.user.username}
     </span>
   `;
+}
+
+function getCurrentSearchQuery() {
+  return getCurrentSearchParams().get("q")?.trim() || "";
 }
 
 function renderNavLink(item, currentPath) {
@@ -513,6 +554,75 @@ async function loadMoviesCatalog() {
   }
 }
 
+function normalizeSearchResults(results) {
+  if (!Array.isArray(results)) {
+    return [];
+  }
+
+  return results
+    .filter(
+      (item) =>
+        item &&
+        Number.isInteger(item.id) &&
+        (item.media_type === "movie" || item.media_type === "tv")
+    )
+    .map((item) => ({
+      ...item,
+      media_type: item.media_type,
+    }));
+}
+
+async function loadSearchResults(searchQuery) {
+  const normalizedQuery =
+    typeof searchQuery === "string" ? searchQuery.trim() : "";
+
+  if (!normalizedQuery) {
+    resetSearchState();
+    return;
+  }
+
+  if (
+    appState.search.status === "loading" &&
+    appState.search.query === normalizedQuery
+  ) {
+    return;
+  }
+
+  if (
+    appState.search.status === "success" &&
+    appState.search.query === normalizedQuery
+  ) {
+    return;
+  }
+
+  setSearchState({
+    status: "loading",
+    query: normalizedQuery,
+    items: [],
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(
+      `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&language=fr-FR`
+    );
+
+    setSearchState({
+      status: "success",
+      query: normalizedQuery,
+      items: normalizeSearchResults(response?.results),
+      error: null,
+    });
+  } catch (error) {
+    setSearchState({
+      status: "error",
+      query: normalizedQuery,
+      items: [],
+      error: formatApiError(error),
+    });
+  }
+}
+
 async function loadHomeCatalogSection(sectionKey, endpoint) {
   const sectionState = appState.catalog.home[sectionKey];
 
@@ -800,6 +910,15 @@ function handleRouteEffects(currentPath) {
   if (parseDetailPath(currentPath)) {
     void loadDetailPage(currentPath);
   }
+
+  if (currentPath === "/recherche") {
+    void loadSearchResults(getCurrentSearchQuery());
+    return;
+  }
+
+  if (appState.search.status !== "idle") {
+    resetSearchState();
+  }
 }
 
 document.addEventListener("click", (event) => {
@@ -896,6 +1015,26 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("submit", async (event) => {
+  const searchForm = event.target.closest("[data-search-form]");
+
+  if (searchForm) {
+    event.preventDefault();
+
+    const formData = new FormData(searchForm);
+    const searchQuery =
+      typeof formData.get("query") === "string"
+        ? formData.get("query").trim()
+        : "";
+
+    if (!searchQuery) {
+      navigate("/recherche");
+      return;
+    }
+
+    navigate(`/recherche?q=${encodeURIComponent(searchQuery)}`);
+    return;
+  }
+
   const form = event.target.closest("[data-auth-form]");
 
   if (!form) {
@@ -965,9 +1104,18 @@ document.addEventListener("submit", async (event) => {
   }
 });
 
-subscribeRoute(renderApp);
 subscribeRoute(handleRouteEffects);
+subscribeRoute(renderApp);
 subscribeState(renderApp);
 resetAuthFormState();
 void initializeSession();
 startRouter();
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
