@@ -29,26 +29,28 @@ function validateWatchlistPayload(payload) {
   const tmdbId = Number.parseInt(safePayload.tmdbId, 10);
 
   if (!ALLOWED_WATCHLIST_TYPES.has(type)) {
-    errors.push("type must be one of: movie, tv");
+    errors.push("Le type doit être `movie` ou `tv`.");
   }
 
   if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
-    errors.push("tmdbId must be a positive integer");
+    errors.push("L'identifiant TMDB doit être un entier positif.");
   }
 
   if (!title) {
-    errors.push("title is required");
+    errors.push("Le titre est obligatoire.");
   }
 
   if (poster === "") {
-    errors.push("poster must be a string when provided");
+    errors.push(
+      "Le poster doit être une chaîne de caractères lorsqu'il est fourni."
+    );
   }
 
   if (errors.length > 0) {
     throw createApiError(
       400,
       "VALIDATION_ERROR",
-      "Invalid watchlist payload",
+      "Les informations des favoris sont invalides.",
       errors
     );
   }
@@ -66,11 +68,19 @@ function validateWatchlistRouteParams(params) {
   const tmdbId = Number.parseInt(params.id, 10);
 
   if (!ALLOWED_WATCHLIST_TYPES.has(type)) {
-    throw createApiError(400, "INVALID_TYPE", "type must be one of: movie, tv");
+    throw createApiError(
+      400,
+      "INVALID_TYPE",
+      "Le type doit être `movie` ou `tv`."
+    );
   }
 
   if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
-    throw createApiError(400, "INVALID_ID", "id must be a positive integer");
+    throw createApiError(
+      400,
+      "INVALID_ID",
+      "L'identifiant doit être un entier positif."
+    );
   }
 
   return {
@@ -107,7 +117,7 @@ router.post("/", requireAuth, (req, res, next) => {
         createApiError(
           409,
           "WATCHLIST_ITEM_EXISTS",
-          "Watchlist item already exists"
+          "Ce titre est déjà présent dans les favoris."
         )
       );
     }
@@ -129,7 +139,7 @@ router.post("/", requireAuth, (req, res, next) => {
         createApiError(
           409,
           "WATCHLIST_ITEM_EXISTS",
-          "Watchlist item already exists"
+          "Ce titre est déjà présent dans les favoris."
         )
       );
     }
@@ -139,7 +149,7 @@ router.post("/", requireAuth, (req, res, next) => {
         createApiError(
           409,
           "WATCHLIST_ITEM_EXISTS",
-          "Watchlist item already exists"
+          "Ce titre est déjà présent dans les favoris."
         )
       );
     }
@@ -162,7 +172,7 @@ router.delete("/:type/:id", requireAuth, (req, res, next) => {
         createApiError(
           404,
           "WATCHLIST_ITEM_NOT_FOUND",
-          "Watchlist item not found"
+          "Ce titre est introuvable dans les favoris."
         )
       );
     }

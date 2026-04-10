@@ -38,46 +38,46 @@ function validateRegisterPayload(payload) {
   let email = "";
 
   if (typeof rawEmail !== "string") {
-    errors.push("email must be a string");
+    errors.push("L'email doit être une chaîne de caractères.");
   } else {
     email = rawEmail.trim().toLowerCase();
 
     if (email.length === 0) {
-      errors.push("email is required");
+      errors.push("L'email est obligatoire.");
     } else if (!email.includes("@")) {
-      errors.push("email format is invalid");
+      errors.push("Le format de l'email est invalide.");
     }
   }
 
   let username = "";
 
   if (typeof rawUsername !== "string") {
-    errors.push("username must be a string");
+    errors.push("Le pseudo doit être une chaîne de caractères.");
   } else {
     username = rawUsername.trim();
 
     if (username.length === 0) {
-      errors.push("username is required");
+      errors.push("Le pseudo est obligatoire.");
     } else if (username.length < 3) {
-      errors.push("username must be at least 3 characters");
+      errors.push("Le pseudo doit contenir au moins 3 caractères.");
     } else if (username.length > 30) {
-      errors.push("username must be at most 30 characters");
+      errors.push("Le pseudo doit contenir au maximum 30 caractères.");
     } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-      errors.push("username contains invalid characters");
+      errors.push("Le pseudo contient des caractères invalides.");
     }
   }
 
   let password = "";
 
   if (typeof rawPassword !== "string") {
-    errors.push("password must be a string");
+    errors.push("Le mot de passe doit être une chaîne de caractères.");
   } else {
     password = rawPassword;
 
     if (password.length < 8) {
-      errors.push("password must be at least 8 characters");
+      errors.push("Le mot de passe doit contenir au moins 8 caractères.");
     } else if (password.length > 72) {
-      errors.push("password must be at most 72 characters");
+      errors.push("Le mot de passe doit contenir au maximum 72 caractères.");
     }
   }
 
@@ -110,22 +110,22 @@ function validateLoginPayload(payload) {
   let password = "";
 
   if (typeof rawEmail !== "string") {
-    errors.push("email must be a string");
+    errors.push("L'email doit être une chaîne de caractères.");
   } else {
     email = rawEmail.trim().toLowerCase();
 
     if (email.length === 0) {
-      errors.push("email is required");
+      errors.push("L'email est obligatoire.");
     }
   }
 
   if (typeof rawPassword !== "string") {
-    errors.push("password must be a string");
+    errors.push("Le mot de passe doit être une chaîne de caractères.");
   } else {
     password = rawPassword;
 
     if (password.length === 0) {
-      errors.push("password is required");
+      errors.push("Le mot de passe est obligatoire.");
     }
   }
 
@@ -167,7 +167,7 @@ router.post("/register", async (req, res, next) => {
       createApiError(
         400,
         "VALIDATION_ERROR",
-        "Invalid registration payload",
+        "Les informations d'inscription sont invalides.",
         validationResult.errors
       )
     );
@@ -177,13 +177,19 @@ router.post("/register", async (req, res, next) => {
 
   const existingUserByEmail = findByEmail(email);
   if (existingUserByEmail) {
-    return next(createApiError(409, "EMAIL_TAKEN", "Email is already in use"));
+    return next(
+      createApiError(
+        409,
+        "EMAIL_TAKEN",
+        "Cette adresse e-mail est déjà utilisée."
+      )
+    );
   }
 
   const existingUserByUsername = findByUsername(username);
   if (existingUserByUsername) {
     return next(
-      createApiError(409, "USERNAME_TAKEN", "Username is already in use")
+      createApiError(409, "USERNAME_TAKEN", "Ce pseudo est déjà utilisé.")
     );
   }
 
@@ -207,7 +213,9 @@ router.post("/register", async (req, res, next) => {
     });
   } catch (error) {
     if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
-      return next(createApiError(409, "USER_EXISTS", "User already exists"));
+      return next(
+        createApiError(409, "USER_EXISTS", "Cet utilisateur existe déjà.")
+      );
     }
 
     return next(error);
@@ -222,7 +230,7 @@ router.post("/login", async (req, res, next) => {
       createApiError(
         400,
         "VALIDATION_ERROR",
-        "Invalid login payload",
+        "Les informations de connexion sont invalides.",
         validationResult.errors
       )
     );
@@ -236,7 +244,7 @@ router.post("/login", async (req, res, next) => {
 
     if (!user) {
       return next(
-        createApiError(401, "INVALID_CREDENTIALS", "Invalid credentials")
+        createApiError(401, "INVALID_CREDENTIALS", "Identifiants invalides.")
       );
     }
 
@@ -244,7 +252,7 @@ router.post("/login", async (req, res, next) => {
 
     if (!passwordMatches) {
       return next(
-        createApiError(401, "INVALID_CREDENTIALS", "Invalid credentials")
+        createApiError(401, "INVALID_CREDENTIALS", "Identifiants invalides.")
       );
     }
 
@@ -290,7 +298,7 @@ router.post("/logout", (req, res, next) => {
       createApiError(
         401,
         "MISSING_OR_INVALID_TOKEN",
-        "Missing or invalid token"
+        "Jeton manquant ou invalide."
       )
     );
   }
@@ -299,7 +307,7 @@ router.post("/logout", (req, res, next) => {
     const existingSession = findByToken(token);
 
     if (!existingSession) {
-      return next(createApiError(401, "INVALID_TOKEN", "Invalid token"));
+      return next(createApiError(401, "INVALID_TOKEN", "Jeton invalide."));
     }
 
     deleteByToken(token);
