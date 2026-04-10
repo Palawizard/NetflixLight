@@ -44,7 +44,11 @@ import { resolveView } from "./views.js";
 const appElement = document.querySelector("#app");
 const protectedPaths = new Set(["/favoris", "/profil"]);
 const guestOnlyPaths = new Set(["/login", "/register"]);
+const SEARCH_DEBOUNCE_MS = 350;
 let currentDetailRequestId = 0;
+let currentSearchDebounceId = null;
+let currentSearchAbortController = null;
+let currentSearchRequestId = 0;
 
 const navItems = [
   { path: "/", label: "Accueil" },
@@ -164,6 +168,24 @@ function renderSearchForm(currentQuery) {
       </div>
     </form>
   `;
+}
+
+function clearSearchDebounce() {
+  if (currentSearchDebounceId !== null) {
+    window.clearTimeout(currentSearchDebounceId);
+    currentSearchDebounceId = null;
+  }
+}
+
+function cancelActiveSearchRequest() {
+  if (currentSearchAbortController) {
+    currentSearchAbortController.abort();
+    currentSearchAbortController = null;
+  }
+}
+
+function isAbortError(error) {
+  return error?.name === "AbortError";
 }
 
 function renderSessionBadge() {
@@ -576,7 +598,10 @@ async function loadSearchResults(searchQuery) {
   const normalizedQuery =
     typeof searchQuery === "string" ? searchQuery.trim() : "";
 
+  clearSearchDebounce();
+
   if (!normalizedQuery) {
+    cancelActiveSearchRequest();
     resetSearchState();
     return;
   }
@@ -602,11 +627,24 @@ async function loadSearchResults(searchQuery) {
     error: null,
   });
 
+  cancelActiveSearchRequest();
+  const requestId = currentSearchRequestId + 1;
+  currentSearchRequestId = requestId;
+  currentSearchAbortController = new AbortController();
+
   try {
     const response = await apiRequest(
-      `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&language=fr-FR`
+      `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&language=fr-FR`,
+      {
+        signal: currentSearchAbortController.signal,
+      }
     );
 
+    if (requestId !== currentSearchRequestId) {
+      return;
+    }
+
+    currentSearchAbortController = null;
     setSearchState({
       status: "success",
       query: normalizedQuery,
@@ -614,6 +652,15 @@ async function loadSearchResults(searchQuery) {
       error: null,
     });
   } catch (error) {
+    if (isAbortError(error)) {
+      return;
+    }
+
+    if (requestId !== currentSearchRequestId) {
+      return;
+    }
+
+    currentSearchAbortController = null;
     setSearchState({
       status: "error",
       query: normalizedQuery,
@@ -916,6 +963,8 @@ function handleRouteEffects(currentPath) {
     return;
   }
 
+  clearSearchDebounce();
+  cancelActiveSearchRequest();
   if (appState.search.status !== "idle") {
     resetSearchState();
   }
@@ -1014,11 +1063,35 @@ document.addEventListener("click", (event) => {
   navigate(targetPath);
 });
 
+document.addEventListener("input", (event) => {
+  const searchInput = event.target.closest('#global-search[name="query"]');
+
+  if (!searchInput) {
+    return;
+  }
+
+  const searchQuery = searchInput.value.trim();
+  const currentPath = getCurrentPath();
+
+  clearSearchDebounce();
+  currentSearchDebounceId = window.setTimeout(() => {
+    if (!searchQuery) {
+      if (currentPath === "/recherche") {
+        navigate("/recherche");
+      }
+      return;
+    }
+
+    navigate(`/recherche?q=${encodeURIComponent(searchQuery)}`);
+  }, SEARCH_DEBOUNCE_MS);
+});
+
 document.addEventListener("submit", async (event) => {
   const searchForm = event.target.closest("[data-search-form]");
 
   if (searchForm) {
     event.preventDefault();
+    clearSearchDebounce();
 
     const formData = new FormData(searchForm);
     const searchQuery =
