@@ -49,6 +49,38 @@ let currentDetailRequestId = 0;
 let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
 let currentSearchRequestId = 0;
+const HOME_SECTION_CONFIG = {
+  trending: {
+    endpoint:
+      "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR",
+  },
+  moviesPopular: {
+    endpoint: "/api/tmdb/movies/popular?language=fr-FR",
+    mediaType: "movie",
+  },
+  tvPopular: {
+    endpoint: "/api/tmdb/tv/popular?language=fr-FR",
+    mediaType: "tv",
+  },
+  topRated: {
+    endpoint: "/api/tmdb/movies/top-rated?language=fr-FR",
+    mediaType: "movie",
+  },
+};
+const GENRE_SECTION_CONFIG = {
+  action: {
+    genreId: 28,
+    mediaType: "movie",
+  },
+  comedy: {
+    genreId: 35,
+    mediaType: "movie",
+  },
+  horror: {
+    genreId: 27,
+    mediaType: "movie",
+  },
+};
 
 const navItems = [
   { path: "/", label: "Accueil" },
@@ -149,14 +181,14 @@ function renderShell(content, currentPath) {
 function renderSearchForm(currentQuery) {
   return `
     <form data-search-form class="w-full lg:max-w-md">
-      <label class="sr-only" for="global-search">Rechercher un film ou une serie</label>
+      <label class="sr-only" for="global-search">Rechercher un film ou une série</label>
       <div class="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur">
         <input
           id="global-search"
           type="search"
           name="query"
           value="${escapeHtml(currentQuery)}"
-          placeholder="Rechercher un film ou une serie"
+          placeholder="Rechercher un film ou une série"
           class="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/40"
         />
         <button
@@ -257,7 +289,7 @@ function renderSessionLoading() {
         <p class="text-sm uppercase tracking-[0.35em] text-amber-300">Session</p>
         <h1 class="mt-4 text-4xl font-semibold tracking-tight">Un instant</h1>
         <p class="mt-4 text-base leading-8 text-white/70">
-          On prepare ton espace.
+          On prépare ton espace.
         </p>
       </div>
     </section>
@@ -271,7 +303,7 @@ function ensureRouteAccess(currentPath) {
 
   if (!isAuthenticated && protectedPaths.has(currentPath)) {
     appState.session.redirectAfterLogin = currentPath;
-    appState.ui.flash = "Connecte-toi pour acceder a cette page.";
+    appState.ui.flash = "Connecte-toi pour accéder à cette page.";
     navigate("/login");
     return false;
   }
@@ -397,7 +429,7 @@ async function toggleFavoriteFromDetail() {
   ) {
     const currentPath = getCurrentPath();
 
-    setFlashMessage("Connecte-toi pour gerer tes favoris.");
+    setFlashMessage("Connecte-toi pour gérer tes favoris.");
     updateState((state) => {
       state.session.redirectAfterLogin = currentPath;
     });
@@ -446,7 +478,7 @@ async function toggleFavoriteFromDetail() {
         state.watchlist.lastAction = {
           key: watchlistKey,
           tone: "success",
-          message: "Retire des favoris.",
+          message: "Retiré des favoris.",
         };
       });
     } catch (error) {
@@ -456,7 +488,7 @@ async function toggleFavoriteFromDetail() {
           state.watchlist.lastAction = {
             key: watchlistKey,
             tone: "success",
-            message: "Retire des favoris.",
+            message: "Retiré des favoris.",
           };
         });
         return;
@@ -522,7 +554,7 @@ async function toggleFavoriteFromDetail() {
       state.watchlist.lastAction = {
         key: watchlistKey,
         tone: "success",
-        message: "Ajoute aux favoris.",
+        message: "Ajouté aux favoris.",
       };
     });
   } catch (error) {
@@ -533,7 +565,7 @@ async function toggleFavoriteFromDetail() {
         state.watchlist.lastAction = {
           key: watchlistKey,
           tone: "success",
-          message: "Deja present dans les favoris.",
+          message: "Déjà présent dans les favoris.",
         };
       });
       return;
@@ -576,7 +608,7 @@ async function loadMoviesCatalog() {
 
     setMoviesCatalogState({
       status: "success",
-      items: Array.isArray(response.results) ? response.results : [],
+      items: normalizeCatalogResults(response.results, "movie"),
       error: null,
     });
   } catch (error) {
@@ -703,10 +735,28 @@ async function loadSearchResults(searchQuery, page = 1) {
   }
 }
 
-async function loadHomeCatalogSection(sectionKey, endpoint) {
+function normalizeCatalogResults(results, fallbackMediaType = null) {
+  if (!Array.isArray(results)) {
+    return [];
+  }
+
+  return results
+    .filter((item) => item && Number.isInteger(item.id))
+    .map((item) => ({
+      ...item,
+      media_type:
+        item.media_type === "movie" || item.media_type === "tv"
+          ? item.media_type
+          : fallbackMediaType,
+    }));
+}
+
+async function loadHomeCatalogSection(sectionKey) {
   const sectionState = appState.catalog.home[sectionKey];
+  const sectionConfig = HOME_SECTION_CONFIG[sectionKey];
 
   if (
+    !sectionConfig ||
     !sectionState ||
     sectionState.status === "loading" ||
     sectionState.status === "success"
@@ -721,11 +771,14 @@ async function loadHomeCatalogSection(sectionKey, endpoint) {
   });
 
   try {
-    const response = await apiRequest(endpoint);
+    const response = await apiRequest(sectionConfig.endpoint);
 
     setHomeCatalogState(sectionKey, {
       status: "success",
-      items: Array.isArray(response.results) ? response.results : [],
+      items: normalizeCatalogResults(
+        response.results,
+        sectionConfig.mediaType || null
+      ),
       error: null,
     });
   } catch (error) {
@@ -738,28 +791,18 @@ async function loadHomeCatalogSection(sectionKey, endpoint) {
 }
 
 function loadHomeCarousels() {
-  void loadHomeCatalogSection(
-    "trending",
-    "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
-  );
-  void loadHomeCatalogSection(
-    "moviesPopular",
-    "/api/tmdb/movies/popular?language=fr-FR"
-  );
-  void loadHomeCatalogSection(
-    "tvPopular",
-    "/api/tmdb/tv/popular?language=fr-FR"
-  );
-  void loadHomeCatalogSection(
-    "topRated",
-    "/api/tmdb/movies/top-rated?language=fr-FR"
-  );
+  void loadHomeCatalogSection("trending");
+  void loadHomeCatalogSection("moviesPopular");
+  void loadHomeCatalogSection("tvPopular");
+  void loadHomeCatalogSection("topRated");
 }
 
-async function loadGenreCatalogSection(sectionKey, genreId) {
+async function loadGenreCatalogSection(sectionKey) {
   const sectionState = appState.catalog.genres[sectionKey];
+  const sectionConfig = GENRE_SECTION_CONFIG[sectionKey];
 
   if (
+    !sectionConfig ||
     !sectionState ||
     sectionState.status === "loading" ||
     sectionState.status === "success"
@@ -775,12 +818,12 @@ async function loadGenreCatalogSection(sectionKey, genreId) {
 
   try {
     const response = await apiRequest(
-      `/api/tmdb/discover?type=movie&genre=${genreId}&page=1`
+      `/api/tmdb/discover?type=movie&genre=${sectionConfig.genreId}&page=1`
     );
 
     setGenreCatalogState(sectionKey, {
       status: "success",
-      items: Array.isArray(response.results) ? response.results : [],
+      items: normalizeCatalogResults(response.results, sectionConfig.mediaType),
       error: null,
     });
   } catch (error) {
@@ -793,48 +836,36 @@ async function loadGenreCatalogSection(sectionKey, genreId) {
 }
 
 function loadGenreCarousels() {
-  void loadGenreCatalogSection("action", 28);
-  void loadGenreCatalogSection("comedy", 35);
-  void loadGenreCatalogSection("horror", 27);
+  void loadGenreCatalogSection("action");
+  void loadGenreCatalogSection("comedy");
+  void loadGenreCatalogSection("horror");
 }
 
 function retryCatalogSection(retryKey) {
   switch (retryKey) {
     case "home-trending":
-      void loadHomeCatalogSection(
-        "trending",
-        "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
-      );
+      void loadHomeCatalogSection("trending");
       return;
     case "home-movies-popular":
-      void loadHomeCatalogSection(
-        "moviesPopular",
-        "/api/tmdb/movies/popular?language=fr-FR"
-      );
+      void loadHomeCatalogSection("moviesPopular");
       return;
     case "home-tv-popular":
-      void loadHomeCatalogSection(
-        "tvPopular",
-        "/api/tmdb/tv/popular?language=fr-FR"
-      );
+      void loadHomeCatalogSection("tvPopular");
       return;
     case "home-top-rated":
-      void loadHomeCatalogSection(
-        "topRated",
-        "/api/tmdb/movies/top-rated?language=fr-FR"
-      );
+      void loadHomeCatalogSection("topRated");
       return;
     case "movies-popular":
       void loadMoviesCatalog();
       return;
     case "genre-action":
-      void loadGenreCatalogSection("action", 28);
+      void loadGenreCatalogSection("action");
       return;
     case "genre-comedy":
-      void loadGenreCatalogSection("comedy", 35);
+      void loadGenreCatalogSection("comedy");
       return;
     case "genre-horror":
-      void loadGenreCatalogSection("horror", 27);
+      void loadGenreCatalogSection("horror");
       return;
     default:
   }
@@ -1087,17 +1118,6 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  if (event.target.closest("[data-refresh-hero]")) {
-    setHeroState({
-      status: "idle",
-      item: null,
-      error: null,
-    });
-
-    void loadHomeHero();
-    return;
-  }
-
   const trigger = event.target.closest("[data-nav-path]");
 
   if (!trigger) {
@@ -1195,7 +1215,7 @@ document.addEventListener("submit", async (event) => {
 
       await loadWatchlist({ force: true });
       resetAuthFormState();
-      setFlashMessage("Connexion reussie.");
+      setFlashMessage("Connexion réussie.");
       navigate(nextPath);
       return;
     }
@@ -1213,9 +1233,9 @@ document.addEventListener("submit", async (event) => {
       setAuthFormState({
         pending: false,
         error: null,
-        success: "Compte cree. Tu peux maintenant te connecter.",
+        success: "Compte créé. Tu peux maintenant te connecter.",
       });
-      setFlashMessage("Compte cree avec succes.");
+      setFlashMessage("Compte créé avec succès.");
       navigate("/login");
     }
   } catch (error) {
