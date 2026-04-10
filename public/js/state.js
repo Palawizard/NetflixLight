@@ -31,6 +31,9 @@ function createSearchState() {
   return {
     status: "idle",
     query: "",
+    page: 1,
+    totalPages: 0,
+    totalResults: 0,
     items: [],
     error: null,
   };
