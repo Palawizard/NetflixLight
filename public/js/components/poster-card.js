@@ -12,7 +12,7 @@
  * @property {string} [overview]
  */
 
-const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+import { renderTmdbImage } from "../tmdb-images.js";
 
 /**
  * @param {TmdbMediaItem} item
@@ -23,16 +23,21 @@ export function renderPosterCard(item) {
   const year = getReleaseYear(item.release_date || item.first_air_date);
   const detailPath = getDetailPath(item);
   const posterMarkup = item.poster_path
-    ? `
-      <img
-        src="${TMDB_IMAGE_BASE_URL}${item.poster_path}"
-        alt="Poster de ${title}"
-        loading="lazy"
-        class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-      />
-    `
+    ? renderTmdbImage({
+        path: item.poster_path,
+        alt: `Poster de ${title}`,
+        size: "w342",
+        srcSetSizes: [
+          { size: "w185", width: 185 },
+          { size: "w342", width: 342 },
+          { size: "w500", width: 500 },
+        ],
+        sizes: "(max-width: 640px) 70vw, 18rem",
+        className:
+          "h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]",
+      })
     : `
-      <div class="flex h-full items-center justify-center bg-white/5 px-6 text-center text-sm uppercase tracking-[0.3em] text-white/40">
+      <div class="flex h-full items-center justify-center bg-linear-to-br from-white/10 via-white/5 to-black/40 px-6 text-center text-sm uppercase tracking-[0.3em] text-white/40">
         ${title}
       </div>
     `;

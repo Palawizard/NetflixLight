@@ -1,9 +1,7 @@
 import { renderCarousel } from "./components/carousel.js";
 import { renderPosterCard } from "./components/poster-card.js";
 import { getPlaybackSources } from "./player-sources.js";
-
-const TMDB_POSTER_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
-const TMDB_PROFILE_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w300";
+import { buildTmdbImageUrl, renderTmdbImage } from "./tmdb-images.js";
 
 /**
  * @typedef {object} TmdbMediaItem
@@ -201,14 +199,19 @@ function renderWatchlistCard(item, watchlistState) {
   const typeLabel = item.type === "movie" ? "Film" : "Série";
   const detailPath = `/${item.type}/${item.tmdbId}`;
   const posterMarkup = item.snapshot?.poster
-    ? `
-      <img
-        src="${TMDB_POSTER_IMAGE_BASE_URL}${item.snapshot.poster}"
-        alt="Poster de ${title}"
-        loading="lazy"
-        class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-      />
-    `
+    ? renderTmdbImage({
+        path: item.snapshot.poster,
+        alt: `Poster de ${title}`,
+        size: "w185",
+        srcSetSizes: [
+          { size: "w92", width: 92 },
+          { size: "w185", width: 185 },
+          { size: "w342", width: 342 },
+        ],
+        sizes: "6rem",
+        className:
+          "h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]",
+      })
     : `
       <div class="flex h-full items-center justify-center bg-white/5 px-4 text-center text-xs uppercase tracking-[0.25em] text-white/40">
         ${title}
@@ -673,11 +676,20 @@ function renderHomeHero(heroState) {
   return `
     <section class="relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
       <div class="absolute inset-0">
-        <img
-          src="https://image.tmdb.org/t/p/original${backdropPath}"
-          alt="${title}"
-          class="h-full w-full object-cover"
-        />
+        ${renderTmdbImage({
+          path: backdropPath,
+          alt: title,
+          size: "w1280",
+          srcSetSizes: [
+            { size: "w780", width: 780 },
+            { size: "w1280", width: 1280 },
+            { size: "original", width: 1920 },
+          ],
+          sizes: "100vw",
+          loading: "eager",
+          fetchPriority: "high",
+          className: "h-full w-full object-cover",
+        })}
       </div>
 
       <div class="absolute inset-0 bg-linear-to-r from-black via-black/75 to-black/20"></div>
@@ -823,13 +835,20 @@ function renderDetailContent(state, item, type) {
         <div class="absolute inset-0">
           ${
             backdropPath
-              ? `
-                <img
-                  src="https://image.tmdb.org/t/p/original${backdropPath}"
-                  alt="${title}"
-                  class="h-full w-full object-cover"
-                />
-              `
+              ? renderTmdbImage({
+                  path: backdropPath,
+                  alt: title,
+                  size: "w1280",
+                  srcSetSizes: [
+                    { size: "w780", width: 780 },
+                    { size: "w1280", width: 1280 },
+                    { size: "original", width: 1920 },
+                  ],
+                  sizes: "100vw",
+                  loading: "eager",
+                  fetchPriority: "high",
+                  className: "h-full w-full object-cover",
+                })
               : '<div class="h-full w-full bg-linear-to-br from-rose-500/30 via-black to-black"></div>'
           }
         </div>
@@ -943,7 +962,7 @@ function renderPlayerContent(item, type) {
   const returnPath = `/${type}/${item.id}`;
   const { sample, trailer } = getPlaybackSources(item);
   const posterPath = item.backdrop_path
-    ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
+    ? buildTmdbImageUrl(item.backdrop_path, "w1280")
     : sample.poster;
 
   return `
@@ -1513,14 +1532,17 @@ function renderCastCard(member) {
   const actorName = escapeHtml(member.name || "Nom inconnu");
   const characterName = escapeHtml(formatCharacterName(member.character));
   const photoMarkup = member.profile_path
-    ? `
-      <img
-        src="${TMDB_PROFILE_IMAGE_BASE_URL}${member.profile_path}"
-        alt="${actorName}"
-        loading="lazy"
-        class="h-full w-full object-cover"
-      />
-    `
+    ? renderTmdbImage({
+        path: member.profile_path,
+        alt: actorName,
+        size: "w185",
+        srcSetSizes: [
+          { size: "w185", width: 185 },
+          { size: "h632", width: 421 },
+        ],
+        sizes: "(max-width: 640px) 50vw, 20rem",
+        className: "h-full w-full object-cover",
+      })
     : `
       <div class="flex h-full items-center justify-center bg-linear-to-br from-white/10 via-white/5 to-black/40 px-6 text-center text-sm uppercase tracking-[0.3em] text-white/40">
         ${actorName}
