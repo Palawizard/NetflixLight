@@ -51,6 +51,7 @@ const appElement = document.querySelector("#app");
 const protectedPaths = new Set(["/favoris", "/profil"]);
 const guestOnlyPaths = new Set(["/login", "/register"]);
 const SEARCH_DEBOUNCE_MS = 350;
+const THEME_STORAGE_KEY = "netflixlight.theme";
 let currentDetailRequestId = 0;
 let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
@@ -194,6 +195,7 @@ function renderShell(content, currentPath) {
             >
               NetflixLight
             </button>
+            ${renderThemeToggle()}
             ${renderSessionBadge()}
           </div>
 
@@ -253,6 +255,51 @@ function cancelActiveSearchRequest() {
 
 function isAbortError(error) {
   return error?.name === "AbortError";
+}
+
+function getStoredThemePreference() {
+  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+
+  if (storedTheme === "light" || storedTheme === "dark") {
+    return storedTheme;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
+}
+
+function applyThemePreference(theme) {
+  document.documentElement.dataset.theme = theme;
+  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  updateState((state) => {
+    state.ui.theme = theme;
+  });
+}
+
+function toggleThemePreference() {
+  const nextTheme = appState.ui.theme === "light" ? "dark" : "light";
+
+  applyThemePreference(nextTheme);
+}
+
+function renderThemeToggle() {
+  const isLightTheme = appState.ui.theme === "light";
+  const label = isLightTheme
+    ? "Passer au thème sombre"
+    : "Passer au thème clair";
+
+  return `
+    <button
+      type="button"
+      data-toggle-theme
+      aria-label="${label}"
+      aria-pressed="${isLightTheme ? "true" : "false"}"
+      class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
+    >
+      ${isLightTheme ? "Clair" : "Sombre"}
+    </button>
+  `;
 }
 
 function renderSessionBadge() {
@@ -1439,6 +1486,13 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const themeToggleButton = event.target.closest("[data-toggle-theme]");
+
+  if (themeToggleButton) {
+    toggleThemePreference();
+    return;
+  }
+
   const searchPageButton = event.target.closest("[data-search-page]");
 
   if (searchPageButton) {
@@ -1613,6 +1667,7 @@ subscribeRoute(() => {
   renderApp();
 });
 subscribeState(scheduleRenderApp);
+applyThemePreference(getStoredThemePreference());
 resetAuthFormState();
 void initializeSession();
 startRouter();

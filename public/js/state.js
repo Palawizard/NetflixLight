@@ -95,6 +95,7 @@ export const appState = {
       success: null,
     },
     logout: createLogoutState(),
+    theme: "dark",
   },
 };
 

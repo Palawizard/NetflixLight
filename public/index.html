@@ -4,10 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NetflixLight</title>
+    <script>
+      (() => {
+        const storageKey = "netflixlight.theme";
+        const storedTheme = window.localStorage.getItem(storageKey);
+        const prefersLight = window.matchMedia(
+          "(prefers-color-scheme: light)"
+        ).matches;
+        const theme =
+          storedTheme === "light" || storedTheme === "dark"
+            ? storedTheme
+            : prefersLight
+              ? "light"
+              : "dark";
+
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <link rel="stylesheet" href="/css/app.css" />
   </head>
   <body class="min-h-screen bg-neutral-950 text-white">
     <div
+      data-app-background
       class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(244,63,94,0.18),_transparent_28%),linear-gradient(180deg,_#09090b,_#171717)]"
     >
       <div id="app"></div>
