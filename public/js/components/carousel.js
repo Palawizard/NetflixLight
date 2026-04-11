@@ -35,7 +35,7 @@ export function renderCarousel({ id, title, items }) {
           ${items
             .map(
               (item) => `
-                <div class="w-[16rem] shrink-0 sm:w-[18rem]">
+              <div class="w-[11rem] shrink-0 sm:w-[14rem] lg:w-[18rem]">
                   ${renderPosterCard(item)}
                 </div>
               `

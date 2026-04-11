@@ -178,8 +178,8 @@ function renderShell(content, currentPath) {
   return `
     <div class="min-h-screen">
       <header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
-        <div class="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
-          <div class="flex items-center justify-between gap-4">
+        <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex flex-wrap items-center justify-between gap-4">
             <button
               type="button"
               data-nav-path="/"
@@ -192,14 +192,14 @@ function renderShell(content, currentPath) {
 
           <div class="flex flex-1 flex-col gap-4 lg:flex-row lg:items-center lg:justify-end">
             ${renderSearchForm(currentSearchQuery)}
-            <nav class="flex flex-wrap items-center justify-end gap-2">
+            <nav class="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
             ${navItems.map((item) => renderNavLink(item, currentPath)).join("")}
             </nav>
           </div>
         </div>
       </header>
 
-      <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
+      <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10">
         ${content}
       </main>
     </div>
@@ -210,7 +210,7 @@ function renderSearchForm(currentQuery) {
   return `
     <form data-search-form class="w-full lg:max-w-md">
       <label class="sr-only" for="global-search">Rechercher un film ou une série</label>
-      <div class="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur">
+      <div class="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:rounded-full sm:py-2">
         <input
           id="global-search"
           type="search"

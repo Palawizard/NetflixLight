@@ -69,7 +69,7 @@ function renderMoviesView(state) {
     <section class="space-y-6">
       <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
         <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Films</p>
-        <h1 class="mt-3 text-4xl font-semibold tracking-tight">À l'affiche</h1>
+        <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">À l'affiche</h1>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
           Retrouve les films populaires du moment et garde de côté ceux qui te tentent.
         </p>
@@ -92,7 +92,7 @@ function renderFavoritesView(state) {
         <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
-            <h1 class="mt-3 text-4xl font-semibold tracking-tight">Ma liste</h1>
+            <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ma liste</h1>
             <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
               Connecté en tant que ${escapeHtml(username)}. Retrouve ici les titres que tu veux garder de côté.
             </p>
@@ -294,7 +294,7 @@ function renderProfileView(state) {
         <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Profil</p>
-            <h1 class="mt-3 text-4xl font-semibold tracking-tight">Mon compte</h1>
+            <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Mon compte</h1>
             <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
               Retrouve ici les informations liées à ton compte et gère ta session.
             </p>
@@ -354,7 +354,7 @@ function renderLoginView(state) {
   return `
     <section class="mx-auto w-full max-w-xl rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur sm:p-10">
       <p class="text-sm uppercase tracking-[0.3em] text-violet-300">Connexion</p>
-      <h1 class="mt-3 text-4xl font-semibold tracking-tight">Connexion</h1>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Connexion</h1>
       <p class="mt-4 text-base leading-8 text-white/70">
         Connecte-toi pour retrouver ta liste et ton compte.
       </p>
@@ -402,7 +402,7 @@ function renderRegisterView(state) {
   return `
     <section class="mx-auto w-full max-w-xl rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur sm:p-10">
       <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300">Inscription</p>
-      <h1 class="mt-3 text-4xl font-semibold tracking-tight">Inscription</h1>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Inscription</h1>
       <p class="mt-4 text-base leading-8 text-white/70">
         Crée ton compte pour enregistrer tes envies et y revenir quand tu veux.
       </p>
@@ -575,7 +575,7 @@ function renderSearchView(state) {
     <section class="space-y-6">
       <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
         <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Recherche</p>
-        <h1 class="mt-3 text-4xl font-semibold tracking-tight">
+        <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
           ${
             hasQuery
               ? `Résultats pour "${escapeHtml(searchState.query)}"`
@@ -621,7 +621,7 @@ function renderHomeHero(heroState) {
     return `
       <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
         <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
-        <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+        <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
           Chargement...
         </h1>
       </section>
@@ -632,7 +632,7 @@ function renderHomeHero(heroState) {
     return `
       <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
         <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
-        <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+        <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
           Impossible de charger la sélection
         </h1>
         <p class="mt-6 max-w-2xl text-base leading-8 text-rose-100/90 sm:text-lg">
@@ -653,7 +653,7 @@ function renderHomeHero(heroState) {
     return `
       <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
         <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
-        <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+        <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
           Regarde ce qui te tente ce soir.
         </h1>
         <p class="mt-6 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
@@ -693,13 +693,13 @@ function renderHomeHero(heroState) {
       </div>
 
       <div class="absolute inset-0 bg-linear-to-r from-black via-black/75 to-black/20"></div>
-      <div class="relative z-10 flex min-h-112 items-end p-8 sm:p-10">
+      <div class="relative z-10 flex min-h-96 items-end p-6 sm:min-h-112 sm:p-10">
         <div class="max-w-2xl">
           <p class="text-sm uppercase tracking-[0.35em] text-rose-300">
             ${mediaType === "movie" ? "Film" : "Série"}${year ? ` • ${year}` : ""}
           </p>
 
-          <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+          <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
             ${title}
           </h1>
 
@@ -779,7 +779,7 @@ function renderDetailError(type, id, errorMessage) {
   return `
     <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
       <p class="text-sm uppercase tracking-[0.35em] text-rose-300">Détail</p>
-      <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+      <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-5xl">
         Impossible de charger ce ${type === "movie" ? "film" : "contenu"}
       </h1>
       <p class="mt-5 max-w-2xl text-base leading-8 text-rose-100/90">
@@ -854,7 +854,7 @@ function renderDetailContent(state, item, type) {
         </div>
         <div class="absolute inset-0 bg-linear-to-r from-black via-black/78 to-black/35"></div>
 
-        <div class="relative z-10 flex min-h-120 items-end p-8 sm:p-10">
+        <div class="relative z-10 flex min-h-96 items-end p-6 sm:min-h-120 sm:p-10">
           <div class="max-w-3xl">
             <div class="flex flex-wrap gap-3">
               <span class="rounded-full bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-rose-200">
@@ -865,7 +865,7 @@ function renderDetailContent(state, item, type) {
               </span>
             </div>
 
-            <h1 class="mt-5 text-4xl font-semibold tracking-tight text-white sm:text-6xl">
+            <h1 class="mt-5 text-3xl font-semibold tracking-tight text-white sm:text-6xl">
               ${title}
             </h1>
 
@@ -1064,7 +1064,7 @@ function renderPlayerContent(item, type) {
         </div>
         <div class="space-y-4 p-8 sm:p-10">
           <p class="text-sm uppercase tracking-[0.3em] text-rose-300">Lecture</p>
-          <h1 class="text-4xl font-semibold tracking-tight text-white">${title}</h1>
+          <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">${title}</h1>
           <p class="max-w-3xl text-sm leading-7 text-white/65">
             Source de lecture: ${sample.title}. ${sample.attribution}
           </p>
