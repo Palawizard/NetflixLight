@@ -1,5 +1,6 @@
 import { apiRequest, formatApiError } from "./api.js";
 import { initializeCarousels, scrollCarousel } from "./components/carousel.js";
+import { initializePlayers } from "./player-controls.js";
 import {
   appState,
   setGenreCatalogState,
@@ -120,6 +121,7 @@ function renderApp() {
     currentPath
   );
   initializeCarousels(appElement);
+  initializePlayers(appElement);
 }
 
 function getDocumentTitle(currentPath, currentRoute) {
