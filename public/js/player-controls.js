@@ -1,6 +1,7 @@
 const CONTROLS_IDLE_DELAY_MS = 3000;
+const PROGRESS_SAVE_INTERVAL_MS = 5000;
 
-export function initializePlayers(container) {
+export function initializePlayers(container, { onProgress } = {}) {
   const playerElements = container.querySelectorAll("[data-player]");
 
   playerElements.forEach((playerElement) => {
@@ -34,7 +35,14 @@ export function initializePlayers(container) {
 
     playerElement.dataset.playerReady = "true";
     video.volume = Number.parseFloat(volumeInput.value || "0.8");
+    const mediaType = playerElement.dataset.playerType;
+    const tmdbId = Number.parseInt(playerElement.dataset.playerId || "", 10);
+    const resumePosition = Number.parseFloat(
+      playerElement.dataset.playerResume || "0"
+    );
     let controlsIdleTimeoutId = null;
+    let lastSavedAt = 0;
+    let hasAppliedResume = false;
 
     const setControlsVisible = (isVisible) => {
       playerElement.dataset.controlsHidden = isVisible ? "false" : "true";
@@ -105,6 +113,25 @@ export function initializePlayers(container) {
       timeLabel.textContent = `${formatVideoTime(currentTime)} / ${formatVideoTime(duration)}`;
     };
 
+    const saveProgress = ({ force = false } = {}) => {
+      if (typeof onProgress !== "function" || !Number.isInteger(tmdbId)) {
+        return;
+      }
+
+      const now = Date.now();
+      if (!force && now - lastSavedAt < PROGRESS_SAVE_INTERVAL_MS) {
+        return;
+      }
+
+      lastSavedAt = now;
+      void onProgress({
+        type: mediaType,
+        tmdbId,
+        position: video.currentTime,
+        duration: video.duration,
+      });
+    };
+
     const togglePlayback = () => {
       if (video.paused) {
         void video.play();
@@ -163,8 +190,24 @@ export function initializePlayers(container) {
       toggleFullscreen();
     });
 
-    video.addEventListener("loadedmetadata", syncControls);
-    video.addEventListener("timeupdate", syncControls);
+    video.addEventListener("loadedmetadata", () => {
+      if (
+        !hasAppliedResume &&
+        Number.isFinite(resumePosition) &&
+        resumePosition > 0 &&
+        Number.isFinite(video.duration) &&
+        resumePosition < video.duration - 3
+      ) {
+        video.currentTime = resumePosition;
+        hasAppliedResume = true;
+      }
+
+      syncControls();
+    });
+    video.addEventListener("timeupdate", () => {
+      syncControls();
+      saveProgress();
+    });
     video.addEventListener("play", () => {
       syncControls();
       scheduleControlsAutoHide();
@@ -175,6 +218,8 @@ export function initializePlayers(container) {
       clearControlsIdleTimeout();
     });
     video.addEventListener("volumechange", syncControls);
+    video.addEventListener("pause", () => saveProgress({ force: true }));
+    video.addEventListener("ended", () => saveProgress({ force: true }));
     playerElement.addEventListener("pointermove", revealControls);
     playerElement.addEventListener("click", revealControls);
     playerElement.addEventListener("keydown", (event) => {

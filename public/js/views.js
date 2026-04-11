@@ -43,6 +43,7 @@ function renderHomeView(state) {
   return `
     <section class="space-y-8">
       ${renderHomeHero(state.hero)}
+      ${renderContinueWatchingSection(state.watchProgress)}
       ${renderHomeCarousels(state.catalog.home)}
 
       <div class="grid gap-5 lg:grid-cols-2">
@@ -128,6 +129,38 @@ function renderWatchlistContent(watchlistState, items) {
       ${items.map((item) => renderWatchlistCard(item, watchlistState)).join("")}
     </section>
   `;
+}
+
+function renderContinueWatchingSection(watchProgressState) {
+  if (
+    watchProgressState.status !== "success" ||
+    !Array.isArray(watchProgressState.items) ||
+    watchProgressState.items.length === 0
+  ) {
+    return "";
+  }
+
+  const items = watchProgressState.items
+    .filter((item) => item?.snapshot?.title)
+    .map((item) => ({
+      id: item.tmdbId,
+      media_type: item.type,
+      title: item.snapshot.title,
+      poster_path: item.snapshot.poster,
+      navigation_path: `/lecture/${item.type}/${item.tmdbId}`,
+      vote_average: null,
+      release_date: item.updatedAt,
+    }));
+
+  if (items.length === 0) {
+    return "";
+  }
+
+  return renderCarousel({
+    id: "continue-watching",
+    title: "Continuer à regarder",
+    items,
+  });
 }
 
 function renderWatchlistLoading() {
@@ -945,7 +978,7 @@ function renderPlayerView(state, type, id) {
     return renderPlayerLoading();
   }
 
-  return renderPlayerContent(detailState.item, type);
+  return renderPlayerContent(state, detailState.item, type);
 }
 
 function renderPlayerLoading() {
@@ -963,13 +996,16 @@ function renderPlayerLoading() {
   `;
 }
 
-function renderPlayerContent(item, type) {
+function renderPlayerContent(state, item, type) {
   const title = escapeHtml(item.title || item.name || "Titre inconnu");
   const returnPath = `/${type}/${item.id}`;
   const { sample, trailer } = getPlaybackSources(item);
   const posterPath = item.backdrop_path
     ? buildTmdbImageUrl(item.backdrop_path, "w1280")
     : sample.poster;
+  const progressKey = `${type}:${item.id}`;
+  const resumeProgress = state.watchProgress.itemKeys[progressKey];
+  const resumePosition = resumeProgress?.positionSeconds || 0;
 
   return `
     <section class="space-y-6">
@@ -983,6 +1019,9 @@ function renderPlayerContent(item, type) {
 
       <article
         data-player
+        data-player-type="${type}"
+        data-player-id="${item.id}"
+        data-player-resume="${resumePosition}"
         role="region"
         aria-label="Lecteur vidéo"
         tabindex="0"
