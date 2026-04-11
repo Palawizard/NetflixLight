@@ -371,6 +371,95 @@ function renderProfileView(state) {
           </dd>
         </div>
       </dl>
+
+      ${renderViewingHistorySection(state.viewingHistory)}
+    </section>
+  `;
+}
+
+function renderViewingHistorySection(historyState) {
+  if (!historyState || historyState.status === "idle") {
+    return renderViewingHistoryLoading();
+  }
+
+  if (historyState.status === "loading") {
+    return renderViewingHistoryLoading();
+  }
+
+  if (historyState.status === "error") {
+    return `
+      <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 text-rose-100 shadow-xl shadow-black/20">
+        <p class="text-sm uppercase tracking-[0.3em] text-rose-200">Historique</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight">Derniers contenus consultés</h2>
+        <p class="mt-5 text-base leading-8">
+          ${historyState.error || "Impossible de charger ton historique pour le moment."}
+        </p>
+      </section>
+    `;
+  }
+
+  const items = Array.isArray(historyState.items)
+    ? historyState.items
+        .filter((item) => item?.snapshot?.title)
+        .map((item) => ({
+          id: item.tmdbId,
+          media_type: item.type,
+          title: item.snapshot.title,
+          poster_path: item.snapshot.poster,
+          release_date: item.viewedAt,
+          vote_average: null,
+        }))
+    : [];
+
+  if (items.length === 0) {
+    return `
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Historique</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+          Derniers contenus consultés
+        </h2>
+        <p class="mt-5 text-base leading-8">
+          Ouvre quelques fiches détail pour retrouver ici tes derniers contenus consultés.
+        </p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="space-y-6">
+      <div class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Historique</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+          Derniers contenus consultés
+        </h2>
+        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+          Reviens rapidement sur les fiches que tu as ouvertes récemment.
+        </p>
+      </div>
+      ${renderCarousel({
+        id: "viewing-history",
+        title: "Historique",
+        items,
+      })}
+    </section>
+  `;
+}
+
+function renderViewingHistoryLoading() {
+  return `
+    <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+      <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Historique</p>
+      <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+        Derniers contenus consultés
+      </h2>
+      <div class="mt-6 grid gap-5 sm:grid-cols-3">
+        ${Array.from(
+          { length: 3 },
+          () => `
+            <div class="h-48 animate-pulse rounded-[1.75rem] bg-white/10"></div>
+          `
+        ).join("")}
+      </div>
     </section>
   `;
 }
