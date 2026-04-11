@@ -21,6 +21,8 @@ import {
   resetWatchProgressState,
   setViewingHistoryState,
   resetViewingHistoryState,
+  setUserRatingsState,
+  resetUserRatingsState,
   setSearchState,
   resetSearchState,
   subscribeState,
@@ -421,6 +423,7 @@ async function initializeSession() {
     void loadWatchlist();
     void loadWatchProgress();
     void loadViewingHistory();
+    void loadUserRatings();
   } catch (error) {
     if (error.status !== 401) {
       setFlashMessage("Impossible de charger ton espace.");
@@ -433,6 +436,7 @@ async function initializeSession() {
     resetWatchlistState();
     resetWatchProgressState();
     resetViewingHistoryState();
+    resetUserRatingsState();
   }
 }
 
@@ -621,6 +625,60 @@ async function loadViewingHistory({ force = false } = {}) {
   }
 }
 
+function createUserRatingKey(type, tmdbId) {
+  return `${type}:${tmdbId}`;
+}
+
+function buildUserRatingKeyMap(items) {
+  return Object.fromEntries(
+    items.map((item) => [createUserRatingKey(item.type, item.tmdbId), item])
+  );
+}
+
+async function loadUserRatings({ force = false } = {}) {
+  if (appState.session.status !== "authenticated" || !appState.session.user) {
+    resetUserRatingsState();
+    return;
+  }
+
+  const ratingsState = appState.userRatings;
+
+  if (
+    !force &&
+    (ratingsState.status === "loading" || ratingsState.status === "success")
+  ) {
+    return;
+  }
+
+  setUserRatingsState({
+    status: "loading",
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest("/api/user-ratings");
+    const items = Array.isArray(response.items) ? response.items : [];
+
+    setUserRatingsState({
+      status: "success",
+      items,
+      itemKeys: buildUserRatingKeyMap(items),
+      pendingKeys: {},
+      error: null,
+    });
+  } catch (error) {
+    if (error.status === 401) {
+      resetUserRatingsState();
+      return;
+    }
+
+    setUserRatingsState({
+      status: "error",
+      error: formatApiError(error),
+    });
+  }
+}
+
 function buildProgressSnapshotItem(item) {
   return {
     title: item.title || item.name || "Titre inconnu",
@@ -745,6 +803,86 @@ async function saveWatchProgressFromPlayer({
   }
 }
 
+async function setPersonalRatingFromDetail(rating) {
+  if (
+    appState.session.status !== "authenticated" ||
+    !appState.session.user ||
+    appState.detail.status !== "success" ||
+    !appState.detail.item ||
+    !appState.detail.type ||
+    !appState.detail.id
+  ) {
+    const currentPath = getCurrentPath();
+
+    setFlashMessage("Connecte-toi pour noter ce titre.");
+    updateState((state) => {
+      state.session.redirectAfterLogin = currentPath;
+    });
+    navigate("/login");
+    return;
+  }
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return;
+  }
+
+  const { type, id } = appState.detail;
+  const ratingKey = createUserRatingKey(type, id);
+
+  if (appState.userRatings.pendingKeys[ratingKey]) {
+    return;
+  }
+
+  updateState((state) => {
+    state.userRatings.pendingKeys[ratingKey] = true;
+    state.userRatings.lastAction = {
+      key: ratingKey,
+      tone: "neutral",
+      message: "Enregistrement de ta note...",
+    };
+    state.userRatings.error = null;
+  });
+
+  try {
+    const response = await apiRequest(`/api/user-ratings/${type}/${id}`, {
+      method: "PUT",
+      body: {
+        rating,
+      },
+    });
+
+    updateState((state) => {
+      delete state.userRatings.pendingKeys[ratingKey];
+
+      if (response?.item) {
+        state.userRatings.itemKeys[ratingKey] = response.item;
+        state.userRatings.items = [
+          response.item,
+          ...state.userRatings.items.filter(
+            (item) => createUserRatingKey(item.type, item.tmdbId) !== ratingKey
+          ),
+        ];
+      }
+
+      state.userRatings.status = "success";
+      state.userRatings.lastAction = {
+        key: ratingKey,
+        tone: "success",
+        message: "Ta note est enregistrée.",
+      };
+    });
+  } catch (error) {
+    updateState((state) => {
+      delete state.userRatings.pendingKeys[ratingKey];
+      state.userRatings.lastAction = {
+        key: ratingKey,
+        tone: "error",
+        message: formatApiError(error),
+      };
+    });
+  }
+}
+
 async function removeWatchlistItemFromList(type, tmdbId) {
   if (appState.session.status !== "authenticated" || !appState.session.user) {
     setFlashMessage("Connecte-toi pour gérer tes favoris.");
@@ -849,6 +987,7 @@ async function logoutUser() {
     resetWatchlistState();
     resetWatchProgressState();
     resetViewingHistoryState();
+    resetUserRatingsState();
     resetAuthFormState();
     resetLogoutState();
     setFlashMessage("Tu es déconnecté.");
@@ -1493,6 +1632,14 @@ function handleRouteEffects(currentPath) {
     void loadViewingHistory();
   }
 
+  if (
+    appState.session.status === "authenticated" &&
+    (appState.userRatings.status === "idle" ||
+      appState.userRatings.status === "error")
+  ) {
+    void loadUserRatings();
+  }
+
   if (currentPath === "/") {
     void loadHomeHero();
     loadHomeCarousels();
@@ -1598,6 +1745,18 @@ document.addEventListener("click", (event) => {
 
   if (favoriteToggleButton) {
     void toggleFavoriteFromDetail();
+    return;
+  }
+
+  const ratingButton = event.target.closest("[data-set-rating]");
+
+  if (ratingButton) {
+    const rating = Number.parseInt(
+      ratingButton.getAttribute("data-set-rating") || "",
+      10
+    );
+
+    void setPersonalRatingFromDetail(rating);
     return;
   }
 
@@ -1745,6 +1904,7 @@ document.addEventListener("submit", async (event) => {
       await loadWatchlist({ force: true });
       await loadWatchProgress({ force: true });
       await loadViewingHistory({ force: true });
+      await loadUserRatings({ force: true });
       resetAuthFormState();
       setFlashMessage("Connexion réussie.");
       navigate(nextPath);
