@@ -52,6 +52,8 @@ let currentDetailRequestId = 0;
 let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
 let currentSearchRequestId = 0;
+let lastRenderedMarkup = "";
+let scheduledRenderId = null;
 const HOME_SECTION_CONFIG = {
   trending: {
     endpoint:
@@ -102,7 +104,7 @@ function renderApp() {
     appState.session.status === "loading"
   ) {
     document.title = "Chargement | NetflixLight";
-    appElement.innerHTML = renderShell(renderSessionLoading(), currentPath);
+    commitAppMarkup(renderShell(renderSessionLoading(), currentPath));
     return;
   }
 
@@ -113,15 +115,37 @@ function renderApp() {
   const currentRoute = resolveView(currentPath);
 
   document.title = getDocumentTitle(currentPath, currentRoute);
-  appElement.innerHTML = renderShell(
+  const nextMarkup = renderShell(
     `
     ${renderFlash(appState.ui.flash)}
     ${currentRoute.render(appState)}
   `,
     currentPath
   );
+
+  commitAppMarkup(nextMarkup);
+}
+
+function commitAppMarkup(nextMarkup) {
+  if (nextMarkup === lastRenderedMarkup) {
+    return;
+  }
+
+  appElement.innerHTML = nextMarkup;
+  lastRenderedMarkup = nextMarkup;
   initializeCarousels(appElement);
   initializePlayers(appElement);
+}
+
+function scheduleRenderApp() {
+  if (scheduledRenderId !== null) {
+    return;
+  }
+
+  scheduledRenderId = window.requestAnimationFrame(() => {
+    scheduledRenderId = null;
+    renderApp();
+  });
 }
 
 function getDocumentTitle(currentPath, currentRoute) {
@@ -1435,8 +1459,11 @@ document.addEventListener("submit", async (event) => {
 });
 
 subscribeRoute(handleRouteEffects);
-subscribeRoute(renderApp);
-subscribeState(renderApp);
+subscribeRoute(() => {
+  lastRenderedMarkup = "";
+  renderApp();
+});
+subscribeState(scheduleRenderApp);
 resetAuthFormState();
 void initializeSession();
 startRouter();

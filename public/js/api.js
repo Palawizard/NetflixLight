@@ -1,9 +1,21 @@
+const API_CACHE_TTL_MS = 60000;
+const apiCache = new Map();
+
 export async function apiRequest(
   pathname,
-  { method = "GET", body, signal } = {}
+  { method = "GET", body, signal, cache = method === "GET" } = {}
 ) {
+  const normalizedMethod = method.toUpperCase();
+  const cacheKey = `${normalizedMethod}:${pathname}`;
+  const shouldUseCache = cache && normalizedMethod === "GET" && !body;
+  const cachedPayload = shouldUseCache ? getCachedPayload(cacheKey) : null;
+
+  if (cachedPayload) {
+    return cachedPayload;
+  }
+
   const response = await fetch(pathname, {
-    method,
+    method: normalizedMethod,
     headers: body
       ? {
           "Content-Type": "application/json",
@@ -19,6 +31,12 @@ export async function apiRequest(
   const payload = isJsonResponse ? await response.json() : null;
 
   if (response.ok) {
+    if (shouldUseCache) {
+      setCachedPayload(cacheKey, payload);
+    } else if (normalizedMethod !== "GET") {
+      clearApiCache();
+    }
+
     return payload;
   }
 
@@ -26,6 +44,40 @@ export async function apiRequest(
   error.status = response.status;
   error.payload = payload;
   throw error;
+}
+
+function getCachedPayload(cacheKey) {
+  const cachedEntry = apiCache.get(cacheKey);
+
+  if (!cachedEntry) {
+    return null;
+  }
+
+  if (cachedEntry.expiresAt <= Date.now()) {
+    apiCache.delete(cacheKey);
+    return null;
+  }
+
+  return clonePayload(cachedEntry.payload);
+}
+
+function setCachedPayload(cacheKey, payload) {
+  apiCache.set(cacheKey, {
+    payload: clonePayload(payload),
+    expiresAt: Date.now() + API_CACHE_TTL_MS,
+  });
+}
+
+function clearApiCache() {
+  apiCache.clear();
+}
+
+function clonePayload(payload) {
+  if (payload === undefined || payload === null) {
+    return payload;
+  }
+
+  return JSON.parse(JSON.stringify(payload));
 }
 
 export function formatApiError(error) {
