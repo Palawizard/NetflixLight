@@ -39,6 +39,13 @@ function createSearchState() {
   };
 }
 
+function createLogoutState() {
+  return {
+    pending: false,
+    error: null,
+  };
+}
+
 export const appState = {
   session: {
     status: "idle",
@@ -76,6 +83,7 @@ export const appState = {
       error: null,
       success: null,
     },
+    logout: createLogoutState(),
   },
 };
 
@@ -116,6 +124,21 @@ export function resetAuthFormState() {
       error: null,
       success: null,
     };
+  });
+}
+
+export function setLogoutState(nextLogoutState) {
+  updateState((state) => {
+    state.ui.logout = {
+      ...state.ui.logout,
+      ...nextLogoutState,
+    };
+  });
+}
+
+export function resetLogoutState() {
+  updateState((state) => {
+    state.ui.logout = createLogoutState();
   });
 }
 

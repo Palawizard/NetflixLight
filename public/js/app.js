@@ -9,6 +9,8 @@ import {
   setHeroState,
   resetAuthFormState,
   setAuthFormState,
+  resetLogoutState,
+  setLogoutState,
   setFlashMessage,
   setDetailState,
   setWatchlistState,
@@ -502,6 +504,39 @@ async function removeWatchlistItemFromList(type, tmdbId) {
         tone: "error",
         message: formatApiError(error),
       };
+    });
+  }
+}
+
+async function logoutUser() {
+  if (appState.ui.logout.pending) {
+    return;
+  }
+
+  setLogoutState({
+    pending: true,
+    error: null,
+  });
+
+  try {
+    await apiRequest("/api/auth/logout", {
+      method: "POST",
+    });
+
+    updateState((state) => {
+      state.session.status = "guest";
+      state.session.user = null;
+      state.session.redirectAfterLogin = null;
+    });
+    resetWatchlistState();
+    resetAuthFormState();
+    resetLogoutState();
+    setFlashMessage("Tu es déconnecté.");
+    navigate("/");
+  } catch (error) {
+    setLogoutState({
+      pending: false,
+      error: formatApiError(error),
     });
   }
 }
@@ -1195,6 +1230,13 @@ document.addEventListener("click", (event) => {
     if ((type === "movie" || type === "tv") && Number.isInteger(tmdbId)) {
       void removeWatchlistItemFromList(type, tmdbId);
     }
+    return;
+  }
+
+  const logoutButton = event.target.closest("[data-logout]");
+
+  if (logoutButton) {
+    void logoutUser();
     return;
   }
 
