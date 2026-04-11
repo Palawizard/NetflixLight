@@ -19,6 +19,8 @@ import {
   resetWatchlistState,
   setWatchProgressState,
   resetWatchProgressState,
+  setViewingHistoryState,
+  resetViewingHistoryState,
   setSearchState,
   resetSearchState,
   subscribeState,
@@ -418,6 +420,7 @@ async function initializeSession() {
     });
     void loadWatchlist();
     void loadWatchProgress();
+    void loadViewingHistory();
   } catch (error) {
     if (error.status !== 401) {
       setFlashMessage("Impossible de charger ton espace.");
@@ -429,6 +432,7 @@ async function initializeSession() {
     });
     resetWatchlistState();
     resetWatchProgressState();
+    resetViewingHistoryState();
   }
 }
 
@@ -564,11 +568,112 @@ async function loadWatchProgress({ force = false } = {}) {
   }
 }
 
+function createViewingHistoryKey(type, tmdbId) {
+  return `${type}:${tmdbId}`;
+}
+
+function buildViewingHistoryKeyMap(items) {
+  return Object.fromEntries(
+    items.map((item) => [createViewingHistoryKey(item.type, item.tmdbId), item])
+  );
+}
+
+async function loadViewingHistory({ force = false } = {}) {
+  if (appState.session.status !== "authenticated" || !appState.session.user) {
+    resetViewingHistoryState();
+    return;
+  }
+
+  const historyState = appState.viewingHistory;
+
+  if (
+    !force &&
+    (historyState.status === "loading" || historyState.status === "success")
+  ) {
+    return;
+  }
+
+  setViewingHistoryState({
+    status: "loading",
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest("/api/viewing-history");
+    const items = Array.isArray(response.items) ? response.items : [];
+
+    setViewingHistoryState({
+      status: "success",
+      items,
+      itemKeys: buildViewingHistoryKeyMap(items),
+      error: null,
+    });
+  } catch (error) {
+    if (error.status === 401) {
+      resetViewingHistoryState();
+      return;
+    }
+
+    setViewingHistoryState({
+      status: "error",
+      error: formatApiError(error),
+    });
+  }
+}
+
 function buildProgressSnapshotItem(item) {
   return {
     title: item.title || item.name || "Titre inconnu",
     poster: item.poster_path || item.backdrop_path || null,
   };
+}
+
+async function saveViewingHistoryFromDetail(item, type) {
+  if (
+    appState.session.status !== "authenticated" ||
+    !appState.session.user ||
+    !item?.id ||
+    !(type === "movie" || type === "tv")
+  ) {
+    return;
+  }
+
+  const historyKey = createViewingHistoryKey(type, item.id);
+  const snapshot = buildProgressSnapshotItem(item);
+
+  try {
+    const response = await apiRequest("/api/viewing-history", {
+      method: "POST",
+      body: {
+        type,
+        tmdbId: item.id,
+        title: snapshot.title,
+        poster: snapshot.poster,
+      },
+    });
+
+    updateState((state) => {
+      if (!response?.item) {
+        return;
+      }
+
+      state.viewingHistory.items = [
+        response.item,
+        ...state.viewingHistory.items.filter(
+          (historyItem) =>
+            createViewingHistoryKey(historyItem.type, historyItem.tmdbId) !==
+            historyKey
+        ),
+      ].slice(0, 12);
+      state.viewingHistory.itemKeys[historyKey] = response.item;
+      state.viewingHistory.status = "success";
+      state.viewingHistory.error = null;
+    });
+  } catch (error) {
+    setViewingHistoryState({
+      error: formatApiError(error),
+    });
+  }
 }
 
 async function saveWatchProgressFromPlayer({
@@ -743,6 +848,7 @@ async function logoutUser() {
     });
     resetWatchlistState();
     resetWatchProgressState();
+    resetViewingHistoryState();
     resetAuthFormState();
     resetLogoutState();
     setFlashMessage("Tu es déconnecté.");
@@ -1346,6 +1452,7 @@ async function loadDetailPage(pathname) {
       item: response,
       error: null,
     });
+    void saveViewingHistoryFromDetail(response, type);
   } catch (error) {
     if (requestId !== currentDetailRequestId) {
       return;
@@ -1376,6 +1483,14 @@ function handleRouteEffects(currentPath) {
       appState.watchProgress.status === "error")
   ) {
     void loadWatchProgress();
+  }
+
+  if (
+    appState.session.status === "authenticated" &&
+    (appState.viewingHistory.status === "idle" ||
+      appState.viewingHistory.status === "error")
+  ) {
+    void loadViewingHistory();
   }
 
   if (currentPath === "/") {
@@ -1628,6 +1743,8 @@ document.addEventListener("submit", async (event) => {
       });
 
       await loadWatchlist({ force: true });
+      await loadWatchProgress({ force: true });
+      await loadViewingHistory({ force: true });
       resetAuthFormState();
       setFlashMessage("Connexion réussie.");
       navigate(nextPath);
