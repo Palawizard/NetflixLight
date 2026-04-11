@@ -956,7 +956,10 @@ function renderPlayerContent(item, type) {
         Retour au détail
       </button>
 
-      <article class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30 backdrop-blur">
+      <article
+        data-player
+        class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30 backdrop-blur"
+      >
         <div class="relative bg-black">
           <video
             data-player-video
@@ -964,8 +967,64 @@ function renderPlayerContent(item, type) {
             src="${sample.src}"
             poster="${posterPath}"
             preload="metadata"
-            controls
           ></video>
+          <div class="border-t border-white/10 bg-black/85 px-4 py-4">
+            <div class="flex flex-col gap-4">
+              <div class="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  data-player-play
+                  class="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+                >
+                  Lecture
+                </button>
+                <span
+                  data-player-time
+                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75"
+                >
+                  0:00 / 0:00
+                </span>
+                <button
+                  type="button"
+                  data-player-mute
+                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  Son
+                </button>
+                <label class="flex items-center gap-2 text-sm text-white/65">
+                  Volume
+                  <input
+                    data-player-volume
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value="0.8"
+                    class="w-28 accent-rose-400"
+                  />
+                </label>
+                <button
+                  type="button"
+                  data-player-fullscreen
+                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  Plein ecran
+                </button>
+              </div>
+              <label class="space-y-2 text-sm text-white/65">
+                Progression
+                <input
+                  data-player-seek
+                  type="range"
+                  min="0"
+                  max="0"
+                  step="0.1"
+                  value="0"
+                  class="w-full accent-rose-400"
+                />
+              </label>
+            </div>
+          </div>
         </div>
         <div class="space-y-4 p-8 sm:p-10">
           <p class="text-sm uppercase tracking-[0.3em] text-rose-300">Lecture</p>
