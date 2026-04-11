@@ -279,26 +279,68 @@ function renderWatchlistFeedback(watchlistState) {
 
 function renderProfileView(state) {
   const user = state.session.user;
+  const logoutState = state.ui.logout;
+  const watchlistCount = Array.isArray(state.watchlist.items)
+    ? state.watchlist.items.length
+    : 0;
 
   return `
-    <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-      <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Profil</p>
-      <h1 class="mt-3 text-4xl font-semibold tracking-tight">Mon compte</h1>
-      <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-        Retrouve ici les informations liées à ton compte.
-      </p>
+    <section class="space-y-6">
+      <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Profil</p>
+            <h1 class="mt-3 text-4xl font-semibold tracking-tight">Mon compte</h1>
+            <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+              Retrouve ici les informations liées à ton compte et gère ta session.
+            </p>
+          </div>
 
-      <dl class="mt-8 grid gap-4 sm:grid-cols-2">
+          <button
+            type="button"
+            data-logout
+            class="inline-flex w-fit rounded-full border border-rose-300/20 bg-rose-500/10 px-5 py-3 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+            ${logoutState.pending ? "disabled" : ""}
+          >
+            ${logoutState.pending ? "Déconnexion..." : "Se déconnecter"}
+          </button>
+        </div>
+        ${renderLogoutFeedback(logoutState)}
+      </header>
+
+      <dl class="grid gap-4 sm:grid-cols-2">
         <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
           <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Pseudo</dt>
-          <dd class="mt-3 text-lg font-medium text-white">${user?.username || "-"}</dd>
+          <dd class="mt-3 text-lg font-medium text-white">${escapeHtml(user?.username || "-")}</dd>
         </div>
         <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
           <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Email</dt>
-          <dd class="mt-3 text-lg font-medium text-white">${user?.email || "-"}</dd>
+          <dd class="mt-3 text-lg font-medium text-white">${escapeHtml(user?.email || "-")}</dd>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Membre depuis</dt>
+          <dd class="mt-3 text-lg font-medium text-white">${formatLongDate(user?.created_at)}</dd>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <dt class="text-xs uppercase tracking-[0.3em] text-white/40">Favoris</dt>
+          <dd class="mt-3 text-lg font-medium text-white">
+            ${watchlistCount} titre${watchlistCount > 1 ? "s" : ""}
+          </dd>
         </div>
       </dl>
     </section>
+  `;
+}
+
+function renderLogoutFeedback(logoutState) {
+  if (!logoutState.error) {
+    return "";
+  }
+
+  return `
+    <p class="mt-6 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+      ${logoutState.error}
+    </p>
   `;
 }
 
