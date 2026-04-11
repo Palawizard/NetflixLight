@@ -1,3 +1,5 @@
+const CONTROLS_IDLE_DELAY_MS = 3000;
+
 export function initializePlayers(container) {
   const playerElements = container.querySelectorAll("[data-player]");
 
@@ -15,6 +17,7 @@ export function initializePlayers(container) {
     const fullscreenButton = playerElement.querySelector(
       "[data-player-fullscreen]"
     );
+    const controls = playerElement.querySelector("[data-player-controls]");
 
     if (
       !video ||
@@ -23,13 +26,48 @@ export function initializePlayers(container) {
       !volumeInput ||
       !seekInput ||
       !timeLabel ||
-      !fullscreenButton
+      !fullscreenButton ||
+      !controls
     ) {
       return;
     }
 
     playerElement.dataset.playerReady = "true";
     video.volume = Number.parseFloat(volumeInput.value || "0.8");
+    let controlsIdleTimeoutId = null;
+
+    const setControlsVisible = (isVisible) => {
+      playerElement.dataset.controlsHidden = isVisible ? "false" : "true";
+      controls.classList.toggle("opacity-0", !isVisible);
+      controls.classList.toggle("pointer-events-none", !isVisible);
+    };
+
+    const clearControlsIdleTimeout = () => {
+      if (controlsIdleTimeoutId !== null) {
+        window.clearTimeout(controlsIdleTimeoutId);
+        controlsIdleTimeoutId = null;
+      }
+    };
+
+    const scheduleControlsAutoHide = () => {
+      clearControlsIdleTimeout();
+
+      if (video.paused || controls.contains(document.activeElement)) {
+        setControlsVisible(true);
+        return;
+      }
+
+      controlsIdleTimeoutId = window.setTimeout(() => {
+        if (!video.paused && !controls.contains(document.activeElement)) {
+          setControlsVisible(false);
+        }
+      }, CONTROLS_IDLE_DELAY_MS);
+    };
+
+    const revealControls = () => {
+      setControlsVisible(true);
+      scheduleControlsAutoHide();
+    };
 
     const syncControls = () => {
       const duration = Number.isFinite(video.duration) ? video.duration : 0;
@@ -89,15 +127,31 @@ export function initializePlayers(container) {
 
     video.addEventListener("loadedmetadata", syncControls);
     video.addEventListener("timeupdate", syncControls);
-    video.addEventListener("play", syncControls);
-    video.addEventListener("pause", syncControls);
+    video.addEventListener("play", () => {
+      syncControls();
+      scheduleControlsAutoHide();
+    });
+    video.addEventListener("pause", () => {
+      syncControls();
+      setControlsVisible(true);
+      clearControlsIdleTimeout();
+    });
     video.addEventListener("volumechange", syncControls);
+    playerElement.addEventListener("pointermove", revealControls);
+    playerElement.addEventListener("click", revealControls);
+    playerElement.addEventListener("keydown", revealControls);
+    playerElement.addEventListener("focusin", () => {
+      setControlsVisible(true);
+      clearControlsIdleTimeout();
+    });
+    playerElement.addEventListener("focusout", scheduleControlsAutoHide);
     document.addEventListener("fullscreenchange", () => {
       fullscreenButton.textContent = document.fullscreenElement
         ? "Quitter plein ecran"
         : "Plein ecran";
     });
 
+    setControlsVisible(true);
     syncControls();
   });
 }

@@ -968,7 +968,10 @@ function renderPlayerContent(item, type) {
             poster="${posterPath}"
             preload="metadata"
           ></video>
-          <div class="border-t border-white/10 bg-black/85 px-4 py-4">
+          <div
+            data-player-controls
+            class="border-t border-white/10 bg-black/85 px-4 py-4 transition-opacity duration-300"
+          >
             <div class="flex flex-col gap-4">
               <div class="flex flex-wrap items-center gap-3">
                 <button
