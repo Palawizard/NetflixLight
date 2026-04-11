@@ -27,6 +27,16 @@ function createWatchlistState() {
   };
 }
 
+function createWatchProgressState() {
+  return {
+    status: "idle",
+    items: [],
+    itemKeys: {},
+    pendingKeys: {},
+    error: null,
+  };
+}
+
 function createSearchState() {
   return {
     status: "idle",
@@ -59,6 +69,7 @@ export const appState = {
   },
   detail: createDetailState(),
   watchlist: createWatchlistState(),
+  watchProgress: createWatchProgressState(),
   search: createSearchState(),
   catalog: {
     home: {
@@ -208,6 +219,21 @@ export function setWatchlistState(nextWatchlistState) {
 export function resetWatchlistState() {
   updateState((state) => {
     state.watchlist = createWatchlistState();
+  });
+}
+
+export function setWatchProgressState(nextWatchProgressState) {
+  updateState((state) => {
+    state.watchProgress = {
+      ...state.watchProgress,
+      ...nextWatchProgressState,
+    };
+  });
+}
+
+export function resetWatchProgressState() {
+  updateState((state) => {
+    state.watchProgress = createWatchProgressState();
   });
 }
 

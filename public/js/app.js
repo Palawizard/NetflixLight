@@ -17,6 +17,8 @@ import {
   setDetailState,
   setWatchlistState,
   resetWatchlistState,
+  setWatchProgressState,
+  resetWatchProgressState,
   setSearchState,
   resetSearchState,
   subscribeState,
@@ -136,7 +138,9 @@ function commitAppMarkup(nextMarkup) {
   lastRenderedMarkup = nextMarkup;
   initializeAnimations(appElement);
   initializeCarousels(appElement);
-  initializePlayers(appElement);
+  initializePlayers(appElement, {
+    onProgress: saveWatchProgressFromPlayer,
+  });
 }
 
 function scheduleRenderApp() {
@@ -366,6 +370,7 @@ async function initializeSession() {
       user: response.user,
     });
     void loadWatchlist();
+    void loadWatchProgress();
   } catch (error) {
     if (error.status !== 401) {
       setFlashMessage("Impossible de charger ton espace.");
@@ -376,10 +381,15 @@ async function initializeSession() {
       user: null,
     });
     resetWatchlistState();
+    resetWatchProgressState();
   }
 }
 
 function createWatchlistKey(type, tmdbId) {
+  return `${type}:${tmdbId}`;
+}
+
+function createWatchProgressKey(type, tmdbId) {
   return `${type}:${tmdbId}`;
 }
 
@@ -453,6 +463,132 @@ async function loadWatchlist({ force = false } = {}) {
     setWatchlistState({
       status: "error",
       error: formatApiError(error),
+    });
+  }
+}
+
+function buildWatchProgressKeyMap(items) {
+  return Object.fromEntries(
+    items.map((item) => [createWatchProgressKey(item.type, item.tmdbId), item])
+  );
+}
+
+async function loadWatchProgress({ force = false } = {}) {
+  if (appState.session.status !== "authenticated" || !appState.session.user) {
+    resetWatchProgressState();
+    return;
+  }
+
+  const progressState = appState.watchProgress;
+
+  if (
+    !force &&
+    (progressState.status === "loading" || progressState.status === "success")
+  ) {
+    return;
+  }
+
+  setWatchProgressState({
+    status: "loading",
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest("/api/watch-progress");
+    const items = Array.isArray(response.items) ? response.items : [];
+
+    setWatchProgressState({
+      status: "success",
+      items,
+      itemKeys: buildWatchProgressKeyMap(items),
+      pendingKeys: {},
+      error: null,
+    });
+  } catch (error) {
+    if (error.status === 401) {
+      resetWatchProgressState();
+      return;
+    }
+
+    setWatchProgressState({
+      status: "error",
+      error: formatApiError(error),
+    });
+  }
+}
+
+function buildProgressSnapshotItem(item) {
+  return {
+    title: item.title || item.name || "Titre inconnu",
+    poster: item.poster_path || item.backdrop_path || null,
+  };
+}
+
+async function saveWatchProgressFromPlayer({
+  type,
+  tmdbId,
+  position,
+  duration,
+}) {
+  if (
+    appState.session.status !== "authenticated" ||
+    !appState.session.user ||
+    !type ||
+    !Number.isInteger(tmdbId)
+  ) {
+    return;
+  }
+
+  const watchProgressKey = createWatchProgressKey(type, tmdbId);
+  const detailItem =
+    appState.detail.type === type && appState.detail.id === tmdbId
+      ? appState.detail.item
+      : null;
+  const snapshot = detailItem ? buildProgressSnapshotItem(detailItem) : {};
+  const positionSeconds = Math.max(Math.floor(position || 0), 0);
+  const durationSeconds =
+    Number.isFinite(duration) && duration > 0 ? Math.floor(duration) : null;
+
+  updateState((state) => {
+    state.watchProgress.pendingKeys[watchProgressKey] = true;
+  });
+
+  try {
+    const response = await apiRequest(`/api/watch-progress/${type}/${tmdbId}`, {
+      method: "PUT",
+      body: {
+        positionSeconds,
+        durationSeconds,
+        ...snapshot,
+      },
+    });
+
+    updateState((state) => {
+      delete state.watchProgress.pendingKeys[watchProgressKey];
+
+      if (!response?.item) {
+        state.watchProgress.items = state.watchProgress.items.filter(
+          (item) =>
+            createWatchProgressKey(item.type, item.tmdbId) !== watchProgressKey
+        );
+        delete state.watchProgress.itemKeys[watchProgressKey];
+        return;
+      }
+
+      state.watchProgress.items = [
+        response.item,
+        ...state.watchProgress.items.filter(
+          (item) =>
+            createWatchProgressKey(item.type, item.tmdbId) !== watchProgressKey
+        ),
+      ];
+      state.watchProgress.itemKeys[watchProgressKey] = response.item;
+      state.watchProgress.error = null;
+    });
+  } catch (error) {
+    updateState((state) => {
+      delete state.watchProgress.pendingKeys[watchProgressKey];
+      state.watchProgress.error = formatApiError(error);
     });
   }
 }
@@ -559,6 +695,7 @@ async function logoutUser() {
       state.session.redirectAfterLogin = null;
     });
     resetWatchlistState();
+    resetWatchProgressState();
     resetAuthFormState();
     resetLogoutState();
     setFlashMessage("Tu es déconnecté.");
@@ -1184,6 +1321,14 @@ function handleRouteEffects(currentPath) {
       appState.watchlist.status === "error")
   ) {
     void loadWatchlist();
+  }
+
+  if (
+    appState.session.status === "authenticated" &&
+    (appState.watchProgress.status === "idle" ||
+      appState.watchProgress.status === "error")
+  ) {
+    void loadWatchProgress();
   }
 
   if (currentPath === "/") {

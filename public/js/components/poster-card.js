@@ -10,6 +10,7 @@
  * @property {string} [poster_path]
  * @property {string} [backdrop_path]
  * @property {string} [overview]
+ * @property {string} [navigation_path]
  */
 
 import { renderTmdbImage } from "../tmdb-images.js";
@@ -101,6 +102,10 @@ function formatRating(voteAverage) {
 }
 
 function getDetailPath(item) {
+  if (typeof item?.navigation_path === "string" && item.navigation_path) {
+    return item.navigation_path;
+  }
+
   if (!item?.id) {
     return null;
   }
