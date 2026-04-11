@@ -134,7 +134,7 @@ router.get("/:type/:id", async (req, res, next) => {
     const payload = await tmdbGet(`/${type}/${id}`, {
       query: {
         language,
-        append_to_response: "credits,similar,images",
+        append_to_response: "credits,similar,images,videos",
         include_image_language: language ? `${language},null` : "null",
       },
     });
