@@ -1,6 +1,7 @@
 import { renderCarousel } from "./components/carousel.js";
 import { renderPosterCard } from "./components/poster-card.js";
 
+const TMDB_POSTER_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 const TMDB_PROFILE_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w300";
 
 /**
@@ -83,15 +84,196 @@ function renderMoviesView(state) {
 
 function renderFavoritesView(state) {
   const username = state.session.user?.username || "utilisateur";
+  const watchlistState = state.watchlist;
+  const items = getSortedWatchlistItems(watchlistState.items);
 
   return `
-    <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-      <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
-      <h1 class="mt-3 text-4xl font-semibold tracking-tight">Ma liste</h1>
-      <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-        Connecté en tant que ${username}. Retrouve ici les titres que tu veux garder de côté.
-      </p>
+    <section class="space-y-6">
+      <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
+            <h1 class="mt-3 text-4xl font-semibold tracking-tight">Ma liste</h1>
+            <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+              Connecté en tant que ${escapeHtml(username)}. Retrouve ici les titres que tu veux garder de côté.
+            </p>
+          </div>
+          <div class="rounded-3xl border border-white/10 bg-black/20 px-5 py-4">
+            <p class="text-xs uppercase tracking-[0.3em] text-white/40">Tri</p>
+            <p class="mt-2 text-sm font-medium text-white">Ajout le plus récent</p>
+          </div>
+        </div>
+        ${renderWatchlistFeedback(watchlistState)}
+      </header>
+
+      ${renderWatchlistContent(watchlistState, items)}
     </section>
+  `;
+}
+
+function renderWatchlistContent(watchlistState, items) {
+  if (watchlistState.status === "idle" || watchlistState.status === "loading") {
+    return renderWatchlistLoading();
+  }
+
+  if (watchlistState.status === "error") {
+    return renderWatchlistError(watchlistState.error);
+  }
+
+  if (items.length === 0) {
+    return renderWatchlistEmpty();
+  }
+
+  return `
+    <section class="grid gap-5 md:grid-cols-2">
+      ${items.map((item) => renderWatchlistCard(item, watchlistState)).join("")}
+    </section>
+  `;
+}
+
+function renderWatchlistLoading() {
+  return `
+    <section class="grid gap-5 md:grid-cols-2">
+      ${Array.from(
+        { length: 4 },
+        () => `
+          <article class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20">
+            <div class="flex gap-5 p-5">
+              <div class="h-36 w-24 shrink-0 animate-pulse rounded-2xl bg-white/10"></div>
+              <div class="flex flex-1 flex-col justify-between">
+                <div class="space-y-4">
+                  <div class="h-4 w-24 animate-pulse rounded-full bg-white/10"></div>
+                  <div class="h-8 w-full max-w-xs animate-pulse rounded-2xl bg-white/10"></div>
+                </div>
+                <div class="h-10 w-32 animate-pulse rounded-full bg-white/10"></div>
+              </div>
+            </div>
+          </article>
+        `
+      ).join("")}
+    </section>
+  `;
+}
+
+function renderWatchlistError(errorMessage) {
+  return `
+    <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 text-rose-100 shadow-xl shadow-black/20">
+      <p class="text-base leading-8">
+        ${errorMessage || "Impossible de charger tes favoris pour le moment."}
+      </p>
+      <button
+        type="button"
+        data-retry-watchlist
+        class="mt-6 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+      >
+        Réessayer
+      </button>
+    </section>
+  `;
+}
+
+function renderWatchlistEmpty() {
+  return `
+    <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/75 shadow-xl shadow-black/20 backdrop-blur">
+      <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Liste vide</p>
+      <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+        Aucun favori pour le moment
+      </h2>
+      <p class="mt-4 max-w-2xl text-base leading-8">
+        Ajoute des films ou séries depuis une page détail pour les retrouver ici.
+      </p>
+      <button
+        type="button"
+        data-nav-path="/"
+        class="mt-6 rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+      >
+        Explorer les titres
+      </button>
+    </section>
+  `;
+}
+
+function renderWatchlistCard(item, watchlistState) {
+  const watchlistKey = createFavoriteKey(item.type, item.tmdbId);
+  const isPending = Boolean(watchlistState.pendingKeys[watchlistKey]);
+  const title = escapeHtml(item.snapshot?.title || "Titre inconnu");
+  const typeLabel = item.type === "movie" ? "Film" : "Série";
+  const detailPath = `/${item.type}/${item.tmdbId}`;
+  const posterMarkup = item.snapshot?.poster
+    ? `
+      <img
+        src="${TMDB_POSTER_IMAGE_BASE_URL}${item.snapshot.poster}"
+        alt="Poster de ${title}"
+        loading="lazy"
+        class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+      />
+    `
+    : `
+      <div class="flex h-full items-center justify-center bg-white/5 px-4 text-center text-xs uppercase tracking-[0.25em] text-white/40">
+        ${title}
+      </div>
+    `;
+
+  return `
+    <article class="group overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20 backdrop-blur transition duration-300 hover:border-white/20">
+      <div class="flex gap-5 p-5">
+        <button
+          type="button"
+          data-nav-path="${detailPath}"
+          class="w-24 shrink-0 overflow-hidden rounded-2xl bg-black/30 text-left"
+        >
+          <div class="aspect-2/3">
+            ${posterMarkup}
+          </div>
+        </button>
+
+        <div class="flex min-w-0 flex-1 flex-col justify-between gap-5">
+          <button
+            type="button"
+            data-nav-path="${detailPath}"
+            class="text-left"
+          >
+            <p class="text-xs uppercase tracking-[0.3em] text-emerald-300">${typeLabel}</p>
+            <h2 class="mt-3 line-clamp-2 text-2xl font-semibold tracking-tight text-white">
+              ${title}
+            </h2>
+            <p class="mt-3 text-sm text-white/55">
+              Ajouté le ${formatLongDate(item.addedAt)}
+            </p>
+          </button>
+
+          <button
+            type="button"
+            data-remove-watchlist
+            data-watchlist-type="${item.type}"
+            data-watchlist-id="${item.tmdbId}"
+            class="inline-flex w-fit rounded-full border border-rose-300/20 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+            ${isPending ? "disabled" : ""}
+          >
+            ${isPending ? "Suppression..." : "Supprimer"}
+          </button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderWatchlistFeedback(watchlistState) {
+  if (!watchlistState.lastAction?.message) {
+    return "";
+  }
+
+  const toneClass =
+    watchlistState.lastAction.tone === "error"
+      ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
+      : watchlistState.lastAction.tone === "success"
+        ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+        : "border-white/10 bg-white/5 text-white/75";
+
+  return `
+    <p class="mt-6 rounded-2xl border px-4 py-3 text-sm ${toneClass}">
+      ${watchlistState.lastAction.message}
+    </p>
   `;
 }
 
@@ -981,6 +1163,25 @@ function renderDetailFact(label, value) {
 
 function createFavoriteKey(type, tmdbId) {
   return `${type}:${tmdbId}`;
+}
+
+function getSortedWatchlistItems(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.slice().sort((leftItem, rightItem) => {
+    const leftTime = Date.parse(leftItem.addedAt || "");
+    const rightTime = Date.parse(rightItem.addedAt || "");
+    const normalizedLeftTime = Number.isNaN(leftTime) ? 0 : leftTime;
+    const normalizedRightTime = Number.isNaN(rightTime) ? 0 : rightTime;
+
+    if (normalizedLeftTime !== normalizedRightTime) {
+      return normalizedRightTime - normalizedLeftTime;
+    }
+
+    return rightItem.tmdbId - leftItem.tmdbId;
+  });
 }
 
 function renderSimilarContentSection(similarItems, type, itemId) {
