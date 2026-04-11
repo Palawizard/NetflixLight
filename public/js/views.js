@@ -212,7 +212,7 @@ function renderWatchlistCard(item, watchlistState) {
         ],
         sizes: "6rem",
         className:
-          "h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]",
+          "h-full w-full transform-gpu object-cover transition duration-300 group-hover:scale-[1.03] motion-reduce:transform-none motion-reduce:transition-none",
       })
     : `
       <div class="flex h-full items-center justify-center bg-white/5 px-4 text-center text-xs uppercase tracking-[0.25em] text-white/40">
@@ -221,7 +221,7 @@ function renderWatchlistCard(item, watchlistState) {
     `;
 
   return `
-    <article class="group overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20 backdrop-blur transition duration-300 hover:border-white/20">
+    <article class="group transform-gpu overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20 backdrop-blur transition duration-300 hover:border-white/20 motion-reduce:transform-none motion-reduce:transition-none">
       <div class="flex gap-5 p-5">
         <button
           type="button"

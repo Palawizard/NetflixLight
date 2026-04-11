@@ -1,4 +1,5 @@
 import { apiRequest, formatApiError } from "./api.js";
+import { initializeAnimations } from "./animations.js";
 import { initializeCarousels, scrollCarousel } from "./components/carousel.js";
 import { initializePlayers } from "./player-controls.js";
 import {
@@ -133,6 +134,7 @@ function commitAppMarkup(nextMarkup) {
 
   appElement.innerHTML = nextMarkup;
   lastRenderedMarkup = nextMarkup;
+  initializeAnimations(appElement);
   initializeCarousels(appElement);
   initializePlayers(appElement);
 }
