@@ -357,6 +357,25 @@ function buildWatchlistKeyMap(items) {
   );
 }
 
+function sortWatchlistItemsByAddedAt(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.slice().sort((leftItem, rightItem) => {
+    const leftTime = Date.parse(leftItem.addedAt || "");
+    const rightTime = Date.parse(rightItem.addedAt || "");
+    const normalizedLeftTime = Number.isNaN(leftTime) ? 0 : leftTime;
+    const normalizedRightTime = Number.isNaN(rightTime) ? 0 : rightTime;
+
+    if (normalizedLeftTime !== normalizedRightTime) {
+      return normalizedRightTime - normalizedLeftTime;
+    }
+
+    return rightItem.tmdbId - leftItem.tmdbId;
+  });
+}
+
 async function loadWatchlist({ force = false } = {}) {
   if (appState.session.status !== "authenticated" || !appState.session.user) {
     resetWatchlistState();
@@ -379,7 +398,7 @@ async function loadWatchlist({ force = false } = {}) {
 
   try {
     const response = await apiRequest("/api/watchlist");
-    const items = Array.isArray(response.items) ? response.items : [];
+    const items = sortWatchlistItemsByAddedAt(response.items);
 
     setWatchlistState({
       status: "success",
@@ -402,6 +421,87 @@ async function loadWatchlist({ force = false } = {}) {
     setWatchlistState({
       status: "error",
       error: formatApiError(error),
+    });
+  }
+}
+
+async function removeWatchlistItemFromList(type, tmdbId) {
+  if (appState.session.status !== "authenticated" || !appState.session.user) {
+    setFlashMessage("Connecte-toi pour gérer tes favoris.");
+    navigate("/login");
+    return;
+  }
+
+  const watchlistKey = createWatchlistKey(type, tmdbId);
+  const isPending = Boolean(appState.watchlist.pendingKeys[watchlistKey]);
+  const existingItem = appState.watchlist.items.find(
+    (watchlistItem) =>
+      createWatchlistKey(watchlistItem.type, watchlistItem.tmdbId) ===
+      watchlistKey
+  );
+
+  if (isPending || !existingItem) {
+    return;
+  }
+
+  updateState((state) => {
+    state.watchlist.items = state.watchlist.items.filter(
+      (watchlistItem) =>
+        createWatchlistKey(watchlistItem.type, watchlistItem.tmdbId) !==
+        watchlistKey
+    );
+    delete state.watchlist.itemKeys[watchlistKey];
+    state.watchlist.pendingKeys[watchlistKey] = true;
+    state.watchlist.lastAction = {
+      key: watchlistKey,
+      tone: "neutral",
+      message: "Suppression du favori...",
+    };
+    state.watchlist.error = null;
+  });
+
+  try {
+    await apiRequest(`/api/watchlist/${type}/${tmdbId}`, {
+      method: "DELETE",
+    });
+
+    updateState((state) => {
+      delete state.watchlist.pendingKeys[watchlistKey];
+      state.watchlist.lastAction = {
+        key: watchlistKey,
+        tone: "success",
+        message: "Titre supprimé des favoris.",
+      };
+    });
+  } catch (error) {
+    if (error.status === 404) {
+      updateState((state) => {
+        delete state.watchlist.pendingKeys[watchlistKey];
+        state.watchlist.lastAction = {
+          key: watchlistKey,
+          tone: "success",
+          message: "Titre supprimé des favoris.",
+        };
+      });
+      return;
+    }
+
+    updateState((state) => {
+      state.watchlist.items = sortWatchlistItemsByAddedAt([
+        existingItem,
+        ...state.watchlist.items.filter(
+          (watchlistItem) =>
+            createWatchlistKey(watchlistItem.type, watchlistItem.tmdbId) !==
+            watchlistKey
+        ),
+      ]);
+      state.watchlist.itemKeys[watchlistKey] = true;
+      delete state.watchlist.pendingKeys[watchlistKey];
+      state.watchlist.lastAction = {
+        key: watchlistKey,
+        tone: "error",
+        message: formatApiError(error),
+      };
     });
   }
 }
@@ -541,14 +641,14 @@ async function toggleFavoriteFromDetail() {
 
     updateState((state) => {
       const savedItem = response?.item || optimisticItem;
-      state.watchlist.items = [
+      state.watchlist.items = sortWatchlistItemsByAddedAt([
         savedItem,
         ...state.watchlist.items.filter(
           (watchlistItem) =>
             createWatchlistKey(watchlistItem.type, watchlistItem.tmdbId) !==
             watchlistKey
         ),
-      ];
+      ]);
       state.watchlist.itemKeys[watchlistKey] = true;
       delete state.watchlist.pendingKeys[watchlistKey];
       state.watchlist.lastAction = {
@@ -1018,6 +1118,10 @@ function handleRouteEffects(currentPath) {
     loadGenreCarousels();
   }
 
+  if (currentPath === "/favoris") {
+    void loadWatchlist();
+  }
+
   if (parseDetailPath(currentPath)) {
     void loadDetailPage(currentPath);
   }
@@ -1054,6 +1158,13 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const retryWatchlistButton = event.target.closest("[data-retry-watchlist]");
+
+  if (retryWatchlistButton) {
+    void loadWatchlist({ force: true });
+    return;
+  }
+
   const retryDetailButton = event.target.closest("[data-retry-detail]");
 
   if (retryDetailButton) {
@@ -1068,6 +1179,21 @@ document.addEventListener("click", (event) => {
         error: null,
       });
       void loadDetailPage(detailPath);
+    }
+    return;
+  }
+
+  const removeWatchlistButton = event.target.closest("[data-remove-watchlist]");
+
+  if (removeWatchlistButton) {
+    const type = removeWatchlistButton.getAttribute("data-watchlist-type");
+    const tmdbId = Number.parseInt(
+      removeWatchlistButton.getAttribute("data-watchlist-id") || "",
+      10
+    );
+
+    if ((type === "movie" || type === "tv") && Number.isInteger(tmdbId)) {
+      void removeWatchlistItemFromList(type, tmdbId);
     }
     return;
   }
