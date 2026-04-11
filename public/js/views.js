@@ -958,11 +958,15 @@ function renderPlayerContent(item, type) {
 
       <article
         data-player
-        class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30 backdrop-blur"
+        role="region"
+        aria-label="Lecteur vidéo"
+        tabindex="0"
+        class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30 outline-none backdrop-blur focus-visible:ring-2 focus-visible:ring-rose-300"
       >
         <div class="relative bg-black">
           <video
             data-player-video
+            aria-label="Extrait vidéo ${title}"
             class="aspect-video w-full bg-black object-contain"
             src="${sample.src}"
             poster="${posterPath}"
@@ -977,12 +981,15 @@ function renderPlayerContent(item, type) {
                 <button
                   type="button"
                   data-player-play
-                  class="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+                  aria-label="Lancer la lecture"
+                  aria-pressed="false"
+                  class="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
                 >
                   Lecture
                 </button>
                 <span
                   data-player-time
+                  aria-live="polite"
                   class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75"
                 >
                   0:00 / 0:00
@@ -990,15 +997,19 @@ function renderPlayerContent(item, type) {
                 <button
                   type="button"
                   data-player-mute
-                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                  aria-label="Couper le son"
+                  aria-pressed="false"
+                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
                 >
                   Son
                 </button>
-                <label class="flex items-center gap-2 text-sm text-white/65">
+                <label class="flex items-center gap-2 text-sm text-white/65" for="player-volume-${type}-${item.id}">
                   Volume
                   <input
+                    id="player-volume-${type}-${item.id}"
                     data-player-volume
                     type="range"
+                    aria-label="Volume"
                     min="0"
                     max="1"
                     step="0.05"
@@ -1009,16 +1020,19 @@ function renderPlayerContent(item, type) {
                 <button
                   type="button"
                   data-player-fullscreen
-                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                  aria-label="Passer en plein écran"
+                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
                 >
-                  Plein ecran
+                  Plein écran
                 </button>
               </div>
-              <label class="space-y-2 text-sm text-white/65">
+              <label class="space-y-2 text-sm text-white/65" for="player-seek-${type}-${item.id}">
                 Progression
                 <input
+                  id="player-seek-${type}-${item.id}"
                   data-player-seek
                   type="range"
+                  aria-label="Progression de la vidéo"
                   min="0"
                   max="0"
                   step="0.1"
