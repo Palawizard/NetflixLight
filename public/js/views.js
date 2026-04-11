@@ -163,7 +163,8 @@ function renderWatchlistError(errorMessage) {
       <button
         type="button"
         data-retry-watchlist
-        class="mt-6 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+        aria-label="Réessayer le chargement des favoris"
+        class="mt-6 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
       >
         Réessayer
       </button>
@@ -184,7 +185,8 @@ function renderWatchlistEmpty() {
       <button
         type="button"
         data-nav-path="/"
-        class="mt-6 rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+        aria-label="Explorer les titres depuis l'accueil"
+        class="mt-6 rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
       >
         Explorer les titres
       </button>
@@ -224,7 +226,8 @@ function renderWatchlistCard(item, watchlistState) {
         <button
           type="button"
           data-nav-path="${detailPath}"
-          class="w-24 shrink-0 overflow-hidden rounded-2xl bg-black/30 text-left"
+          aria-label="Ouvrir la fiche détail de ${title}"
+          class="w-24 shrink-0 overflow-hidden rounded-2xl bg-black/30 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
         >
           <div class="aspect-2/3">
             ${posterMarkup}
@@ -235,7 +238,8 @@ function renderWatchlistCard(item, watchlistState) {
           <button
             type="button"
             data-nav-path="${detailPath}"
-            class="text-left"
+            aria-label="Ouvrir la fiche détail de ${title}"
+            class="text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
           >
             <p class="text-xs uppercase tracking-[0.3em] text-emerald-300">${typeLabel}</p>
             <h2 class="mt-3 line-clamp-2 text-2xl font-semibold tracking-tight text-white">
@@ -251,7 +255,8 @@ function renderWatchlistCard(item, watchlistState) {
             data-remove-watchlist
             data-watchlist-type="${item.type}"
             data-watchlist-id="${item.tmdbId}"
-            class="inline-flex w-fit rounded-full border border-rose-300/20 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Supprimer ${title} des favoris"
+            class="inline-flex w-fit rounded-full border border-rose-300/20 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
             ${isPending ? "disabled" : ""}
           >
             ${isPending ? "Suppression..." : "Supprimer"}
@@ -303,7 +308,8 @@ function renderProfileView(state) {
           <button
             type="button"
             data-logout
-            class="inline-flex w-fit rounded-full border border-rose-300/20 bg-rose-500/10 px-5 py-3 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Se déconnecter du compte"
+            class="inline-flex w-fit rounded-full border border-rose-300/20 bg-rose-500/10 px-5 py-3 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
             ${logoutState.pending ? "disabled" : ""}
           >
             ${logoutState.pending ? "Déconnexion..." : "Se déconnecter"}
@@ -1137,7 +1143,8 @@ function renderFavoriteToggle(state, item, type) {
       <button
         type="button"
         data-toggle-favorite
-        class="rounded-full px-5 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${buttonClass}"
+        aria-label="${buttonLabel}"
+        class="rounded-full px-5 py-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60 ${buttonClass}"
         ${isPending || isHydratingWatchlist ? "disabled" : ""}
       >
         ${buttonLabel}
