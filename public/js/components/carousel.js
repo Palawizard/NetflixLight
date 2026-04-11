@@ -13,14 +13,16 @@ export function renderCarousel({ id, title, items }) {
           <button
             type="button"
             data-carousel-prev="${id}"
-            class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+            aria-label="Faire défiler ${title} vers la gauche"
+            class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
           >
             ←
           </button>
           <button
             type="button"
             data-carousel-next="${id}"
-            class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+            aria-label="Faire défiler ${title} vers la droite"
+            class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
           >
             →
           </button>

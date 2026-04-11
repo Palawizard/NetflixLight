@@ -1184,6 +1184,11 @@
       outline-offset: 2px;
     }
   }
+  .focus-visible\:outline-offset-4 {
+    &:focus-visible {
+      outline-offset: 4px;
+    }
+  }
   .focus-visible\:outline-rose-300 {
     &:focus-visible {
       outline-color: var(--color-rose-300);

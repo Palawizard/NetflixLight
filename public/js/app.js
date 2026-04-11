@@ -183,7 +183,8 @@ function renderShell(content, currentPath) {
             <button
               type="button"
               data-nav-path="/"
-              class="text-left text-lg font-semibold uppercase tracking-[0.25em] text-rose-400 transition hover:text-rose-300"
+              aria-label="Retourner à l'accueil"
+              class="text-left text-lg font-semibold uppercase tracking-[0.25em] text-rose-400 transition hover:text-rose-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-rose-300"
             >
               NetflixLight
             </button>
@@ -286,7 +287,8 @@ function renderNavLink(item, currentPath) {
     <button
       type="button"
       data-nav-path="${item.path}"
-      class="rounded-full px-4 py-2 text-sm font-medium transition ${
+      aria-label="Aller vers ${item.label}"
+      class="rounded-full px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 ${
         isActive
           ? "bg-white text-neutral-950"
           : "bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"

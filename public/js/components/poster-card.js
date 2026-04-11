@@ -47,7 +47,8 @@ export function renderPosterCard(item) {
       <button
         type="button"
         data-nav-path="${detailPath}"
-        class="group block w-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 text-left shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-white/20"
+        aria-label="Ouvrir la fiche détail de ${title}"
+        class="group block w-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 text-left shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-rose-300"
       >
         <div class="relative aspect-2/3 overflow-hidden bg-black/40">
           ${posterMarkup}
