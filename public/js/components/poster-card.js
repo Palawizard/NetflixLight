@@ -53,10 +53,10 @@ export function renderPosterCard(item) {
           ${posterMarkup}
           <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent opacity-90 transition duration-300 group-hover:opacity-100"></div>
 
-          <div class="absolute inset-x-0 bottom-0 p-5">
-            <div class="translate-y-2 transition duration-300 group-hover:translate-y-0">
-              <h3 class="text-lg font-semibold text-white">${title}</h3>
-              <div class="mt-3 flex items-center gap-3 text-sm text-white/75">
+        <div class="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+          <div class="translate-y-2 transition duration-300 group-hover:translate-y-0">
+              <h3 class="text-base font-semibold text-white sm:text-lg">${title}</h3>
+              <div class="mt-3 flex items-center gap-3 text-xs text-white/75 sm:text-sm">
                 <span class="rounded-full bg-black/40 px-3 py-1 text-amber-300">
                   ${rating}
                 </span>
@@ -75,10 +75,10 @@ export function renderPosterCard(item) {
         ${posterMarkup}
         <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent opacity-90 transition duration-300 group-hover:opacity-100"></div>
 
-        <div class="absolute inset-x-0 bottom-0 p-5">
+        <div class="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           <div class="translate-y-2 transition duration-300 group-hover:translate-y-0">
-            <h3 class="text-lg font-semibold text-white">${title}</h3>
-            <div class="mt-3 flex items-center gap-3 text-sm text-white/75">
+            <h3 class="text-base font-semibold text-white sm:text-lg">${title}</h3>
+            <div class="mt-3 flex items-center gap-3 text-xs text-white/75 sm:text-sm">
               <span class="rounded-full bg-black/40 px-3 py-1 text-amber-300">
                 ${rating}
               </span>
