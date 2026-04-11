@@ -1076,8 +1076,21 @@ function parseDetailPath(pathname) {
   };
 }
 
+function parsePlayerPath(pathname) {
+  const playerMatch = pathname.match(/^\/lecture\/(movie|tv)\/(\d+)$/);
+
+  if (!playerMatch) {
+    return null;
+  }
+
+  return {
+    type: playerMatch[1],
+    id: Number.parseInt(playerMatch[2], 10),
+  };
+}
+
 async function loadDetailPage(pathname) {
-  const detailRoute = parseDetailPath(pathname);
+  const detailRoute = parseDetailPath(pathname) || parsePlayerPath(pathname);
 
   if (!detailRoute) {
     return;
@@ -1158,6 +1171,10 @@ function handleRouteEffects(currentPath) {
   }
 
   if (parseDetailPath(currentPath)) {
+    void loadDetailPage(currentPath);
+  }
+
+  if (parsePlayerPath(currentPath)) {
     void loadDetailPage(currentPath);
   }
 
