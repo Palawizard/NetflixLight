@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS watch_progress (
     position_seconds INTEGER NOT NULL DEFAULT 0 CHECK (position_seconds >= 0),
     duration_seconds INTEGER CHECK (duration_seconds IS NULL OR duration_seconds >= 0),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    snapshot_title TEXT,
+    snapshot_poster TEXT,
     PRIMARY KEY (user_id, media_type, tmdb_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );

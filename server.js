@@ -5,6 +5,7 @@ const { config, missingTmdbVars } = require("./src/config/env");
 const authRoutes = require("./src/routes/auth.routes");
 const tmdbRoutes = require("./src/routes/tmdb.routes");
 const watchlistRoutes = require("./src/routes/watchlist.routes");
+const watchProgressRoutes = require("./src/routes/watch-progress.routes");
 const { apiRequestLogger } = require("./src/middlewares/api-logger.middleware");
 const {
   apiNotFoundHandler,
@@ -34,6 +35,7 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/tmdb", tmdbRoutes);
 app.use("/api/watchlist", watchlistRoutes);
+app.use("/api/watch-progress", watchProgressRoutes);
 
 app.locals.appConfig = {
   environment: config.environment,
