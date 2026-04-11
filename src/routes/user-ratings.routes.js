@@ -1,0 +1,109 @@
+const express = require("express");
+const { requireAuth } = require("../middlewares/require-auth.middleware");
+const { createApiError } = require("../utils/api-error");
+const {
+  findUserRatingByUserAndMedia,
+  listUserRatingsByUserId,
+  removeUserRating,
+  upsertUserRating,
+} = require("../data-access/repositories/user-rating.repository");
+
+const router = express.Router();
+const ALLOWED_MEDIA_TYPES = new Set(["movie", "tv"]);
+
+function validateRatingParams(params) {
+  const type = typeof params.type === "string" ? params.type.trim() : "";
+  const tmdbId = Number.parseInt(params.id, 10);
+
+  if (!ALLOWED_MEDIA_TYPES.has(type)) {
+    throw createApiError(400, "INVALID_TYPE", "type must be one of: movie, tv");
+  }
+
+  if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
+    throw createApiError(400, "INVALID_ID", "id must be a positive integer");
+  }
+
+  return {
+    type,
+    tmdbId,
+  };
+}
+
+function validateRatingPayload(payload) {
+  const safePayload =
+    payload !== null && typeof payload === "object" ? payload : {};
+  const rating = Number.parseInt(safePayload.rating, 10);
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw createApiError(
+      400,
+      "INVALID_RATING",
+      "rating must be an integer between 1 and 5"
+    );
+  }
+
+  return {
+    rating,
+  };
+}
+
+router.get("/", requireAuth, (req, res, next) => {
+  try {
+    return res.status(200).json({
+      items: listUserRatingsByUserId(req.authUser.id),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get("/:type/:id", requireAuth, (req, res, next) => {
+  try {
+    const { type, tmdbId } = validateRatingParams(req.params);
+
+    return res.status(200).json({
+      item: findUserRatingByUserAndMedia({
+        userId: req.authUser.id,
+        type,
+        tmdbId,
+      }),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.put("/:type/:id", requireAuth, (req, res, next) => {
+  try {
+    const { type, tmdbId } = validateRatingParams(req.params);
+    const { rating } = validateRatingPayload(req.body);
+
+    return res.status(200).json({
+      item: upsertUserRating({
+        userId: req.authUser.id,
+        type,
+        tmdbId,
+        rating,
+      }),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.delete("/:type/:id", requireAuth, (req, res, next) => {
+  try {
+    const { type, tmdbId } = validateRatingParams(req.params);
+    removeUserRating({
+      userId: req.authUser.id,
+      type,
+      tmdbId,
+    });
+
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});
+
+module.exports = router;

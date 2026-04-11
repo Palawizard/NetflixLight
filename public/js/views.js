@@ -1002,6 +1002,7 @@ function renderDetailContent(state, item, type) {
             </p>
 
             ${renderFavoriteToggle(state, item, type)}
+            ${renderPersonalRating(state, item, type)}
 
             <div class="mt-8 flex flex-wrap gap-3">
               <button
@@ -1295,6 +1296,79 @@ function renderFavoriteToggle(state, item, type) {
         }
       </p>
     </div>
+  `;
+}
+
+function renderPersonalRating(state, item, type) {
+  const isAuthenticated =
+    state.session.status === "authenticated" && Boolean(state.session.user);
+  const ratingKey = createFavoriteKey(type, item.id);
+  const ratingItem = state.userRatings.itemKeys[ratingKey];
+  const selectedRating = ratingItem?.rating || 0;
+  const isHydratingRatings =
+    isAuthenticated &&
+    (state.userRatings.status === "idle" ||
+      state.userRatings.status === "loading");
+  const isPending = Boolean(state.userRatings.pendingKeys[ratingKey]);
+  const lastAction =
+    state.userRatings.lastAction?.key === ratingKey
+      ? state.userRatings.lastAction
+      : null;
+
+  return `
+    <section class="mt-8 rounded-3xl border border-white/10 bg-black/20 p-5">
+      <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Ta note</p>
+      <div class="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Notation personnelle">
+        ${[1, 2, 3, 4, 5]
+          .map((rating) =>
+            renderRatingStarButton({
+              rating,
+              selectedRating,
+              disabled: isPending || isHydratingRatings,
+            })
+          )
+          .join("")}
+      </div>
+      <p class="mt-4 text-sm ${
+        lastAction?.tone === "error"
+          ? "text-rose-200"
+          : lastAction?.tone === "success"
+            ? "text-emerald-200"
+            : "text-white/65"
+      }">
+        ${
+          lastAction?.message ||
+          (isHydratingRatings
+            ? "On charge ta note personnelle."
+            : selectedRating > 0
+              ? `Tu as mis ${selectedRating}/5 à ce titre.`
+              : isAuthenticated
+                ? "Note ce titre de 1 à 5 étoiles."
+                : "Connecte-toi pour noter ce titre.")
+        }
+      </p>
+    </section>
+  `;
+}
+
+function renderRatingStarButton({ rating, selectedRating, disabled }) {
+  const isSelected = rating <= selectedRating;
+
+  return `
+    <button
+      type="button"
+      data-set-rating="${rating}"
+      aria-label="Mettre ${rating} étoile${rating > 1 ? "s" : ""} sur 5"
+      aria-pressed="${isSelected ? "true" : "false"}"
+      class="rounded-full border px-4 py-2 text-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-60 ${
+        isSelected
+          ? "border-amber-300/40 bg-amber-400/20 text-amber-200"
+          : "border-white/10 bg-white/5 text-white/45 hover:bg-white/10 hover:text-amber-200"
+      }"
+      ${disabled ? "disabled" : ""}
+    >
+      ★
+    </button>
   `;
 }
 
