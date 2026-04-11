@@ -48,7 +48,7 @@ export function renderPosterCard(item) {
         type="button"
         data-nav-path="${detailPath}"
         aria-label="Ouvrir la fiche détail de ${title}"
-        class="group block w-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 text-left shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-rose-300"
+        class="group block w-full transform-gpu overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 text-left shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-rose-300 motion-reduce:transform-none motion-reduce:transition-none"
       >
         <div class="relative aspect-2/3 overflow-hidden bg-black/40">
           ${posterMarkup}
@@ -71,7 +71,7 @@ export function renderPosterCard(item) {
   }
 
   return `
-    <article class="group overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-white/20">
+    <article class="group transform-gpu overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-white/20 motion-reduce:transform-none motion-reduce:transition-none">
       <div class="relative aspect-2/3 overflow-hidden bg-black/40">
         ${posterMarkup}
         <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent opacity-90 transition duration-300 group-hover:opacity-100"></div>
