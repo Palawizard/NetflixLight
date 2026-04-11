@@ -1,5 +1,6 @@
 import { renderCarousel } from "./components/carousel.js";
 import { renderPosterCard } from "./components/poster-card.js";
+import { getPlaybackSources } from "./player-sources.js";
 
 const TMDB_POSTER_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 const TMDB_PROFILE_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w300";
@@ -514,6 +515,17 @@ export function resolveView(pathname) {
     };
   }
 
+  const playerMatch = pathname.match(/^\/lecture\/(movie|tv)\/(\d+)$/);
+
+  if (playerMatch) {
+    const [, type, id] = playerMatch;
+
+    return {
+      title: "Lecture",
+      render: (state) => renderPlayerView(state, type, Number.parseInt(id, 10)),
+    };
+  }
+
   return {
     title: "404",
     render: () => renderNotFoundView(pathname),
@@ -792,6 +804,7 @@ function renderDetailContent(state, item, type) {
   const returnPath = type === "movie" ? "/films" : "/";
   const returnLabel =
     type === "movie" ? "Retour aux films" : "Retour à l'accueil";
+  const playerPath = `/lecture/${type}/${item.id}`;
   const genres = getGenreNames(item.genres);
   const mainCast = getMainCast(item.credits?.cast);
   const similarItems = getSimilarItems(item.similar?.results, type, item.id);
@@ -844,6 +857,13 @@ function renderDetailContent(state, item, type) {
             ${renderFavoriteToggle(state, item, type)}
 
             <div class="mt-8 flex flex-wrap gap-3">
+              <button
+                type="button"
+                data-nav-path="${playerPath}"
+                class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+              >
+                Lire
+              </button>
               ${renderDetailBadge(dateLabel, formatLongDate(item.release_date || item.first_air_date))}
               ${renderDetailBadge(durationLabel, type === "movie" ? formatRuntime(item.runtime) : formatSeasonCount(item.number_of_seasons))}
               ${renderDetailBadge("Genres", formatGenreSummary(genres))}
@@ -876,6 +896,118 @@ function renderDetailContent(state, item, type) {
 
       ${renderSimilarContentSection(similarItems, type, item.id)}
       ${renderMainCastSection(mainCast)}
+    </section>
+  `;
+}
+
+function renderPlayerView(state, type, id) {
+  const detailState = state.detail;
+  const isMatchingDetail = detailState.type === type && detailState.id === id;
+
+  if (
+    !isMatchingDetail ||
+    detailState.status === "idle" ||
+    detailState.status === "loading"
+  ) {
+    return renderPlayerLoading();
+  }
+
+  if (detailState.status === "error") {
+    return renderDetailError(type, id, detailState.error);
+  }
+
+  if (!detailState.item) {
+    return renderPlayerLoading();
+  }
+
+  return renderPlayerContent(detailState.item, type);
+}
+
+function renderPlayerLoading() {
+  return `
+    <section class="space-y-6">
+      <div class="h-10 w-40 animate-pulse rounded-full bg-white/10"></div>
+      <article class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30">
+        <div class="aspect-video animate-pulse bg-white/10"></div>
+        <div class="space-y-4 p-8">
+          <div class="h-5 w-36 animate-pulse rounded-full bg-white/10"></div>
+          <div class="h-10 w-full max-w-xl animate-pulse rounded-2xl bg-white/10"></div>
+        </div>
+      </article>
+    </section>
+  `;
+}
+
+function renderPlayerContent(item, type) {
+  const title = escapeHtml(item.title || item.name || "Titre inconnu");
+  const returnPath = `/${type}/${item.id}`;
+  const { sample, trailer } = getPlaybackSources(item);
+  const posterPath = item.backdrop_path
+    ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
+    : sample.poster;
+
+  return `
+    <section class="space-y-6">
+      <button
+        type="button"
+        data-nav-path="${returnPath}"
+        class="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+      >
+        Retour au détail
+      </button>
+
+      <article class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30 backdrop-blur">
+        <div class="relative bg-black">
+          <video
+            data-player-video
+            class="aspect-video w-full bg-black object-contain"
+            src="${sample.src}"
+            poster="${posterPath}"
+            preload="metadata"
+            controls
+          ></video>
+        </div>
+        <div class="space-y-4 p-8 sm:p-10">
+          <p class="text-sm uppercase tracking-[0.3em] text-rose-300">Lecture</p>
+          <h1 class="text-4xl font-semibold tracking-tight text-white">${title}</h1>
+          <p class="max-w-3xl text-sm leading-7 text-white/65">
+            Source de lecture: ${sample.title}. ${sample.attribution}
+          </p>
+        </div>
+      </article>
+
+      ${renderYoutubeTrailerOption(trailer)}
+    </section>
+  `;
+}
+
+function renderYoutubeTrailerOption(trailer) {
+  if (!trailer) {
+    return `
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
+        Aucune bande-annonce YouTube n'est disponible pour ce titre.
+      </section>
+    `;
+  }
+
+  return `
+    <section class="space-y-4 rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+      <div>
+        <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Option YouTube</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+          ${escapeHtml(trailer.title)}
+        </h2>
+      </div>
+      <div class="overflow-hidden rounded-3xl border border-white/10 bg-black">
+        <iframe
+          class="aspect-video w-full"
+          src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailer.key)}"
+          title="${escapeHtml(trailer.title)}"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          loading="lazy"
+        ></iframe>
+      </div>
     </section>
   `;
 }
