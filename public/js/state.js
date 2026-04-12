@@ -57,6 +57,17 @@ function createUserRatingsState() {
   };
 }
 
+function createProfilesState() {
+  return {
+    status: "idle",
+    items: [],
+    activeProfileId: null,
+    pending: false,
+    error: null,
+    lastAction: null,
+  };
+}
+
 function createSearchState() {
   return {
     status: "idle",
@@ -101,6 +112,7 @@ export const appState = {
   watchProgress: createWatchProgressState(),
   viewingHistory: createViewingHistoryState(),
   userRatings: createUserRatingsState(),
+  profiles: createProfilesState(),
   search: createSearchState(),
   genreRecommendations: createGenreRecommendationsState(),
   catalog: {
@@ -297,6 +309,21 @@ export function setUserRatingsState(nextUserRatingsState) {
 export function resetUserRatingsState() {
   updateState((state) => {
     state.userRatings = createUserRatingsState();
+  });
+}
+
+export function setProfilesState(nextProfilesState) {
+  updateState((state) => {
+    state.profiles = {
+      ...state.profiles,
+      ...nextProfilesState,
+    };
+  });
+}
+
+export function resetProfilesState() {
+  updateState((state) => {
+    state.profiles = createProfilesState();
   });
 }
 

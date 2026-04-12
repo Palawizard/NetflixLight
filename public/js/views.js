@@ -426,8 +426,143 @@ function renderProfileView(state) {
         </div>
       </dl>
 
+      ${renderProfilesSection(state.profiles)}
       ${renderViewingHistorySection(state.viewingHistory)}
     </section>
+  `;
+}
+
+function renderProfilesSection(profilesState) {
+  const profiles = Array.isArray(profilesState.items)
+    ? profilesState.items
+    : [];
+  const colors = ["#fb7185", "#38bdf8", "#34d399", "#f59e0b", "#a78bfa"];
+
+  return `
+    <section class="space-y-6 rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+      <div>
+        <p class="text-sm uppercase tracking-[0.3em] text-violet-300">Profils</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+          Profils du compte
+        </h2>
+        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+          Crée plusieurs profils sur le même compte et choisis celui qui est actif sur cet appareil.
+        </p>
+      </div>
+
+      ${renderProfileFeedback(profilesState)}
+
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        ${
+          profilesState.status === "loading" || profilesState.status === "idle"
+            ? Array.from(
+                { length: 3 },
+                () => `
+                  <div class="h-32 animate-pulse rounded-3xl bg-white/10"></div>
+                `
+              ).join("")
+            : profiles
+                .map((profile) =>
+                  renderAccountProfileCard(profile, profilesState)
+                )
+                .join("")
+        }
+      </div>
+
+      <form data-profile-form class="grid gap-4 rounded-3xl border border-white/10 bg-black/20 p-5 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+        <label class="space-y-2">
+          <span class="text-sm font-medium text-white/80">Nom du nouveau profil</span>
+          <input
+            type="text"
+            name="profileName"
+            minlength="2"
+            maxlength="30"
+            required
+            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-violet-400"
+            placeholder="Ex: Salon"
+          />
+        </label>
+        <label class="space-y-2">
+          <span class="text-sm font-medium text-white/80">Couleur</span>
+          <select
+            name="avatarColor"
+            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-violet-400"
+          >
+            ${colors
+              .map((color) => `<option value="${color}">${color}</option>`)
+              .join("")}
+          </select>
+        </label>
+        <button
+          type="submit"
+          class="rounded-full bg-violet-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
+          ${profilesState.pending ? "disabled" : ""}
+        >
+          ${profilesState.pending ? "Création..." : "Créer"}
+        </button>
+      </form>
+    </section>
+  `;
+}
+
+function renderProfileFeedback(profilesState) {
+  const message = profilesState.lastAction?.message || profilesState.error;
+
+  if (!message) {
+    return "";
+  }
+
+  const tone = profilesState.lastAction?.tone || "error";
+  const toneClass =
+    tone === "success"
+      ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+      : "border-rose-400/20 bg-rose-500/10 text-rose-100";
+
+  return `
+    <p class="rounded-2xl border px-4 py-3 text-sm ${toneClass}">
+      ${escapeHtml(message)}
+    </p>
+  `;
+}
+
+function renderAccountProfileCard(profile, profilesState) {
+  const isActive = profile.id === profilesState.activeProfileId;
+  const profileName = escapeHtml(profile.name);
+
+  return `
+    <article class="rounded-3xl border ${
+      isActive
+        ? "border-violet-300/40 bg-violet-500/10"
+        : "border-white/10 bg-black/20"
+    } p-5">
+      <div class="flex items-center gap-4">
+        <span
+          aria-hidden="true"
+          class="grid h-14 w-14 place-items-center rounded-2xl text-lg font-semibold text-white shadow-lg"
+          style="background-color: ${escapeHtml(profile.avatarColor)}"
+        >
+          ${profileName.slice(0, 1).toUpperCase()}
+        </span>
+        <div class="min-w-0">
+          <h3 class="truncate text-lg font-semibold text-white">${profileName}</h3>
+          <p class="text-sm text-white/55">
+            ${isActive ? "Profil actif" : "Profil disponible"}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        data-select-profile="${profile.id}"
+        class="mt-5 rounded-full px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 ${
+          isActive
+            ? "bg-white text-neutral-950"
+            : "bg-white/10 text-white hover:bg-white/20"
+        }"
+        ${isActive ? "disabled" : ""}
+      >
+        ${isActive ? "Sélectionné" : "Utiliser ce profil"}
+      </button>
+    </article>
   `;
 }
 

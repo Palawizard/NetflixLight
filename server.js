@@ -8,6 +8,7 @@ const watchlistRoutes = require("./src/routes/watchlist.routes");
 const watchProgressRoutes = require("./src/routes/watch-progress.routes");
 const viewingHistoryRoutes = require("./src/routes/viewing-history.routes");
 const userRatingsRoutes = require("./src/routes/user-ratings.routes");
+const profilesRoutes = require("./src/routes/profiles.routes");
 const { apiRequestLogger } = require("./src/middlewares/api-logger.middleware");
 const {
   apiNotFoundHandler,
@@ -40,6 +41,7 @@ app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/watch-progress", watchProgressRoutes);
 app.use("/api/viewing-history", viewingHistoryRoutes);
 app.use("/api/user-ratings", userRatingsRoutes);
+app.use("/api/profiles", profilesRoutes);
 
 app.locals.appConfig = {
   environment: config.environment,
