@@ -1875,6 +1875,10 @@ html[data-theme="light"] .bg-rose-500.text-white, html[data-theme="light"] .bg-v
   color: #ffffff;
   text-shadow: none;
 }
+.carousel-edge-mask {
+  -webkit-mask-image: linear-gradient( 90deg, transparent 0, #000 1.75rem, #000 calc(100% - 1.75rem), transparent 100% );
+  mask-image: linear-gradient( 90deg, transparent 0, #000 1.75rem, #000 calc(100% - 1.75rem), transparent 100% );
+}
 .header-menu-panel {
   animation: header-menu-in 140ms ease-out;
   background: rgb(9 9 11 / 0.97);

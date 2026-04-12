@@ -112,12 +112,12 @@ function renderFavoritesView(state) {
         </div>
       </header>
 
-      ${renderWatchlistContent(watchlistState, items)}
+      ${renderWatchlistContent(watchlistState, state.userRatings, items)}
     </section>
   `;
 }
 
-function renderWatchlistContent(watchlistState, items) {
+function renderWatchlistContent(watchlistState, userRatingsState, items) {
   if (watchlistState.status === "idle" || watchlistState.status === "loading") {
     return renderWatchlistLoading();
   }
@@ -132,7 +132,11 @@ function renderWatchlistContent(watchlistState, items) {
 
   return `
     <section class="grid gap-5 md:grid-cols-2">
-      ${items.map((item) => renderWatchlistCard(item, watchlistState)).join("")}
+      ${items
+        .map((item) =>
+          renderWatchlistCard(item, watchlistState, userRatingsState)
+        )
+        .join("")}
     </section>
   `;
 }
@@ -277,12 +281,13 @@ function renderWatchlistEmpty() {
   `;
 }
 
-function renderWatchlistCard(item, watchlistState) {
+function renderWatchlistCard(item, watchlistState, userRatingsState) {
   const watchlistKey = createFavoriteKey(item.type, item.tmdbId);
   const isPending = Boolean(watchlistState.pendingKeys[watchlistKey]);
   const title = escapeHtml(item.snapshot?.title || "Titre inconnu");
   const typeLabel = item.type === "movie" ? "Film" : "Série";
   const detailPath = `/${item.type}/${item.tmdbId}`;
+  const personalRatingLabel = getPersonalRatingLabel(userRatingsState, item);
   const posterMarkup = item.snapshot?.poster
     ? renderTmdbImage({
         path: item.snapshot.poster,
@@ -331,6 +336,15 @@ function renderWatchlistCard(item, watchlistState) {
             <p class="mt-3 text-sm text-white/55">
               Ajouté le ${formatLongDate(item.addedAt)}
             </p>
+            ${
+              personalRatingLabel
+                ? `
+                  <p class="mt-4 inline-flex rounded-full border border-amber-300/40 bg-amber-400/20 px-3 py-1 text-xs font-medium text-amber-200">
+                    Ma note ${personalRatingLabel}
+                  </p>
+                `
+                : ""
+            }
           </button>
 
           <button
