@@ -60,6 +60,22 @@ const SEARCH_DEBOUNCE_MS = 350;
 const THEME_STORAGE_KEY = "netflixlight.theme";
 const GENRE_PREFERENCES_STORAGE_KEY = "netflixlight.genrePreferences";
 const ACTIVE_PROFILE_STORAGE_PREFIX = "netflixlight.activeProfile";
+const DEFAULT_PROFILE_COLOR = "#fb7185";
+const PROFILE_COLOR_PRESETS = [
+  "#fb7185",
+  "#f43f5e",
+  "#f97316",
+  "#f59e0b",
+  "#22c55e",
+  "#14b8a6",
+  "#38bdf8",
+  "#3b82f6",
+  "#8b5cf6",
+  "#d946ef",
+  "#ec4899",
+  "#f8fafc",
+];
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 const FLASH_MESSAGE_TIMEOUT_MS = 3500;
 const GENRE_CATALOG_BATCH_SIZE = 4;
 let currentDetailRequestId = 0;
@@ -236,6 +252,49 @@ function runWithoutPageAnimations(action) {
       );
     });
   });
+}
+
+function normalizeProfileColor(value) {
+  return HEX_COLOR_PATTERN.test(value)
+    ? value.toLowerCase()
+    : DEFAULT_PROFILE_COLOR;
+}
+
+function updateProfileColorPicker(input, nextColor = input.value) {
+  const color = normalizeProfileColor(nextColor);
+
+  input.value = color;
+
+  const picker = input.closest("[data-profile-color-picker]");
+
+  if (!picker) {
+    return;
+  }
+
+  picker.style.setProperty("--profile-color", color);
+
+  const valueLabel = picker.querySelector("[data-profile-color-value]");
+
+  if (valueLabel) {
+    valueLabel.textContent = color.toUpperCase();
+  }
+
+  picker.querySelectorAll("[data-profile-color-preset]").forEach((button) => {
+    const isSelected =
+      normalizeProfileColor(
+        button.getAttribute("data-profile-color-preset")
+      ) === color;
+
+    button.setAttribute("aria-pressed", String(isSelected));
+    button.classList.toggle("ring-2", isSelected);
+    button.classList.toggle("ring-white", isSelected);
+  });
+}
+
+function resetProfileColorPickers(container) {
+  container
+    .querySelectorAll("[data-profile-color-input]")
+    .forEach(updateProfileColorPicker);
 }
 
 function getDocumentTitle(currentPath, currentRoute) {
@@ -711,7 +770,6 @@ function renderProfileSelectionOverlay(state) {
   const profiles = Array.isArray(profilesState.items)
     ? profilesState.items
     : [];
-  const colors = ["#fb7185", "#38bdf8", "#34d399", "#f59e0b", "#a78bfa"];
   const isLoading =
     profilesState.status === "idle" || profilesState.status === "loading";
   const isCreateOpen = Boolean(state.ui.profileOverlay.isCreateOpen);
@@ -751,7 +809,7 @@ function renderProfileSelectionOverlay(state) {
           }
         </div>
 
-        ${isCreateOpen ? renderProfileOverlayCreateForm(profilesState, colors) : ""}
+        ${isCreateOpen ? renderProfileOverlayCreateForm(profilesState) : ""}
       </div>
     </section>
   `;
@@ -759,7 +817,7 @@ function renderProfileSelectionOverlay(state) {
 
 function renderProfileOverlayCard(profile) {
   const profileName = escapeHtml(profile.name || "Profil");
-  const avatarColor = escapeHtml(profile.avatarColor || "#fb7185");
+  const avatarColor = escapeHtml(profile.avatarColor || DEFAULT_PROFILE_COLOR);
 
   return `
     <button
@@ -801,7 +859,7 @@ function renderCreateProfileOverlayTile() {
   `;
 }
 
-function renderProfileOverlayCreateForm(profilesState, colors) {
+function renderProfileOverlayCreateForm(profilesState) {
   return `
     <form data-profile-form class="grid w-full max-w-3xl gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 sm:grid-cols-[1fr_auto_auto] sm:items-end">
       <label class="space-y-2">
@@ -816,15 +874,10 @@ function renderProfileOverlayCreateForm(profilesState, colors) {
           placeholder="Nom du profil"
         />
       </label>
-      <label class="space-y-2">
+      <div class="space-y-2">
         <span class="text-sm font-medium text-white/80">Couleur</span>
-        <select
-          name="avatarColor"
-          class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-violet-400"
-        >
-          ${colors.map((color) => `<option value="${color}">${color}</option>`).join("")}
-        </select>
-      </label>
+        ${renderProfileColorPicker("bg-black/40")}
+      </div>
       <button
         type="submit"
         class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
@@ -833,6 +886,57 @@ function renderProfileOverlayCreateForm(profilesState, colors) {
         ${profilesState.pending ? "Création..." : "Créer"}
       </button>
     </form>
+  `;
+}
+
+function renderProfileColorPicker(backgroundClass) {
+  const presets = PROFILE_COLOR_PRESETS.map(
+    (color) => `
+      <button
+        type="button"
+        data-profile-color-preset="${color}"
+        aria-label="Choisir la couleur ${color}"
+        aria-pressed="${color === DEFAULT_PROFILE_COLOR ? "true" : "false"}"
+        class="h-7 w-7 rounded-lg border border-white/20 transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${color === DEFAULT_PROFILE_COLOR ? "ring-2 ring-white" : ""}"
+        style="background-color: ${color}"
+      ></button>
+    `
+  ).join("");
+
+  return `
+    <div
+      data-profile-color-picker
+      style="--profile-color: ${DEFAULT_PROFILE_COLOR}"
+      class="grid gap-3 rounded-2xl border border-white/10 ${backgroundClass} p-3 transition focus-within:border-violet-400"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          class="h-10 w-10 shrink-0 rounded-xl border border-white/20 shadow-lg shadow-black/20"
+          style="background-color: var(--profile-color)"
+        ></span>
+        <span class="min-w-0">
+          <span class="block text-sm font-medium text-white">Couleur du profil</span>
+          <span data-profile-color-value class="block text-xs uppercase tracking-[0.2em] text-white/45">${DEFAULT_PROFILE_COLOR}</span>
+        </span>
+      </div>
+
+      <div class="grid grid-cols-6 gap-2">
+        ${presets}
+      </div>
+
+      <label class="relative inline-flex min-h-10 cursor-pointer items-center justify-center rounded-2xl border border-white/10 bg-white/10 px-4 text-sm font-medium text-white transition hover:bg-white/15 focus-within:border-white/40">
+        Autre couleur
+        <input
+          type="color"
+          name="avatarColor"
+          value="${DEFAULT_PROFILE_COLOR}"
+          data-profile-color-input
+          aria-label="Choisir une autre couleur de profil"
+          class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </label>
+    </div>
   `;
 }
 
@@ -2367,6 +2471,21 @@ document.addEventListener("click", (event) => {
     closeHeaderMenu();
   }
 
+  const colorPresetButton = event.target.closest("[data-profile-color-preset]");
+
+  if (colorPresetButton) {
+    const picker = colorPresetButton.closest("[data-profile-color-picker]");
+    const colorInput = picker?.querySelector("[data-profile-color-input]");
+
+    if (colorInput) {
+      updateProfileColorPicker(
+        colorInput,
+        colorPresetButton.getAttribute("data-profile-color-preset")
+      );
+    }
+    return;
+  }
+
   const retryHeroButton = event.target.closest("[data-retry-hero]");
 
   if (retryHeroButton) {
@@ -2544,6 +2663,13 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("input", (event) => {
+  const colorInput = event.target.closest("[data-profile-color-input]");
+
+  if (colorInput) {
+    updateProfileColorPicker(colorInput);
+    return;
+  }
+
   const searchInput = event.target.closest('#global-search[name="query"]');
 
   if (!searchInput) {
@@ -2596,6 +2722,7 @@ document.addEventListener("submit", async (event) => {
     event.preventDefault();
     await createProfileFromForm(new FormData(profileForm));
     profileForm.reset();
+    resetProfileColorPickers(profileForm);
     return;
   }
 

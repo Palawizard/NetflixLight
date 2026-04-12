@@ -60,16 +60,16 @@ test("profiles flow creates multiple profiles for one account", async () => {
 
   const createResponse = await agent.post("/api/profiles").send({
     name: "Salon",
-    avatarColor: "#38bdf8",
+    avatarColor: "#123abc",
   });
 
   assert.equal(createResponse.status, 201);
   assert.equal(createResponse.body.item.name, "Salon");
-  assert.equal(createResponse.body.item.avatarColor, "#38bdf8");
+  assert.equal(createResponse.body.item.avatarColor, "#123abc");
 
   const duplicateResponse = await agent.post("/api/profiles").send({
     name: "Salon",
-    avatarColor: "#38bdf8",
+    avatarColor: "#123abc",
   });
 
   assert.equal(duplicateResponse.status, 409);

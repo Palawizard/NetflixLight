@@ -2,6 +2,22 @@ import { renderCarousel } from "./components/carousel.js";
 import { renderPosterCard } from "./components/poster-card.js";
 import { renderTmdbImage } from "./tmdb-images.js";
 
+const DEFAULT_PROFILE_COLOR = "#fb7185";
+const PROFILE_COLOR_PRESETS = [
+  "#fb7185",
+  "#f43f5e",
+  "#f97316",
+  "#f59e0b",
+  "#22c55e",
+  "#14b8a6",
+  "#38bdf8",
+  "#3b82f6",
+  "#8b5cf6",
+  "#d946ef",
+  "#ec4899",
+  "#f8fafc",
+];
+
 /**
  * @typedef {object} TmdbMediaItem
  * @property {number} [id]
@@ -377,7 +393,6 @@ function renderProfilesSection(profilesState) {
   const profiles = Array.isArray(profilesState.items)
     ? profilesState.items
     : [];
-  const colors = ["#fb7185", "#38bdf8", "#34d399", "#f59e0b", "#a78bfa"];
 
   return `
     <section class="space-y-6 rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
@@ -423,17 +438,10 @@ function renderProfilesSection(profilesState) {
             placeholder="Ex: Salon"
           />
         </label>
-        <label class="space-y-2">
+        <div class="space-y-2">
           <span class="text-sm font-medium text-white/80">Couleur</span>
-          <select
-            name="avatarColor"
-            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-violet-400"
-          >
-            ${colors
-              .map((color) => `<option value="${color}">${color}</option>`)
-              .join("")}
-          </select>
-        </label>
+          ${renderProfileColorPicker("bg-black/30")}
+        </div>
         <button
           type="submit"
           class="rounded-full bg-violet-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
@@ -592,6 +600,57 @@ function renderViewingHistoryLoading() {
         ).join("")}
       </div>
     </section>
+  `;
+}
+
+function renderProfileColorPicker(backgroundClass) {
+  const presets = PROFILE_COLOR_PRESETS.map(
+    (color) => `
+      <button
+        type="button"
+        data-profile-color-preset="${color}"
+        aria-label="Choisir la couleur ${color}"
+        aria-pressed="${color === DEFAULT_PROFILE_COLOR ? "true" : "false"}"
+        class="h-7 w-7 rounded-lg border border-white/20 transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${color === DEFAULT_PROFILE_COLOR ? "ring-2 ring-white" : ""}"
+        style="background-color: ${color}"
+      ></button>
+    `
+  ).join("");
+
+  return `
+    <div
+      data-profile-color-picker
+      style="--profile-color: ${DEFAULT_PROFILE_COLOR}"
+      class="grid gap-3 rounded-2xl border border-white/10 ${backgroundClass} p-3 transition focus-within:border-violet-400"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          class="h-10 w-10 shrink-0 rounded-xl border border-white/20 shadow-lg shadow-black/20"
+          style="background-color: var(--profile-color)"
+        ></span>
+        <span class="min-w-0">
+          <span class="block text-sm font-medium text-white">Couleur du profil</span>
+          <span data-profile-color-value class="block text-xs uppercase tracking-[0.2em] text-white/45">${DEFAULT_PROFILE_COLOR}</span>
+        </span>
+      </div>
+
+      <div class="grid grid-cols-6 gap-2">
+        ${presets}
+      </div>
+
+      <label class="relative inline-flex min-h-10 cursor-pointer items-center justify-center rounded-2xl border border-white/10 bg-white/10 px-4 text-sm font-medium text-white transition hover:bg-white/15 focus-within:border-white/40">
+        Autre couleur
+        <input
+          type="color"
+          name="avatarColor"
+          value="${DEFAULT_PROFILE_COLOR}"
+          data-profile-color-input
+          aria-label="Choisir une autre couleur de profil"
+          class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </label>
+    </div>
   `;
 }
 

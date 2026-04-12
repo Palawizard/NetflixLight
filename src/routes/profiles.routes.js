@@ -7,7 +7,8 @@ const {
 } = require("../data-access/repositories/profile.repository");
 
 const router = express.Router();
-const PROFILE_COLORS = ["#fb7185", "#38bdf8", "#34d399", "#f59e0b", "#a78bfa"];
+const DEFAULT_PROFILE_COLOR = "#fb7185";
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 function validateProfilePayload(payload) {
   const safePayload =
@@ -17,7 +18,7 @@ function validateProfilePayload(payload) {
   const avatarColor =
     typeof safePayload.avatarColor === "string"
       ? safePayload.avatarColor.trim()
-      : PROFILE_COLORS[0];
+      : DEFAULT_PROFILE_COLOR;
 
   if (name.length < 2 || name.length > 30) {
     throw createApiError(
@@ -29,9 +30,9 @@ function validateProfilePayload(payload) {
 
   return {
     name,
-    avatarColor: PROFILE_COLORS.includes(avatarColor)
-      ? avatarColor
-      : PROFILE_COLORS[0],
+    avatarColor: HEX_COLOR_PATTERN.test(avatarColor)
+      ? avatarColor.toLowerCase()
+      : DEFAULT_PROFILE_COLOR,
   };
 }
 
