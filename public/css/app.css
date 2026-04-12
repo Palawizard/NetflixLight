@@ -307,6 +307,9 @@
   .inline-flex {
     display: inline-flex;
   }
+  .table {
+    display: table;
+  }
   .aspect-2\/3 {
     aspect-ratio: 2/3;
   }
@@ -587,12 +590,6 @@
     border-color: color-mix(in srgb, #fff 10%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       border-color: color-mix(in oklab, var(--color-white) 10%, transparent);
-    }
-  }
-  .bg-amber-400\/15 {
-    background-color: color-mix(in srgb, oklch(82.8% 0.189 84.429) 15%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-amber-400) 15%, transparent);
     }
   }
   .bg-amber-400\/20 {
@@ -953,9 +950,6 @@
   }
   .text-sky-300 {
     color: var(--color-sky-300);
-  }
-  .text-teal-300 {
-    color: var(--color-teal-300);
   }
   .text-violet-300 {
     color: var(--color-violet-300);
@@ -1427,11 +1421,6 @@
       max-width: var(--container-md);
     }
   }
-  .lg\:grid-cols-2 {
-    @media (width >= 64rem) {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
   .lg\:grid-cols-3 {
     @media (width >= 64rem) {
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1537,6 +1526,86 @@ html[data-theme="light"] .border-white\/10 {
 }
 html[data-theme="light"] .shadow-black\/20, html[data-theme="light"] .shadow-black\/30 {
   --tw-shadow-color: rgb(15 23 42 / 0.12);
+}
+html[data-theme="light"] .text-rose-100, html[data-theme="light"] .text-rose-200, html[data-theme="light"] .text-rose-300 {
+  color: #be123c;
+}
+html[data-theme="light"] .text-rose-100\/90 {
+  color: rgb(190 18 60 / 0.9);
+}
+html[data-theme="light"] .text-amber-200, html[data-theme="light"] .text-amber-300 {
+  color: #92400e;
+}
+html[data-theme="light"] .text-sky-300 {
+  color: #0369a1;
+}
+html[data-theme="light"] .text-cyan-300 {
+  color: #0e7490;
+}
+html[data-theme="light"] .text-teal-300 {
+  color: #0f766e;
+}
+html[data-theme="light"] .text-violet-300 {
+  color: #6d28d9;
+}
+html[data-theme="light"] .text-fuchsia-300 {
+  color: #a21caf;
+}
+html[data-theme="light"] .text-emerald-100, html[data-theme="light"] .text-emerald-200, html[data-theme="light"] .text-emerald-300 {
+  color: #047857;
+}
+html[data-theme="light"] .bg-rose-500.text-white, html[data-theme="light"] .bg-violet-500.text-white, html[data-theme="light"] .bg-fuchsia-500.text-white, html[data-theme="light"] .solid-on-color {
+  color: #ffffff;
+  text-shadow: none;
+}
+.media-surface {
+  color: #f8fafc;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.55);
+}
+.media-panel {
+  background-color: rgb(0 0 0 / 0.56);
+}
+.media-chip {
+  background-color: rgb(0 0 0 / 0.5);
+  color: #fde68a;
+}
+html[data-theme="light"] .media-surface, html[data-theme="light"] .media-surface .text-white, html[data-theme="light"] .media-surface .text-white\/80, html[data-theme="light"] .media-surface .text-white\/75, html[data-theme="light"] .media-surface .text-white\/70, html[data-theme="light"] .media-surface .text-white\/65, html[data-theme="light"] .media-surface .text-white\/55, html[data-theme="light"] .media-surface .text-white\/45, html[data-theme="light"] .media-surface .text-white\/40, html[data-theme="light"] .media-surface .text-white\/35 {
+  color: #f8fafc;
+}
+html[data-theme="light"] .media-surface .text-rose-200, html[data-theme="light"] .media-surface .text-rose-300 {
+  color: #fecdd3;
+}
+html[data-theme="light"] .media-surface .text-amber-200, html[data-theme="light"] .media-surface .text-amber-300 {
+  color: #fde68a;
+}
+html[data-theme="light"] .media-surface .text-emerald-200 {
+  color: #bbf7d0;
+}
+html[data-theme="light"] .media-surface .text-cyan-300, html[data-theme="light"] .media-surface .text-teal-300, html[data-theme="light"] .media-surface .text-violet-300, html[data-theme="light"] .media-surface .text-fuchsia-300 {
+  color: #e0f2fe;
+}
+html[data-theme="light"] .media-surface .text-neutral-950 {
+  color: #0f172a;
+  text-shadow: none;
+}
+html[data-theme="light"] .media-surface .bg-white, html[data-theme="light"] .media-surface .bg-white\/90 {
+  background-color: rgb(255 255 255 / 0.94);
+}
+html[data-theme="light"] .media-surface .bg-white\/10, html[data-theme="light"] .media-surface .bg-white\/5 {
+  background-color: rgb(255 255 255 / 0.14);
+}
+html[data-theme="light"] .media-surface .bg-black\/20, html[data-theme="light"] .media-surface .bg-black\/30, html[data-theme="light"] .media-surface .bg-black\/40 {
+  background-color: rgb(0 0 0 / 0.56);
+}
+html[data-theme="light"] .media-surface .border-white\/10 {
+  border-color: rgb(255 255 255 / 0.2);
+}
+html[data-theme="light"] .media-panel {
+  background-color: rgb(0 0 0 / 0.62);
+}
+html[data-theme="light"] .media-chip {
+  background-color: rgb(0 0 0 / 0.58);
+  color: #fde68a;
 }
 @property --tw-translate-x {
   syntax: "*";

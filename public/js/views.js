@@ -29,16 +29,6 @@ import { buildTmdbImageUrl, renderTmdbImage } from "./tmdb-images.js";
  * @property {number} [order]
  */
 
-function createFeatureTile({ eyebrow, title, description }) {
-  return `
-    <article class="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur">
-      <p class="text-xs uppercase tracking-[0.3em] text-rose-300">${eyebrow}</p>
-      <h3 class="mt-3 text-2xl font-semibold tracking-tight text-white">${title}</h3>
-      <p class="mt-3 text-sm leading-7 text-white/70">${description}</p>
-    </article>
-  `;
-}
-
 function renderHomeView(state) {
   return `
     <section class="space-y-8">
@@ -46,19 +36,6 @@ function renderHomeView(state) {
       ${renderContinueWatchingSection(state.watchProgress)}
       ${renderGenreRecommendationsSection(state.genreRecommendations)}
       ${renderHomeCarousels(state.catalog.home)}
-
-      <div class="grid gap-5 lg:grid-cols-2">
-        ${createFeatureTile({
-          eyebrow: "À la une",
-          title: "Les titres du moment",
-          description: "Retrouve rapidement ce qui fait parler en ce moment.",
-        })}
-        ${createFeatureTile({
-          eyebrow: "Ma liste",
-          title: "Tout garder sous la main",
-          description: "Ajoute les titres que tu veux retrouver plus tard.",
-        })}
-      </div>
     </section>
   `;
 }
@@ -170,17 +147,7 @@ function renderGenreRecommendationsSection(recommendationsState) {
   }
 
   if (recommendationsState.status === "empty") {
-    return `
-      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-teal-300">Recommandations</p>
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
-          Des idées selon tes genres
-        </h2>
-        <p class="mt-5 max-w-3xl text-base leading-8">
-          Consulte ou note quelques fiches pour que NetflixLight repère tes genres favoris.
-        </p>
-      </section>
-    `;
+    return "";
   }
 
   if (recommendationsState.status === "loading") {
@@ -538,7 +505,7 @@ function renderAccountProfileCard(profile, profilesState) {
       <div class="flex items-center gap-4">
         <span
           aria-hidden="true"
-          class="grid h-14 w-14 place-items-center rounded-2xl text-lg font-semibold text-white shadow-lg"
+          class="solid-on-color grid h-14 w-14 place-items-center rounded-2xl text-lg font-semibold text-white shadow-lg"
           style="background-color: ${escapeHtml(profile.avatarColor)}"
         >
           ${profileName.slice(0, 1).toUpperCase()}
@@ -967,17 +934,7 @@ function renderHomeHero(heroState) {
   }
 
   if (!heroState.item) {
-    return `
-      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
-        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
-        <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
-          Regarde ce qui te tente ce soir.
-        </h1>
-        <p class="mt-6 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
-          Parcours les films du moment et trouve ton prochain visionnage.
-        </p>
-      </section>
-    `;
+    return "";
   }
 
   /** @type {TmdbMediaItem} */
@@ -991,7 +948,7 @@ function renderHomeHero(heroState) {
   const detailPath = `/${mediaType}/${item.id}`;
 
   return `
-    <section class="relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
+    <section class="media-surface relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
       <div class="absolute inset-0">
         ${renderTmdbImage({
           path: backdropPath,
@@ -1148,7 +1105,7 @@ function renderDetailContent(state, item, type) {
         ${returnLabel}
       </button>
 
-      <article class="relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
+      <article class="media-surface relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
         <div class="absolute inset-0">
           ${
             backdropPath
@@ -1177,7 +1134,7 @@ function renderDetailContent(state, item, type) {
               <span class="rounded-full bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-rose-200">
                 ${type === "movie" ? "Film" : "Série"}
               </span>
-              <span class="rounded-full bg-amber-400/15 px-4 py-2 text-sm font-medium text-amber-200">
+              <span class="media-chip rounded-full px-4 py-2 text-sm font-medium">
                 Note ${formatVoteAverage(item.vote_average)}
               </span>
             </div>
@@ -1306,7 +1263,7 @@ function renderPlayerContent(state, item, type) {
         tabindex="0"
         class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30 outline-none backdrop-blur focus-visible:ring-2 focus-visible:ring-rose-300"
       >
-        <div class="relative bg-black">
+        <div class="media-surface relative bg-black">
           <video
             data-player-video
             aria-label="Extrait vidéo ${title}"
@@ -1505,7 +1462,7 @@ function renderPersonalRating(state, item, type) {
       : null;
 
   return `
-    <section class="mt-8 rounded-3xl border border-white/10 bg-black/20 p-5">
+    <section class="media-panel mt-8 rounded-3xl border border-white/10 p-5">
       <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Ta note</p>
       <div class="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Notation personnelle">
         ${[1, 2, 3, 4, 5]
