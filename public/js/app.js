@@ -180,6 +180,7 @@ function renderApp() {
     `
     ${renderFlash(appState.ui.flash)}
     ${currentRoute.render(appState)}
+    ${renderProfileSelectionOverlay(appState)}
   `,
     currentPath
   );
@@ -671,6 +672,143 @@ function renderSessionLoading() {
   `;
 }
 
+function renderProfileSelectionOverlay(state) {
+  const isAuthenticated =
+    state.session.status === "authenticated" && Boolean(state.session.user);
+
+  if (!isAuthenticated || !state.ui.profileOverlay?.isOpen) {
+    return "";
+  }
+
+  const profilesState = state.profiles;
+  const profiles = Array.isArray(profilesState.items)
+    ? profilesState.items
+    : [];
+  const colors = ["#fb7185", "#38bdf8", "#34d399", "#f59e0b", "#a78bfa"];
+  const isLoading =
+    profilesState.status === "idle" || profilesState.status === "loading";
+  const isCreateOpen = Boolean(state.ui.profileOverlay.isCreateOpen);
+
+  return `
+    <section
+      aria-modal="true"
+      aria-labelledby="profile-overlay-title"
+      role="dialog"
+      class="fixed inset-0 z-50 overflow-y-auto bg-black/95 px-5 py-10 text-white"
+    >
+      <div class="mx-auto flex min-h-full w-full max-w-5xl flex-col items-center justify-center gap-10">
+        <div class="text-center">
+          <p class="text-sm uppercase tracking-[0.3em] text-white/45">NetflixLight</p>
+          <h2 id="profile-overlay-title" class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+            Qui regarde ?
+          </h2>
+        </div>
+
+        ${
+          profilesState.error
+            ? `<p class="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">${escapeHtml(profilesState.error)}</p>`
+            : ""
+        }
+
+        <div class="flex w-full flex-wrap items-center justify-center gap-5">
+          ${
+            isLoading
+              ? Array.from(
+                  { length: 4 },
+                  () => `
+                    <div class="h-44 w-full max-w-48 animate-pulse rounded-3xl bg-white/10 sm:w-48"></div>
+                  `
+                ).join("")
+              : `${profiles.map(renderProfileOverlayCard).join("")}
+                ${renderCreateProfileOverlayTile()}`
+          }
+        </div>
+
+        ${isCreateOpen ? renderProfileOverlayCreateForm(profilesState, colors) : ""}
+      </div>
+    </section>
+  `;
+}
+
+function renderProfileOverlayCard(profile) {
+  const profileName = escapeHtml(profile.name || "Profil");
+  const avatarColor = escapeHtml(profile.avatarColor || "#fb7185");
+
+  return `
+    <button
+      type="button"
+      data-select-profile="${profile.id}"
+      class="group flex min-h-44 w-full max-w-48 flex-col items-center justify-center gap-4 rounded-3xl border border-transparent bg-white/5 p-5 text-center transition hover:border-white/60 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-48"
+    >
+      <span
+        aria-hidden="true"
+        class="solid-on-color grid h-24 w-24 place-items-center rounded-3xl text-4xl font-semibold text-white shadow-2xl shadow-black/30 transition group-hover:scale-105"
+        style="background-color: ${avatarColor}"
+      >
+        ${profileName.slice(0, 1).toUpperCase()}
+      </span>
+      <span class="max-w-full truncate text-xl font-medium text-white/75 transition group-hover:text-white">
+        ${profileName}
+      </span>
+    </button>
+  `;
+}
+
+function renderCreateProfileOverlayTile() {
+  return `
+    <button
+      type="button"
+      data-open-profile-create
+      class="group flex min-h-44 w-full max-w-48 flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-white/25 bg-white/5 p-5 text-center transition hover:border-white/70 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-48"
+    >
+      <span
+        aria-hidden="true"
+        class="grid h-24 w-24 place-items-center rounded-3xl border border-white/25 bg-white/10 text-5xl font-light text-white/70 transition group-hover:scale-105 group-hover:text-white"
+      >
+        +
+      </span>
+      <span class="text-xl font-medium text-white/75 transition group-hover:text-white">
+        Ajouter
+      </span>
+    </button>
+  `;
+}
+
+function renderProfileOverlayCreateForm(profilesState, colors) {
+  return `
+    <form data-profile-form class="grid w-full max-w-3xl gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+      <label class="space-y-2">
+        <span class="text-sm font-medium text-white/80">Nouveau profil</span>
+        <input
+          type="text"
+          name="profileName"
+          minlength="2"
+          maxlength="30"
+          required
+          class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition placeholder:text-white/35 focus:border-violet-400"
+          placeholder="Nom du profil"
+        />
+      </label>
+      <label class="space-y-2">
+        <span class="text-sm font-medium text-white/80">Couleur</span>
+        <select
+          name="avatarColor"
+          class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-violet-400"
+        >
+          ${colors.map((color) => `<option value="${color}">${color}</option>`).join("")}
+        </select>
+      </label>
+      <button
+        type="submit"
+        class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
+        ${profilesState.pending ? "disabled" : ""}
+      >
+        ${profilesState.pending ? "Création..." : "Créer"}
+      </button>
+    </form>
+  `;
+}
+
 function ensureRouteAccess(currentPath) {
   const isAuthenticated =
     appState.session.status === "authenticated" &&
@@ -987,6 +1125,25 @@ function persistActiveProfileId(userId, profileId) {
   );
 }
 
+function openProfileOverlay() {
+  updateState((state) => {
+    state.ui.profileOverlay.isOpen = true;
+  });
+}
+
+function closeProfileOverlay() {
+  updateState((state) => {
+    state.ui.profileOverlay.isOpen = false;
+    state.ui.profileOverlay.isCreateOpen = false;
+  });
+}
+
+function openProfileCreation() {
+  updateState((state) => {
+    state.ui.profileOverlay.isCreateOpen = true;
+  });
+}
+
 function selectActiveProfile(profileId) {
   if (
     appState.session.status !== "authenticated" ||
@@ -1012,6 +1169,7 @@ function selectActiveProfile(profileId) {
       message: `Profil actif: ${activeProfile.name}.`,
     },
   });
+  closeProfileOverlay();
 }
 
 async function loadProfiles({ force = false } = {}) {
@@ -1105,6 +1263,7 @@ async function createProfileFromForm(formData) {
         message: "Profil créé et sélectionné.",
       },
     });
+    closeProfileOverlay();
   } catch (error) {
     setProfilesState({
       pending: false,
@@ -1353,6 +1512,7 @@ async function logoutUser() {
       state.session.status = "guest";
       state.session.user = null;
       state.session.redirectAfterLogin = null;
+      state.ui.profileOverlay.isOpen = false;
     });
     resetWatchlistState();
     resetWatchProgressState();
@@ -2277,6 +2437,15 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const profileCreateButton = event.target.closest(
+    "[data-open-profile-create]"
+  );
+
+  if (profileCreateButton) {
+    openProfileCreation();
+    return;
+  }
+
   const themeToggleButton = event.target.closest("[data-toggle-theme]");
 
   if (themeToggleButton) {
@@ -2442,7 +2611,7 @@ document.addEventListener("submit", async (event) => {
       await loadUserRatings({ force: true });
       await loadProfiles({ force: true });
       resetAuthFormState();
-      setFlashMessage("Connexion réussie.");
+      openProfileOverlay();
       navigate(nextPath);
       return;
     }

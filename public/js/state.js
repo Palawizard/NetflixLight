@@ -68,6 +68,13 @@ function createProfilesState() {
   };
 }
 
+function createProfileOverlayState() {
+  return {
+    isOpen: false,
+    isCreateOpen: false,
+  };
+}
+
 function createSearchState() {
   return {
     status: "idle",
@@ -148,6 +155,7 @@ export const appState = {
       success: null,
     },
     logout: createLogoutState(),
+    profileOverlay: createProfileOverlayState(),
     theme: "dark",
   },
 };
