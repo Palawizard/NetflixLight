@@ -157,6 +157,7 @@ export const appState = {
     logout: createLogoutState(),
     profileOverlay: createProfileOverlayState(),
     theme: "dark",
+    language: "fr",
   },
 };
 

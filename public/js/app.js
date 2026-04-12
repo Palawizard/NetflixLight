@@ -38,6 +38,7 @@ import {
   subscribeRoute,
 } from "./router.js";
 import { resolveView } from "./views.js";
+import { translateApp } from "./i18n.js";
 
 /**
  * @typedef {object} TmdbMediaItem
@@ -58,6 +59,7 @@ const protectedPaths = new Set(["/favoris", "/profil"]);
 const guestOnlyPaths = new Set(["/login", "/register"]);
 const SEARCH_DEBOUNCE_MS = 350;
 const THEME_STORAGE_KEY = "netflixlight.theme";
+const LANGUAGE_STORAGE_KEY = "netflixlight.language";
 const GENRE_PREFERENCES_STORAGE_KEY = "netflixlight.genrePreferences";
 const ACTIVE_PROFILE_STORAGE_PREFIX = "netflixlight.activeProfile";
 const DEFAULT_PROFILE_COLOR = "#fb7185";
@@ -78,6 +80,7 @@ const PROFILE_COLOR_PRESETS = [
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 const FLASH_MESSAGE_TIMEOUT_MS = 3500;
 const GENRE_CATALOG_BATCH_SIZE = 4;
+const SUPPORTED_LANGUAGES = new Set(["fr", "en"]);
 let currentDetailRequestId = 0;
 let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
@@ -90,19 +93,18 @@ let flashMessageToken = 0;
 let pageAnimationSuppressionCount = 0;
 const HOME_SECTION_CONFIG = {
   trending: {
-    endpoint:
-      "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR",
+    endpoint: "/api/tmdb/trending?media_type=all&time_window=week",
   },
   moviesPopular: {
-    endpoint: "/api/tmdb/movies/popular?language=fr-FR",
+    endpoint: "/api/tmdb/movies/popular",
     mediaType: "movie",
   },
   tvPopular: {
-    endpoint: "/api/tmdb/tv/popular?language=fr-FR",
+    endpoint: "/api/tmdb/tv/popular",
     mediaType: "tv",
   },
   topRated: {
-    endpoint: "/api/tmdb/movies/top-rated?language=fr-FR",
+    endpoint: "/api/tmdb/movies/top-rated",
     mediaType: "movie",
   },
 };
@@ -212,6 +214,7 @@ function commitAppMarkup(nextMarkup) {
 
   appElement.innerHTML = nextMarkup;
   lastRenderedMarkup = nextMarkup;
+  translateApp(appElement, appState.ui.language);
   if (pageAnimationSuppressionCount === 0) {
     initializeAnimations(appElement);
   }
@@ -297,6 +300,51 @@ function resetProfileColorPickers(container) {
     .forEach(updateProfileColorPicker);
 }
 
+function getStoredLanguagePreference() {
+  try {
+    const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+
+    return SUPPORTED_LANGUAGES.has(storedLanguage) ? storedLanguage : "fr";
+  } catch {
+    return "fr";
+  }
+}
+
+function setStoredLanguagePreference(language) {
+  try {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  } catch {
+    // localStorage can be unavailable in restricted browser contexts.
+  }
+}
+
+function applyLanguagePreference(language, { reload = false } = {}) {
+  const nextLanguage = SUPPORTED_LANGUAGES.has(language) ? language : "fr";
+  const shouldReload = reload && nextLanguage !== appState.ui.language;
+
+  updateState((state) => {
+    state.ui.language = nextLanguage;
+  });
+  setStoredLanguagePreference(nextLanguage);
+
+  if (shouldReload) {
+    window.location.reload();
+  }
+}
+
+function getTmdbLanguageCode() {
+  return appState.ui.language === "en" ? "en-US" : "fr-FR";
+}
+
+function withTmdbLanguage(url) {
+  const urlWithoutLanguage = url
+    .replace(/([?&])language=[^&]+&?/, "$1")
+    .replace(/[?&]$/, "");
+  const separator = urlWithoutLanguage.includes("?") ? "&" : "?";
+
+  return `${urlWithoutLanguage}${separator}language=${getTmdbLanguageCode()}`;
+}
+
 function getDocumentTitle(currentPath, currentRoute) {
   if (currentPath === "/recherche" && appState.search.query) {
     return `Recherche: ${appState.search.query} | NetflixLight`;
@@ -340,6 +388,7 @@ function renderShell(content, currentPath) {
           </div>
 
           <div class="flex items-center justify-end gap-2 lg:col-start-3 lg:row-start-1">
+            ${renderLanguageChooser()}
             ${renderThemeToggle()}
             ${renderHeaderMenu(currentPath)}
           </div>
@@ -394,6 +443,36 @@ function renderHeaderMenu(currentPath) {
         </nav>
       </div>
     </details>
+  `;
+}
+
+function renderLanguageChooser() {
+  const currentLanguage = appState.ui.language;
+
+  return `
+    <div class="inline-flex rounded-full border border-white/10 bg-white/5 p-1" aria-label="Choisir la langue">
+      ${["fr", "en"]
+        .map((language) => {
+          const isActive = currentLanguage === language;
+
+          return `
+            <button
+              type="button"
+              data-set-language="${language}"
+              aria-label="${language === "fr" ? "Passer le site en français" : "Switch site to English"}"
+              aria-pressed="${isActive ? "true" : "false"}"
+              class="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                isActive
+                  ? "bg-white text-neutral-950"
+                  : "text-white/60 hover:bg-white/10 hover:text-white"
+              }"
+            >
+              ${language}
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
   `;
 }
 
@@ -606,7 +685,9 @@ async function loadGenreRecommendations({ force = false } = {}) {
 
   try {
     const response = await apiRequest(
-      `/api/tmdb/discover?type=${topPreference.type}&genre=${topPreference.id}&page=1&language=fr-FR`
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=${topPreference.type}&genre=${topPreference.id}&page=1`
+      )
     );
 
     setGenreRecommendationsState({
@@ -1859,7 +1940,7 @@ async function loadMoviesCatalog() {
 
   try {
     const response = await apiRequest(
-      "/api/tmdb/movies/popular?language=fr-FR"
+      withTmdbLanguage("/api/tmdb/movies/popular")
     );
 
     setMoviesCatalogState({
@@ -1940,7 +2021,9 @@ async function loadSearchResults(searchQuery, page = 1) {
 
   try {
     const response = await apiRequest(
-      `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&page=${normalizedPage}&language=fr-FR`,
+      withTmdbLanguage(
+        `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&page=${normalizedPage}`
+      ),
       {
         signal: currentSearchAbortController.signal,
       }
@@ -2027,7 +2110,7 @@ async function loadHomeCatalogSection(sectionKey) {
   });
 
   try {
-    const response = await apiRequest(sectionConfig.endpoint);
+    const response = await apiRequest(withTmdbLanguage(sectionConfig.endpoint));
 
     setHomeCatalogState(sectionKey, {
       status: "success",
@@ -2074,7 +2157,9 @@ async function loadGenreCatalogSection(sectionKey) {
 
   try {
     const response = await apiRequest(
-      `/api/tmdb/discover?type=movie&genre=${sectionConfig.genreId}&page=1`
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=movie&genre=${sectionConfig.genreId}&page=1`
+      )
     );
 
     setGenreCatalogState(sectionKey, {
@@ -2096,7 +2181,9 @@ async function loadGenreCatalogBatchItem(sectionKey) {
 
   try {
     const response = await apiRequest(
-      `/api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1&language=fr-FR`
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1`
+      )
     );
 
     return {
@@ -2237,7 +2324,7 @@ async function loadHomeHero() {
 
   try {
     const response = await apiRequest(
-      "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
+      withTmdbLanguage("/api/tmdb/trending?media_type=all&time_window=week")
     );
 
     /** @type {TmdbMediaItem[]} */
@@ -2321,7 +2408,9 @@ async function loadDetailPage(pathname) {
   });
 
   try {
-    const response = await apiRequest(`/api/tmdb/${type}/${id}?language=fr-FR`);
+    const response = await apiRequest(
+      withTmdbLanguage(`/api/tmdb/${type}/${id}`)
+    );
 
     if (requestId !== currentDetailRequestId) {
       return;
@@ -2601,6 +2690,15 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const languageButton = event.target.closest("[data-set-language]");
+
+  if (languageButton) {
+    applyLanguagePreference(languageButton.getAttribute("data-set-language"), {
+      reload: true,
+    });
+    return;
+  }
+
   const searchPageButton = event.target.closest("[data-search-page]");
 
   if (searchPageButton) {
@@ -2806,6 +2904,7 @@ subscribeRoute(() => {
 });
 subscribeState(scheduleRenderApp);
 applyThemePreference(getStoredThemePreference());
+applyLanguagePreference(getStoredLanguagePreference());
 resetAuthFormState();
 void initializeSession();
 registerServiceWorker();
