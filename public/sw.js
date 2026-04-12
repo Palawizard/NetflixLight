@@ -1,4 +1,4 @@
-const CACHE_NAME = "netflixlight-shell-v1";
+const CACHE_NAME = "netflixlight-shell-v2";
 const SHELL_ASSETS = [
   "/",
   "/css/app.css",
@@ -9,8 +9,6 @@ const SHELL_ASSETS = [
   "/js/state.js",
   "/js/views.js",
   "/js/tmdb-images.js",
-  "/js/player-controls.js",
-  "/js/player-sources.js",
   "/js/components/carousel.js",
   "/js/components/poster-card.js",
   "/manifest.webmanifest",

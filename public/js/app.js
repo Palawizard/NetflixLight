@@ -1,7 +1,6 @@
 import { apiRequest, formatApiError } from "./api.js";
 import { initializeAnimations } from "./animations.js";
 import { initializeCarousels, scrollCarousel } from "./components/carousel.js";
-import { initializePlayers } from "./player-controls.js";
 import {
   appState,
   setGenreCatalogState,
@@ -158,9 +157,6 @@ function commitAppMarkup(nextMarkup) {
   lastRenderedMarkup = nextMarkup;
   initializeAnimations(appElement);
   initializeCarousels(appElement);
-  initializePlayers(appElement, {
-    onProgress: saveWatchProgressFromPlayer,
-  });
 }
 
 function scheduleRenderApp() {
@@ -1137,75 +1133,6 @@ async function saveViewingHistoryFromDetail(item, type) {
   }
 }
 
-async function saveWatchProgressFromPlayer({
-  type,
-  tmdbId,
-  position,
-  duration,
-}) {
-  if (
-    appState.session.status !== "authenticated" ||
-    !appState.session.user ||
-    !type ||
-    !Number.isInteger(tmdbId)
-  ) {
-    return;
-  }
-
-  const watchProgressKey = createWatchProgressKey(type, tmdbId);
-  const detailItem =
-    appState.detail.type === type && appState.detail.id === tmdbId
-      ? appState.detail.item
-      : null;
-  const snapshot = detailItem ? buildProgressSnapshotItem(detailItem) : {};
-  const positionSeconds = Math.max(Math.floor(position || 0), 0);
-  const durationSeconds =
-    Number.isFinite(duration) && duration > 0 ? Math.floor(duration) : null;
-
-  updateState((state) => {
-    state.watchProgress.pendingKeys[watchProgressKey] = true;
-  });
-
-  try {
-    const response = await apiRequest(`/api/watch-progress/${type}/${tmdbId}`, {
-      method: "PUT",
-      body: {
-        positionSeconds,
-        durationSeconds,
-        ...snapshot,
-      },
-    });
-
-    updateState((state) => {
-      delete state.watchProgress.pendingKeys[watchProgressKey];
-
-      if (!response?.item) {
-        state.watchProgress.items = state.watchProgress.items.filter(
-          (item) =>
-            createWatchProgressKey(item.type, item.tmdbId) !== watchProgressKey
-        );
-        delete state.watchProgress.itemKeys[watchProgressKey];
-        return;
-      }
-
-      state.watchProgress.items = [
-        response.item,
-        ...state.watchProgress.items.filter(
-          (item) =>
-            createWatchProgressKey(item.type, item.tmdbId) !== watchProgressKey
-        ),
-      ];
-      state.watchProgress.itemKeys[watchProgressKey] = response.item;
-      state.watchProgress.error = null;
-    });
-  } catch (error) {
-    updateState((state) => {
-      delete state.watchProgress.pendingKeys[watchProgressKey];
-      state.watchProgress.error = formatApiError(error);
-    });
-  }
-}
-
 async function setPersonalRatingFromDetail(rating) {
   if (
     appState.session.status !== "authenticated" ||
@@ -1940,21 +1867,8 @@ function parseDetailPath(pathname) {
   };
 }
 
-function parsePlayerPath(pathname) {
-  const playerMatch = pathname.match(/^\/lecture\/(movie|tv)\/(\d+)$/);
-
-  if (!playerMatch) {
-    return null;
-  }
-
-  return {
-    type: playerMatch[1],
-    id: Number.parseInt(playerMatch[2], 10),
-  };
-}
-
 async function loadDetailPage(pathname) {
-  const detailRoute = parseDetailPath(pathname) || parsePlayerPath(pathname);
+  const detailRoute = parseDetailPath(pathname);
 
   if (!detailRoute) {
     return;
@@ -2070,10 +1984,6 @@ function handleRouteEffects(currentPath) {
   }
 
   if (parseDetailPath(currentPath)) {
-    void loadDetailPage(currentPath);
-  }
-
-  if (parsePlayerPath(currentPath)) {
     void loadDetailPage(currentPath);
   }
 

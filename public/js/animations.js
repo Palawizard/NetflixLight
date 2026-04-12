@@ -3,7 +3,6 @@ const ANIMATION_SELECTOR = [
   "main > section > article",
   "main > section > div",
   "main [data-carousel-root]",
-  "main [data-player]",
 ].join(",");
 
 const prefersReducedMotion = window.matchMedia(

@@ -1,7 +1,6 @@
 import { renderCarousel } from "./components/carousel.js";
 import { renderPosterCard } from "./components/poster-card.js";
-import { getPlaybackSources } from "./player-sources.js";
-import { buildTmdbImageUrl, renderTmdbImage } from "./tmdb-images.js";
+import { renderTmdbImage } from "./tmdb-images.js";
 
 /**
  * @typedef {object} TmdbMediaItem
@@ -118,7 +117,7 @@ function renderContinueWatchingSection(watchProgressState) {
       media_type: item.type,
       title: item.snapshot.title,
       poster_path: item.snapshot.poster,
-      navigation_path: `/lecture/${item.type}/${item.tmdbId}`,
+      navigation_path: `/${item.type}/${item.tmdbId}`,
       vote_average: null,
       release_date: item.updatedAt,
     }));
@@ -776,17 +775,6 @@ export function resolveView(pathname) {
     };
   }
 
-  const playerMatch = pathname.match(/^\/lecture\/(movie|tv)\/(\d+)$/);
-
-  if (playerMatch) {
-    const [, type, id] = playerMatch;
-
-    return {
-      title: "Lecture",
-      render: (state) => renderPlayerView(state, type, Number.parseInt(id, 10)),
-    };
-  }
-
   return {
     title: "404",
     render: () => renderNotFoundView(pathname),
@@ -1064,10 +1052,10 @@ function renderDetailContent(state, item, type) {
   const returnPath = type === "movie" ? "/films" : "/";
   const returnLabel =
     type === "movie" ? "Retour aux films" : "Retour à l'accueil";
-  const playerPath = `/lecture/${type}/${item.id}`;
   const genres = getGenreNames(item.genres);
   const mainCast = getMainCast(item.credits?.cast);
   const similarItems = getSimilarItems(item.similar?.results, type, item.id);
+  const trailer = findBestYoutubeTrailer(item.videos?.results);
 
   return `
     <section class="space-y-8">
@@ -1125,13 +1113,6 @@ function renderDetailContent(state, item, type) {
             ${renderPersonalRating(state, item, type)}
 
             <div class="mt-8 flex flex-wrap gap-3">
-              <button
-                type="button"
-                data-nav-path="${playerPath}"
-                class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
-              >
-                Lire
-              </button>
               ${renderDetailBadge(dateLabel, formatLongDate(item.release_date || item.first_air_date))}
               ${renderDetailBadge(durationLabel, type === "movie" ? formatRuntime(item.runtime) : formatSeasonCount(item.number_of_seasons))}
               ${renderDetailBadge("Genres", formatGenreSummary(genres))}
@@ -1162,188 +1143,22 @@ function renderDetailContent(state, item, type) {
         </aside>
       </div>
 
+      ${renderYoutubeTrailerOption(trailer)}
       ${renderSimilarContentSection(similarItems, type, item.id)}
       ${renderMainCastSection(mainCast)}
     </section>
   `;
 }
 
-function renderPlayerView(state, type, id) {
-  const detailState = state.detail;
-  const isMatchingDetail = detailState.type === type && detailState.id === id;
-
-  if (
-    !isMatchingDetail ||
-    detailState.status === "idle" ||
-    detailState.status === "loading"
-  ) {
-    return renderPlayerLoading();
-  }
-
-  if (detailState.status === "error") {
-    return renderDetailError(type, id, detailState.error);
-  }
-
-  if (!detailState.item) {
-    return renderPlayerLoading();
-  }
-
-  return renderPlayerContent(state, detailState.item, type);
-}
-
-function renderPlayerLoading() {
-  return `
-    <section class="space-y-6">
-      <div class="h-10 w-40 animate-pulse rounded-full bg-white/10"></div>
-      <article class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30">
-        <div class="aspect-video animate-pulse bg-white/10"></div>
-        <div class="space-y-4 p-8">
-          <div class="h-5 w-36 animate-pulse rounded-full bg-white/10"></div>
-          <div class="h-10 w-full max-w-xl animate-pulse rounded-2xl bg-white/10"></div>
-        </div>
-      </article>
-    </section>
-  `;
-}
-
-function renderPlayerContent(state, item, type) {
-  const title = escapeHtml(item.title || item.name || "Titre inconnu");
-  const returnPath = `/${type}/${item.id}`;
-  const { sample, trailer } = getPlaybackSources(item);
-  const posterPath = item.backdrop_path
-    ? buildTmdbImageUrl(item.backdrop_path, "w1280")
-    : sample.poster;
-  const progressKey = `${type}:${item.id}`;
-  const resumeProgress = state.watchProgress.itemKeys[progressKey];
-  const resumePosition = resumeProgress?.positionSeconds || 0;
-
-  return `
-    <section class="space-y-6">
-      <button
-        type="button"
-        data-nav-path="${returnPath}"
-        class="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
-      >
-        Retour au détail
-      </button>
-
-      <article
-        data-player
-        data-player-type="${type}"
-        data-player-id="${item.id}"
-        data-player-resume="${resumePosition}"
-        role="region"
-        aria-label="Lecteur vidéo"
-        tabindex="0"
-        class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30 outline-none backdrop-blur focus-visible:ring-2 focus-visible:ring-rose-300"
-      >
-        <div class="media-surface relative bg-black">
-          <video
-            data-player-video
-            aria-label="Extrait vidéo ${title}"
-            class="aspect-video w-full bg-black object-contain"
-            src="${sample.src}"
-            poster="${posterPath}"
-            preload="metadata"
-          ></video>
-          <div
-            data-player-controls
-            class="border-t border-white/10 bg-black/85 px-4 py-4 transition-opacity duration-300"
-          >
-            <div class="flex flex-col gap-4">
-              <div class="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  data-player-play
-                  aria-label="Lancer la lecture"
-                  aria-pressed="false"
-                  class="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
-                >
-                  Lecture
-                </button>
-                <span
-                  data-player-time
-                  aria-live="polite"
-                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75"
-                >
-                  0:00 / 0:00
-                </span>
-                <button
-                  type="button"
-                  data-player-mute
-                  aria-label="Couper le son"
-                  aria-pressed="false"
-                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
-                >
-                  Son
-                </button>
-                <label class="flex items-center gap-2 text-sm text-white/65" for="player-volume-${type}-${item.id}">
-                  Volume
-                  <input
-                    id="player-volume-${type}-${item.id}"
-                    data-player-volume
-                    type="range"
-                    aria-label="Volume"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value="0.8"
-                    class="w-28 accent-rose-400"
-                  />
-                </label>
-                <button
-                  type="button"
-                  data-player-fullscreen
-                  aria-label="Passer en plein écran"
-                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
-                >
-                  Plein écran
-                </button>
-              </div>
-              <label class="space-y-2 text-sm text-white/65" for="player-seek-${type}-${item.id}">
-                Progression
-                <input
-                  id="player-seek-${type}-${item.id}"
-                  data-player-seek
-                  type="range"
-                  aria-label="Progression de la vidéo"
-                  min="0"
-                  max="0"
-                  step="0.1"
-                  value="0"
-                  class="w-full accent-rose-400"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="space-y-4 p-8 sm:p-10">
-          <p class="text-sm uppercase tracking-[0.3em] text-rose-300">Lecture</p>
-          <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">${title}</h1>
-          <p class="max-w-3xl text-sm leading-7 text-white/65">
-            Source de lecture: ${sample.title}. ${sample.attribution}
-          </p>
-        </div>
-      </article>
-
-      ${renderYoutubeTrailerOption(trailer)}
-    </section>
-  `;
-}
-
 function renderYoutubeTrailerOption(trailer) {
   if (!trailer) {
-    return `
-      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
-        Aucune bande-annonce YouTube n'est disponible pour ce titre.
-      </section>
-    `;
+    return "";
   }
 
   return `
     <section class="space-y-4 rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
       <div>
-        <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Option YouTube</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Bande-annonce</p>
         <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
           ${escapeHtml(trailer.title)}
         </h2>
@@ -1360,6 +1175,43 @@ function renderYoutubeTrailerOption(trailer) {
       </div>
     </section>
   `;
+}
+
+const YOUTUBE_TRAILER_TYPES = new Set(["Trailer", "Teaser"]);
+const YOUTUBE_TRAILER_LANGUAGES = ["fr", "en"];
+
+function findBestYoutubeTrailer(videos) {
+  if (!Array.isArray(videos)) {
+    return null;
+  }
+
+  const youtubeVideos = videos.filter(
+    (video) =>
+      video &&
+      video.site === "YouTube" &&
+      typeof video.key === "string" &&
+      video.key.trim() &&
+      YOUTUBE_TRAILER_TYPES.has(video.type)
+  );
+
+  if (youtubeVideos.length === 0) {
+    return null;
+  }
+
+  const bestVideo =
+    youtubeVideos.find((video) => video.official && video.iso_639_1 === "fr") ||
+    youtubeVideos.find((video) => video.iso_639_1 === "fr") ||
+    youtubeVideos.find((video) => video.official && video.type === "Trailer") ||
+    youtubeVideos.find((video) => video.type === "Trailer") ||
+    youtubeVideos.find((video) =>
+      YOUTUBE_TRAILER_LANGUAGES.includes(video.iso_639_1)
+    ) ||
+    youtubeVideos[0];
+
+  return {
+    title: bestVideo.name || "Bande-annonce",
+    key: bestVideo.key.trim(),
+  };
 }
 
 function renderFavoriteToggle(state, item, type) {
