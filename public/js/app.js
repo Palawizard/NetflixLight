@@ -1,19 +1,19 @@
 import { apiRequest, formatApiError } from "./api.js";
 import { initializeAnimations } from "./animations.js";
 import { initializeCarousels, scrollCarousel } from "./components/carousel.js";
-import { initializePlayers } from "./player-controls.js";
 import {
   appState,
   setGenreCatalogState,
   setHomeCatalogState,
   setSessionState,
   setMoviesCatalogState,
+  setSeriesCatalogState,
   setHeroState,
   resetAuthFormState,
   setAuthFormState,
   resetLogoutState,
   setLogoutState,
-  setFlashMessage,
+  setFlashMessage as setFlashMessageState,
   setDetailState,
   setWatchlistState,
   resetWatchlistState,
@@ -28,6 +28,7 @@ import {
   setSearchState,
   resetSearchState,
   setGenreRecommendationsState,
+  setSeriesGenreCatalogState,
   subscribeState,
   updateState,
 } from "./state.js";
@@ -39,6 +40,7 @@ import {
   subscribeRoute,
 } from "./router.js";
 import { resolveView } from "./views.js";
+import { translateApp } from "./i18n.js";
 
 /**
  * @typedef {object} TmdbMediaItem
@@ -59,29 +61,53 @@ const protectedPaths = new Set(["/favoris", "/profil"]);
 const guestOnlyPaths = new Set(["/login", "/register"]);
 const SEARCH_DEBOUNCE_MS = 350;
 const THEME_STORAGE_KEY = "netflixlight.theme";
+const LANGUAGE_STORAGE_KEY = "netflixlight.language";
 const GENRE_PREFERENCES_STORAGE_KEY = "netflixlight.genrePreferences";
 const ACTIVE_PROFILE_STORAGE_PREFIX = "netflixlight.activeProfile";
+const DEFAULT_PROFILE_COLOR = "#fb7185";
+const PROFILE_COLOR_PRESETS = [
+  "#fb7185",
+  "#f43f5e",
+  "#f97316",
+  "#f59e0b",
+  "#22c55e",
+  "#14b8a6",
+  "#38bdf8",
+  "#3b82f6",
+  "#8b5cf6",
+  "#d946ef",
+  "#ec4899",
+  "#f8fafc",
+];
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+const FLASH_MESSAGE_TIMEOUT_MS = 3500;
+const GENRE_CATALOG_BATCH_SIZE = 4;
+const SUPPORTED_LANGUAGES = new Set(["fr", "en"]);
 let currentDetailRequestId = 0;
 let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
 let currentSearchRequestId = 0;
+let currentGenreCatalogRequestId = 0;
+let currentSeriesGenreCatalogRequestId = 0;
 let lastRenderedMarkup = "";
 let scheduledRenderId = null;
+let flashMessageTimeoutId = null;
+let flashMessageToken = 0;
+let pageAnimationSuppressionCount = 0;
 const HOME_SECTION_CONFIG = {
   trending: {
-    endpoint:
-      "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR",
+    endpoint: "/api/tmdb/trending?media_type=all&time_window=week",
   },
   moviesPopular: {
-    endpoint: "/api/tmdb/movies/popular?language=fr-FR",
+    endpoint: "/api/tmdb/movies/popular",
     mediaType: "movie",
   },
   tvPopular: {
-    endpoint: "/api/tmdb/tv/popular?language=fr-FR",
+    endpoint: "/api/tmdb/tv/popular",
     mediaType: "tv",
   },
   topRated: {
-    endpoint: "/api/tmdb/movies/top-rated?language=fr-FR",
+    endpoint: "/api/tmdb/movies/top-rated",
     mediaType: "movie",
   },
 };
@@ -90,15 +116,107 @@ const GENRE_SECTION_CONFIG = {
     genreId: 28,
     mediaType: "movie",
   },
+  adventure: {
+    genreId: 12,
+    mediaType: "movie",
+  },
+  animation: {
+    genreId: 16,
+    mediaType: "movie",
+  },
   comedy: {
     genreId: 35,
+    mediaType: "movie",
+  },
+  crime: {
+    genreId: 80,
+    mediaType: "movie",
+  },
+  drama: {
+    genreId: 18,
+    mediaType: "movie",
+  },
+  family: {
+    genreId: 10751,
+    mediaType: "movie",
+  },
+  fantasy: {
+    genreId: 14,
     mediaType: "movie",
   },
   horror: {
     genreId: 27,
     mediaType: "movie",
   },
+  romance: {
+    genreId: 10749,
+    mediaType: "movie",
+  },
+  scienceFiction: {
+    genreId: 878,
+    mediaType: "movie",
+  },
+  thriller: {
+    genreId: 53,
+    mediaType: "movie",
+  },
 };
+const GENRE_SECTION_KEYS = Object.keys(GENRE_SECTION_CONFIG);
+const SERIES_GENRE_SECTION_CONFIG = {
+  actionAdventure: {
+    genreId: 10759,
+    mediaType: "tv",
+  },
+  animation: {
+    genreId: 16,
+    mediaType: "tv",
+  },
+  comedy: {
+    genreId: 35,
+    mediaType: "tv",
+  },
+  crime: {
+    genreId: 80,
+    mediaType: "tv",
+  },
+  documentary: {
+    genreId: 99,
+    mediaType: "tv",
+  },
+  drama: {
+    genreId: 18,
+    mediaType: "tv",
+  },
+  family: {
+    genreId: 10751,
+    mediaType: "tv",
+  },
+  kids: {
+    genreId: 10762,
+    mediaType: "tv",
+  },
+  mystery: {
+    genreId: 9648,
+    mediaType: "tv",
+  },
+  reality: {
+    genreId: 10764,
+    mediaType: "tv",
+  },
+  scifiFantasy: {
+    genreId: 10765,
+    mediaType: "tv",
+  },
+  talk: {
+    genreId: 10767,
+    mediaType: "tv",
+  },
+  warPolitics: {
+    genreId: 10768,
+    mediaType: "tv",
+  },
+};
+const SERIES_GENRE_SECTION_KEYS = Object.keys(SERIES_GENRE_SECTION_CONFIG);
 
 const EMPTY_GENRE_RECOMMENDATION = {
   status: "empty",
@@ -110,6 +228,7 @@ const EMPTY_GENRE_RECOMMENDATION = {
 const navItems = [
   { path: "/", label: "Accueil" },
   { path: "/films", label: "Films" },
+  { path: "/series", label: "Séries" },
   { path: "/favoris", label: "Favoris" },
   { path: "/profil", label: "Profil" },
   { path: "/login", label: "Connexion" },
@@ -139,6 +258,7 @@ function renderApp() {
     `
     ${renderFlash(appState.ui.flash)}
     ${currentRoute.render(appState)}
+    ${renderProfileSelectionOverlay(appState)}
   `,
     currentPath
   );
@@ -153,11 +273,11 @@ function commitAppMarkup(nextMarkup) {
 
   appElement.innerHTML = nextMarkup;
   lastRenderedMarkup = nextMarkup;
-  initializeAnimations(appElement);
+  translateApp(appElement, appState.ui.language);
+  if (pageAnimationSuppressionCount === 0) {
+    initializeAnimations(appElement);
+  }
   initializeCarousels(appElement);
-  initializePlayers(appElement, {
-    onProgress: saveWatchProgressFromPlayer,
-  });
 }
 
 function scheduleRenderApp() {
@@ -169,6 +289,119 @@ function scheduleRenderApp() {
     scheduledRenderId = null;
     renderApp();
   });
+}
+
+function runWithoutPageAnimations(action) {
+  pageAnimationSuppressionCount += 1;
+
+  let result;
+
+  try {
+    result = action();
+  } catch (error) {
+    pageAnimationSuppressionCount = Math.max(
+      0,
+      pageAnimationSuppressionCount - 1
+    );
+    throw error;
+  }
+
+  return Promise.resolve(result).finally(() => {
+    window.requestAnimationFrame(() => {
+      pageAnimationSuppressionCount = Math.max(
+        0,
+        pageAnimationSuppressionCount - 1
+      );
+    });
+  });
+}
+
+function normalizeProfileColor(value) {
+  return HEX_COLOR_PATTERN.test(value)
+    ? value.toLowerCase()
+    : DEFAULT_PROFILE_COLOR;
+}
+
+function updateProfileColorPicker(input, nextColor = input.value) {
+  const color = normalizeProfileColor(nextColor);
+
+  input.value = color;
+
+  const picker = input.closest("[data-profile-color-picker]");
+
+  if (!picker) {
+    return;
+  }
+
+  picker.style.setProperty("--profile-color", color);
+
+  const valueLabel = picker.querySelector("[data-profile-color-value]");
+
+  if (valueLabel) {
+    valueLabel.textContent = color.toUpperCase();
+  }
+
+  picker.querySelectorAll("[data-profile-color-preset]").forEach((button) => {
+    const isSelected =
+      normalizeProfileColor(
+        button.getAttribute("data-profile-color-preset")
+      ) === color;
+
+    button.setAttribute("aria-pressed", String(isSelected));
+    button.classList.toggle("ring-2", isSelected);
+    button.classList.toggle("ring-white", isSelected);
+  });
+}
+
+function resetProfileColorPickers(container) {
+  container
+    .querySelectorAll("[data-profile-color-input]")
+    .forEach(updateProfileColorPicker);
+}
+
+function getStoredLanguagePreference() {
+  try {
+    const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+
+    return SUPPORTED_LANGUAGES.has(storedLanguage) ? storedLanguage : "fr";
+  } catch {
+    return "fr";
+  }
+}
+
+function setStoredLanguagePreference(language) {
+  try {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  } catch {
+    // localStorage can be unavailable in restricted browser contexts.
+  }
+}
+
+function applyLanguagePreference(language, { reload = false } = {}) {
+  const nextLanguage = SUPPORTED_LANGUAGES.has(language) ? language : "fr";
+  const shouldReload = reload && nextLanguage !== appState.ui.language;
+
+  updateState((state) => {
+    state.ui.language = nextLanguage;
+  });
+  setStoredLanguagePreference(nextLanguage);
+
+  if (shouldReload) {
+    window.location.reload();
+  }
+}
+
+function getTmdbLanguageCode() {
+  return appState.ui.language === "en" ? "en-US" : "fr-FR";
+}
+
+function withTmdbLanguage(url) {
+  const urlWithoutLanguage = url
+    .replace(/([?&])language=[^&]+&?/, "$1")
+    .replace(/[?&]$/, "");
+  const separator = urlWithoutLanguage.includes("?") ? "&" : "?";
+
+  return `${urlWithoutLanguage}${separator}language=${getTmdbLanguageCode()}`;
 }
 
 function getDocumentTitle(currentPath, currentRoute) {
@@ -200,9 +433,9 @@ function renderShell(content, currentPath) {
 
   return `
     <div class="min-h-screen">
-      <header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
-        <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <div class="flex flex-wrap items-center justify-between gap-4">
+      <header data-app-header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
+        <div class="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[1fr_minmax(20rem,34rem)_1fr]">
+          <div class="lg:col-start-1 lg:row-start-1">
             <button
               type="button"
               data-nav-path="/"
@@ -211,15 +444,16 @@ function renderShell(content, currentPath) {
             >
               NetflixLight
             </button>
-            ${renderThemeToggle()}
-            ${renderSessionBadge()}
           </div>
 
-          <div class="flex flex-1 flex-col gap-4 lg:flex-row lg:items-center lg:justify-end">
+          <div class="flex items-center justify-end gap-2 lg:col-start-3 lg:row-start-1">
+            ${renderLanguageChooser()}
+            ${renderThemeToggle()}
+            ${renderHeaderMenu(currentPath)}
+          </div>
+
+          <div class="col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:w-full">
             ${renderSearchForm(currentSearchQuery)}
-            <nav class="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
-            ${navItems.map((item) => renderNavLink(item, currentPath)).join("")}
-            </nav>
           </div>
         </div>
       </header>
@@ -231,9 +465,101 @@ function renderShell(content, currentPath) {
   `;
 }
 
+function renderHeaderMenu(currentPath) {
+  const isAuthenticated =
+    appState.session.status === "authenticated" &&
+    Boolean(appState.session.user);
+  const primaryNavItems = navItems.filter(
+    (item) => !guestOnlyPaths.has(item.path)
+  );
+  const authMenuContent = isAuthenticated
+    ? renderLogoutMenuButton()
+    : navItems
+        .filter((item) => guestOnlyPaths.has(item.path))
+        .map((item) => renderNavLink(item, currentPath))
+        .join("");
+
+  return `
+    <details data-header-menu class="group relative shrink-0">
+      <summary class="inline-flex cursor-pointer list-none items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white/80 transition duration-200 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 [&::-webkit-details-marker]:hidden">
+        <span class="flex h-4 w-5 flex-col justify-between" aria-hidden="true">
+          <span class="h-0.5 w-full origin-left rounded-full bg-current transition duration-200 group-open:translate-x-0.5 group-open:rotate-45"></span>
+          <span class="h-0.5 w-full rounded-full bg-current transition duration-200 group-open:opacity-0"></span>
+          <span class="h-0.5 w-full origin-left rounded-full bg-current transition duration-200 group-open:translate-x-0.5 group-open:-rotate-45"></span>
+        </span>
+        Menu
+      </summary>
+
+      <div data-header-menu-panel class="header-menu-panel absolute right-0 top-full z-30 mt-3 w-[min(18rem,calc(100vw-2rem))] rounded-3xl border p-3 shadow-2xl">
+        <div class="mb-3 flex flex-wrap items-center gap-2 border-b border-white/10 pb-3">
+          ${renderSessionBadge()}
+        </div>
+        <nav class="grid gap-2" aria-label="Navigation principale">
+          ${primaryNavItems.map((item) => renderNavLink(item, currentPath)).join("")}
+          <div class="mt-2 grid gap-2 border-t border-white/10 pt-3">
+            ${authMenuContent}
+          </div>
+        </nav>
+      </div>
+    </details>
+  `;
+}
+
+function renderLanguageChooser() {
+  const currentLanguage = appState.ui.language;
+
+  return `
+    <div class="inline-flex rounded-full border border-white/10 bg-white/5 p-1" aria-label="Choisir la langue">
+      ${["fr", "en"]
+        .map((language) => {
+          const isActive = currentLanguage === language;
+
+          return `
+            <button
+              type="button"
+              data-set-language="${language}"
+              aria-label="${language === "fr" ? "Passer le site en français" : "Switch site to English"}"
+              aria-pressed="${isActive ? "true" : "false"}"
+              class="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                isActive
+                  ? "bg-white text-neutral-950"
+                  : "text-white/60 hover:bg-white/10 hover:text-white"
+              }"
+            >
+              ${language}
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderLogoutMenuButton() {
+  const logoutState = appState.ui.logout;
+
+  return `
+    <button
+      type="button"
+      data-logout
+      aria-label="Se déconnecter du compte"
+      class="w-full rounded-full bg-rose-500 px-4 py-2 text-left text-sm font-medium text-white transition hover:bg-rose-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
+      ${logoutState.pending ? "disabled" : ""}
+    >
+      ${logoutState.pending ? "Déconnexion..." : "Déconnexion"}
+    </button>
+  `;
+}
+
+function closeHeaderMenu() {
+  appElement.querySelectorAll("[data-header-menu][open]").forEach((menu) => {
+    menu.open = false;
+  });
+}
+
 function renderSearchForm(currentQuery) {
   return `
-    <form data-search-form class="w-full lg:max-w-md">
+    <form data-search-form class="w-full lg:max-w-lg">
       <label class="sr-only" for="global-search">Rechercher un film ou une série</label>
       <div class="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:rounded-full sm:py-2">
         <input
@@ -381,7 +707,6 @@ function rememberGenrePreferencesFromDetail(item, type, scoreIncrement = 1) {
   );
 
   writeStoredGenrePreferences(nextPreferences);
-  void loadGenreRecommendations({ force: true });
 }
 
 function getTopGenrePreference() {
@@ -419,7 +744,9 @@ async function loadGenreRecommendations({ force = false } = {}) {
 
   try {
     const response = await apiRequest(
-      `/api/tmdb/discover?type=${topPreference.type}&genre=${topPreference.id}&page=1&language=fr-FR`
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=${topPreference.type}&genre=${topPreference.id}&page=1`
+      )
     );
 
     setGenreRecommendationsState({
@@ -443,6 +770,18 @@ function renderThemeToggle() {
   const label = isLightTheme
     ? "Passer au thème sombre"
     : "Passer au thème clair";
+  const icon = isLightTheme
+    ? `
+      <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `
+    : `
+      <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M12 2.5v2M12 19.5v2M4.5 12h-2M21.5 12h-2M5.6 5.6 4.2 4.2M19.8 19.8l-1.4-1.4M18.4 5.6l1.4-1.4M4.2 19.8l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    `;
 
   return `
     <button
@@ -450,9 +789,11 @@ function renderThemeToggle() {
       data-toggle-theme
       aria-label="${label}"
       aria-pressed="${isLightTheme ? "true" : "false"}"
-      class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
+      title="${label}"
+      class="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 transition duration-200 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
     >
-      ${isLightTheme ? "Clair" : "Sombre"}
+      ${icon}
+      <span class="sr-only">${label}</span>
     </button>
   `;
 }
@@ -496,7 +837,7 @@ function renderNavLink(item, currentPath) {
       type="button"
       data-nav-path="${item.path}"
       aria-label="Aller vers ${item.label}"
-      class="rounded-full px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 ${
+      class="w-full rounded-full px-4 py-2 text-left text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 ${
         isActive
           ? "bg-white text-neutral-950"
           : "bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
@@ -520,6 +861,29 @@ function renderFlash(flashMessage) {
   `;
 }
 
+function setFlashMessage(message) {
+  flashMessageToken += 1;
+  const currentToken = flashMessageToken;
+
+  if (flashMessageTimeoutId !== null) {
+    window.clearTimeout(flashMessageTimeoutId);
+    flashMessageTimeoutId = null;
+  }
+
+  setFlashMessageState(message);
+
+  if (!message) {
+    return;
+  }
+
+  flashMessageTimeoutId = window.setTimeout(() => {
+    if (currentToken === flashMessageToken) {
+      setFlashMessageState(null);
+      flashMessageTimeoutId = null;
+    }
+  }, FLASH_MESSAGE_TIMEOUT_MS);
+}
+
 function renderSessionLoading() {
   return `
     <section class="grid min-h-[60vh] place-items-center">
@@ -534,6 +898,188 @@ function renderSessionLoading() {
   `;
 }
 
+function renderProfileSelectionOverlay(state) {
+  const isAuthenticated =
+    state.session.status === "authenticated" && Boolean(state.session.user);
+
+  if (!isAuthenticated || !state.ui.profileOverlay?.isOpen) {
+    return "";
+  }
+
+  const profilesState = state.profiles;
+  const profiles = Array.isArray(profilesState.items)
+    ? profilesState.items
+    : [];
+  const isLoading =
+    profilesState.status === "idle" || profilesState.status === "loading";
+  const isCreateOpen = Boolean(state.ui.profileOverlay.isCreateOpen);
+
+  return `
+    <section
+      aria-modal="true"
+      aria-labelledby="profile-overlay-title"
+      role="dialog"
+      class="fixed inset-0 z-50 overflow-y-auto bg-black/95 px-5 py-10 text-white"
+    >
+      <div class="mx-auto flex min-h-full w-full max-w-5xl flex-col items-center justify-center gap-10">
+        <div class="text-center">
+          <p class="text-sm uppercase tracking-[0.3em] text-white/45">NetflixLight</p>
+          <h2 id="profile-overlay-title" class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+            Qui regarde ?
+          </h2>
+        </div>
+
+        ${
+          profilesState.error
+            ? `<p class="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">${escapeHtml(profilesState.error)}</p>`
+            : ""
+        }
+
+        <div class="flex w-full flex-wrap items-center justify-center gap-5">
+          ${
+            isLoading
+              ? Array.from(
+                  { length: 4 },
+                  () => `
+                    <div class="h-44 w-full max-w-48 animate-pulse rounded-3xl bg-white/10 sm:w-48"></div>
+                  `
+                ).join("")
+              : `${profiles.map(renderProfileOverlayCard).join("")}
+                ${renderCreateProfileOverlayTile()}`
+          }
+        </div>
+
+        ${isCreateOpen ? renderProfileOverlayCreateForm(profilesState) : ""}
+      </div>
+    </section>
+  `;
+}
+
+function renderProfileOverlayCard(profile) {
+  const profileName = escapeHtml(profile.name || "Profil");
+  const avatarColor = escapeHtml(profile.avatarColor || DEFAULT_PROFILE_COLOR);
+
+  return `
+    <button
+      type="button"
+      data-select-profile="${profile.id}"
+      class="group flex min-h-44 w-full max-w-48 flex-col items-center justify-center gap-4 rounded-3xl border border-transparent bg-white/5 p-5 text-center transition hover:border-white/60 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-48"
+    >
+      <span
+        aria-hidden="true"
+        class="solid-on-color grid h-24 w-24 place-items-center rounded-3xl text-4xl font-semibold text-white shadow-2xl shadow-black/30 transition group-hover:scale-105"
+        style="background-color: ${avatarColor}"
+      >
+        ${profileName.slice(0, 1).toUpperCase()}
+      </span>
+      <span class="max-w-full truncate text-xl font-medium text-white/75 transition group-hover:text-white">
+        ${profileName}
+      </span>
+    </button>
+  `;
+}
+
+function renderCreateProfileOverlayTile() {
+  return `
+    <button
+      type="button"
+      data-open-profile-create
+      class="group flex min-h-44 w-full max-w-48 flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-white/25 bg-white/5 p-5 text-center transition hover:border-white/70 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-48"
+    >
+      <span
+        aria-hidden="true"
+        class="grid h-24 w-24 place-items-center rounded-3xl border border-white/25 bg-white/10 text-5xl font-light text-white/70 transition group-hover:scale-105 group-hover:text-white"
+      >
+        +
+      </span>
+      <span class="text-xl font-medium text-white/75 transition group-hover:text-white">
+        Ajouter
+      </span>
+    </button>
+  `;
+}
+
+function renderProfileOverlayCreateForm(profilesState) {
+  return `
+    <form data-profile-form class="grid w-full max-w-3xl gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+      <label class="space-y-2">
+        <span class="text-sm font-medium text-white/80">Nouveau profil</span>
+        <input
+          type="text"
+          name="profileName"
+          minlength="2"
+          maxlength="30"
+          required
+          class="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition placeholder:text-white/35 focus:border-violet-400"
+          placeholder="Nom du profil"
+        />
+      </label>
+      <div class="space-y-2">
+        <span class="text-sm font-medium text-white/80">Couleur</span>
+        ${renderProfileColorPicker("bg-black/40")}
+      </div>
+      <button
+        type="submit"
+        class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
+        ${profilesState.pending ? "disabled" : ""}
+      >
+        ${profilesState.pending ? "Création..." : "Créer"}
+      </button>
+    </form>
+  `;
+}
+
+function renderProfileColorPicker(backgroundClass) {
+  const presets = PROFILE_COLOR_PRESETS.map(
+    (color) => `
+      <button
+        type="button"
+        data-profile-color-preset="${color}"
+        aria-label="Choisir la couleur ${color}"
+        aria-pressed="${color === DEFAULT_PROFILE_COLOR ? "true" : "false"}"
+        class="h-7 w-7 rounded-lg border border-white/20 transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${color === DEFAULT_PROFILE_COLOR ? "ring-2 ring-white" : ""}"
+        style="background-color: ${color}"
+      ></button>
+    `
+  ).join("");
+
+  return `
+    <div
+      data-profile-color-picker
+      style="--profile-color: ${DEFAULT_PROFILE_COLOR}"
+      class="grid gap-3 rounded-2xl border border-white/10 ${backgroundClass} p-3 transition focus-within:border-violet-400"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          class="h-10 w-10 shrink-0 rounded-xl border border-white/20 shadow-lg shadow-black/20"
+          style="background-color: var(--profile-color)"
+        ></span>
+        <span class="min-w-0">
+          <span class="block text-sm font-medium text-white">Couleur du profil</span>
+          <span data-profile-color-value class="block text-xs uppercase tracking-[0.2em] text-white/45">${DEFAULT_PROFILE_COLOR}</span>
+        </span>
+      </div>
+
+      <div class="grid grid-cols-6 gap-2">
+        ${presets}
+      </div>
+
+      <label class="relative inline-flex min-h-10 cursor-pointer items-center justify-center rounded-2xl border border-white/10 bg-white/10 px-4 text-sm font-medium text-white transition hover:bg-white/15 focus-within:border-white/40">
+        Autre couleur
+        <input
+          type="color"
+          name="avatarColor"
+          value="${DEFAULT_PROFILE_COLOR}"
+          data-profile-color-input
+          aria-label="Choisir une autre couleur de profil"
+          class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </label>
+    </div>
+  `;
+}
+
 function ensureRouteAccess(currentPath) {
   const isAuthenticated =
     appState.session.status === "authenticated" &&
@@ -541,7 +1087,7 @@ function ensureRouteAccess(currentPath) {
 
   if (!isAuthenticated && protectedPaths.has(currentPath)) {
     appState.session.redirectAfterLogin = currentPath;
-    appState.ui.flash = "Connecte-toi pour accéder à cette page.";
+    setFlashMessage("Connecte-toi pour accéder à cette page.");
     navigate("/login");
     return false;
   }
@@ -563,10 +1109,6 @@ async function initializeSession() {
   try {
     const response = await apiRequest("/api/auth/me");
 
-    setWatchlistState({
-      status: "loading",
-      error: null,
-    });
     setSessionState({
       status: "authenticated",
       user: response.user,
@@ -854,6 +1396,25 @@ function persistActiveProfileId(userId, profileId) {
   );
 }
 
+function openProfileOverlay() {
+  updateState((state) => {
+    state.ui.profileOverlay.isOpen = true;
+  });
+}
+
+function closeProfileOverlay() {
+  updateState((state) => {
+    state.ui.profileOverlay.isOpen = false;
+    state.ui.profileOverlay.isCreateOpen = false;
+  });
+}
+
+function openProfileCreation() {
+  updateState((state) => {
+    state.ui.profileOverlay.isCreateOpen = true;
+  });
+}
+
 function selectActiveProfile(profileId) {
   if (
     appState.session.status !== "authenticated" ||
@@ -879,6 +1440,7 @@ function selectActiveProfile(profileId) {
       message: `Profil actif: ${activeProfile.name}.`,
     },
   });
+  closeProfileOverlay();
 }
 
 async function loadProfiles({ force = false } = {}) {
@@ -972,6 +1534,7 @@ async function createProfileFromForm(formData) {
         message: "Profil créé et sélectionné.",
       },
     });
+    closeProfileOverlay();
   } catch (error) {
     setProfilesState({
       pending: false,
@@ -1035,75 +1598,6 @@ async function saveViewingHistoryFromDetail(item, type) {
   } catch (error) {
     setViewingHistoryState({
       error: formatApiError(error),
-    });
-  }
-}
-
-async function saveWatchProgressFromPlayer({
-  type,
-  tmdbId,
-  position,
-  duration,
-}) {
-  if (
-    appState.session.status !== "authenticated" ||
-    !appState.session.user ||
-    !type ||
-    !Number.isInteger(tmdbId)
-  ) {
-    return;
-  }
-
-  const watchProgressKey = createWatchProgressKey(type, tmdbId);
-  const detailItem =
-    appState.detail.type === type && appState.detail.id === tmdbId
-      ? appState.detail.item
-      : null;
-  const snapshot = detailItem ? buildProgressSnapshotItem(detailItem) : {};
-  const positionSeconds = Math.max(Math.floor(position || 0), 0);
-  const durationSeconds =
-    Number.isFinite(duration) && duration > 0 ? Math.floor(duration) : null;
-
-  updateState((state) => {
-    state.watchProgress.pendingKeys[watchProgressKey] = true;
-  });
-
-  try {
-    const response = await apiRequest(`/api/watch-progress/${type}/${tmdbId}`, {
-      method: "PUT",
-      body: {
-        positionSeconds,
-        durationSeconds,
-        ...snapshot,
-      },
-    });
-
-    updateState((state) => {
-      delete state.watchProgress.pendingKeys[watchProgressKey];
-
-      if (!response?.item) {
-        state.watchProgress.items = state.watchProgress.items.filter(
-          (item) =>
-            createWatchProgressKey(item.type, item.tmdbId) !== watchProgressKey
-        );
-        delete state.watchProgress.itemKeys[watchProgressKey];
-        return;
-      }
-
-      state.watchProgress.items = [
-        response.item,
-        ...state.watchProgress.items.filter(
-          (item) =>
-            createWatchProgressKey(item.type, item.tmdbId) !== watchProgressKey
-        ),
-      ];
-      state.watchProgress.itemKeys[watchProgressKey] = response.item;
-      state.watchProgress.error = null;
-    });
-  } catch (error) {
-    updateState((state) => {
-      delete state.watchProgress.pendingKeys[watchProgressKey];
-      state.watchProgress.error = formatApiError(error);
     });
   }
 }
@@ -1289,6 +1783,7 @@ async function logoutUser() {
       state.session.status = "guest";
       state.session.user = null;
       state.session.redirectAfterLogin = null;
+      state.ui.profileOverlay.isOpen = false;
     });
     resetWatchlistState();
     resetWatchProgressState();
@@ -1504,7 +1999,7 @@ async function loadMoviesCatalog() {
 
   try {
     const response = await apiRequest(
-      "/api/tmdb/movies/popular?language=fr-FR"
+      withTmdbLanguage("/api/tmdb/movies/popular")
     );
 
     setMoviesCatalogState({
@@ -1514,6 +2009,35 @@ async function loadMoviesCatalog() {
     });
   } catch (error) {
     setMoviesCatalogState({
+      status: "error",
+      error: formatApiError(error),
+    });
+  }
+}
+
+async function loadSeriesCatalog() {
+  if (
+    appState.catalog.series.status === "loading" ||
+    appState.catalog.series.status === "success"
+  ) {
+    return;
+  }
+
+  setSeriesCatalogState({
+    status: "loading",
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(withTmdbLanguage("/api/tmdb/tv/popular"));
+
+    setSeriesCatalogState({
+      status: "success",
+      items: normalizeCatalogResults(response.results, "tv"),
+      error: null,
+    });
+  } catch (error) {
+    setSeriesCatalogState({
       status: "error",
       error: formatApiError(error),
     });
@@ -1585,7 +2109,9 @@ async function loadSearchResults(searchQuery, page = 1) {
 
   try {
     const response = await apiRequest(
-      `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&page=${normalizedPage}&language=fr-FR`,
+      withTmdbLanguage(
+        `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&page=${normalizedPage}`
+      ),
       {
         signal: currentSearchAbortController.signal,
       }
@@ -1672,7 +2198,7 @@ async function loadHomeCatalogSection(sectionKey) {
   });
 
   try {
-    const response = await apiRequest(sectionConfig.endpoint);
+    const response = await apiRequest(withTmdbLanguage(sectionConfig.endpoint));
 
     setHomeCatalogState(sectionKey, {
       status: "success",
@@ -1719,7 +2245,9 @@ async function loadGenreCatalogSection(sectionKey) {
 
   try {
     const response = await apiRequest(
-      `/api/tmdb/discover?type=movie&genre=${sectionConfig.genreId}&page=1`
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=movie&genre=${sectionConfig.genreId}&page=1`
+      )
     );
 
     setGenreCatalogState(sectionKey, {
@@ -1736,13 +2264,250 @@ async function loadGenreCatalogSection(sectionKey) {
   }
 }
 
-function loadGenreCarousels() {
-  void loadGenreCatalogSection("action");
-  void loadGenreCatalogSection("comedy");
-  void loadGenreCatalogSection("horror");
+async function loadGenreCatalogBatchItem(sectionKey) {
+  const sectionConfig = GENRE_SECTION_CONFIG[sectionKey];
+
+  try {
+    const response = await apiRequest(
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1`
+      )
+    );
+
+    return {
+      key: sectionKey,
+      nextState: {
+        status: "success",
+        items: normalizeCatalogResults(
+          response.results,
+          sectionConfig.mediaType
+        ),
+        error: null,
+      },
+    };
+  } catch (error) {
+    return {
+      key: sectionKey,
+      nextState: {
+        status: "error",
+        items: [],
+        error: formatApiError(error),
+      },
+    };
+  }
+}
+
+async function loadSeriesGenreCatalogSection(sectionKey) {
+  const sectionState = appState.catalog.seriesGenres[sectionKey];
+  const sectionConfig = SERIES_GENRE_SECTION_CONFIG[sectionKey];
+
+  if (
+    !sectionConfig ||
+    !sectionState ||
+    sectionState.status === "loading" ||
+    sectionState.status === "success"
+  ) {
+    return;
+  }
+
+  setSeriesGenreCatalogState(sectionKey, {
+    status: "loading",
+    items: [],
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=tv&genre=${sectionConfig.genreId}&page=1`
+      )
+    );
+
+    setSeriesGenreCatalogState(sectionKey, {
+      status: "success",
+      items: normalizeCatalogResults(response.results, sectionConfig.mediaType),
+      error: null,
+    });
+  } catch (error) {
+    setSeriesGenreCatalogState(sectionKey, {
+      status: "error",
+      items: [],
+      error: formatApiError(error),
+    });
+  }
+}
+
+async function loadSeriesGenreCatalogBatchItem(sectionKey) {
+  const sectionConfig = SERIES_GENRE_SECTION_CONFIG[sectionKey];
+
+  try {
+    const response = await apiRequest(
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1`
+      )
+    );
+
+    return {
+      key: sectionKey,
+      nextState: {
+        status: "success",
+        items: normalizeCatalogResults(
+          response.results,
+          sectionConfig.mediaType
+        ),
+        error: null,
+      },
+    };
+  } catch (error) {
+    return {
+      key: sectionKey,
+      nextState: {
+        status: "error",
+        items: [],
+        error: formatApiError(error),
+      },
+    };
+  }
+}
+
+async function runLimitedBatch(items, limit, task) {
+  const results = [];
+  let nextIndex = 0;
+  const workerCount = Math.min(limit, items.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < items.length) {
+        const item = items[nextIndex];
+        nextIndex += 1;
+        results.push(await task(item));
+      }
+    })
+  );
+
+  return results;
+}
+
+async function loadGenreCarousels() {
+  const genreKeysToLoad = GENRE_SECTION_KEYS.filter((sectionKey) => {
+    const sectionState = appState.catalog.genres[sectionKey];
+
+    return (
+      sectionState &&
+      sectionState.status !== "loading" &&
+      sectionState.status !== "success"
+    );
+  });
+
+  if (genreKeysToLoad.length === 0) {
+    return;
+  }
+
+  const requestId = ++currentGenreCatalogRequestId;
+
+  updateState((state) => {
+    genreKeysToLoad.forEach((sectionKey) => {
+      state.catalog.genres[sectionKey] = {
+        ...state.catalog.genres[sectionKey],
+        status: "loading",
+        items: [],
+        error: null,
+      };
+    });
+  });
+
+  const results = await runLimitedBatch(
+    genreKeysToLoad,
+    GENRE_CATALOG_BATCH_SIZE,
+    loadGenreCatalogBatchItem
+  );
+
+  if (requestId !== currentGenreCatalogRequestId) {
+    return;
+  }
+
+  updateState((state) => {
+    results.forEach(({ key, nextState }) => {
+      state.catalog.genres[key] = {
+        ...state.catalog.genres[key],
+        ...nextState,
+      };
+    });
+  });
+}
+
+async function loadSeriesGenreCarousels() {
+  const genreKeysToLoad = SERIES_GENRE_SECTION_KEYS.filter((sectionKey) => {
+    const sectionState = appState.catalog.seriesGenres[sectionKey];
+
+    return (
+      sectionState &&
+      sectionState.status !== "loading" &&
+      sectionState.status !== "success"
+    );
+  });
+
+  if (genreKeysToLoad.length === 0) {
+    return;
+  }
+
+  const requestId = ++currentSeriesGenreCatalogRequestId;
+
+  updateState((state) => {
+    genreKeysToLoad.forEach((sectionKey) => {
+      state.catalog.seriesGenres[sectionKey] = {
+        ...state.catalog.seriesGenres[sectionKey],
+        status: "loading",
+        items: [],
+        error: null,
+      };
+    });
+  });
+
+  const results = await runLimitedBatch(
+    genreKeysToLoad,
+    GENRE_CATALOG_BATCH_SIZE,
+    loadSeriesGenreCatalogBatchItem
+  );
+
+  if (requestId !== currentSeriesGenreCatalogRequestId) {
+    return;
+  }
+
+  updateState((state) => {
+    results.forEach(({ key, nextState }) => {
+      state.catalog.seriesGenres[key] = {
+        ...state.catalog.seriesGenres[key],
+        ...nextState,
+      };
+    });
+  });
 }
 
 function retryCatalogSection(retryKey) {
+  const genreRetryPrefix = "genre-";
+  const seriesGenreRetryPrefix = "series-genre-";
+
+  if (retryKey.startsWith(seriesGenreRetryPrefix)) {
+    const genreKey = retryKey.slice(seriesGenreRetryPrefix.length);
+
+    if (SERIES_GENRE_SECTION_CONFIG[genreKey]) {
+      void loadSeriesGenreCatalogSection(genreKey);
+    }
+
+    return;
+  }
+
+  if (retryKey.startsWith(genreRetryPrefix)) {
+    const genreKey = retryKey.slice(genreRetryPrefix.length);
+
+    if (GENRE_SECTION_CONFIG[genreKey]) {
+      void loadGenreCatalogSection(genreKey);
+    }
+
+    return;
+  }
+
   switch (retryKey) {
     case "home-trending":
       void loadHomeCatalogSection("trending");
@@ -1759,14 +2524,8 @@ function retryCatalogSection(retryKey) {
     case "movies-popular":
       void loadMoviesCatalog();
       return;
-    case "genre-action":
-      void loadGenreCatalogSection("action");
-      return;
-    case "genre-comedy":
-      void loadGenreCatalogSection("comedy");
-      return;
-    case "genre-horror":
-      void loadGenreCatalogSection("horror");
+    case "series-popular":
+      void loadSeriesCatalog();
       return;
     default:
   }
@@ -1788,7 +2547,7 @@ async function loadHomeHero() {
 
   try {
     const response = await apiRequest(
-      "/api/tmdb/trending?media_type=all&time_window=week&language=fr-FR"
+      withTmdbLanguage("/api/tmdb/trending?media_type=all&time_window=week")
     );
 
     /** @type {TmdbMediaItem[]} */
@@ -1842,21 +2601,8 @@ function parseDetailPath(pathname) {
   };
 }
 
-function parsePlayerPath(pathname) {
-  const playerMatch = pathname.match(/^\/lecture\/(movie|tv)\/(\d+)$/);
-
-  if (!playerMatch) {
-    return null;
-  }
-
-  return {
-    type: playerMatch[1],
-    id: Number.parseInt(playerMatch[2], 10),
-  };
-}
-
 async function loadDetailPage(pathname) {
-  const detailRoute = parseDetailPath(pathname) || parsePlayerPath(pathname);
+  const detailRoute = parseDetailPath(pathname);
 
   if (!detailRoute) {
     return;
@@ -1885,7 +2631,9 @@ async function loadDetailPage(pathname) {
   });
 
   try {
-    const response = await apiRequest(`/api/tmdb/${type}/${id}?language=fr-FR`);
+    const response = await apiRequest(
+      withTmdbLanguage(`/api/tmdb/${type}/${id}`)
+    );
 
     if (requestId !== currentDetailRequestId) {
       return;
@@ -1964,7 +2712,12 @@ function handleRouteEffects(currentPath) {
 
   if (currentPath === "/films") {
     void loadMoviesCatalog();
-    loadGenreCarousels();
+    void loadGenreCarousels();
+  }
+
+  if (currentPath === "/series") {
+    void loadSeriesCatalog();
+    void loadSeriesGenreCarousels();
   }
 
   if (currentPath === "/favoris") {
@@ -1972,10 +2725,6 @@ function handleRouteEffects(currentPath) {
   }
 
   if (parseDetailPath(currentPath)) {
-    void loadDetailPage(currentPath);
-  }
-
-  if (parsePlayerPath(currentPath)) {
     void loadDetailPage(currentPath);
   }
 
@@ -1996,6 +2745,37 @@ function registerServiceWorker() {
     return;
   }
 
+  if (["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) =>
+          Promise.all(
+            registrations.map((registration) => registration.unregister())
+          )
+        )
+        .catch((error) => {
+          console.warn("Service worker cleanup failed", error);
+        });
+
+      if ("caches" in window) {
+        window.caches
+          .keys()
+          .then((cacheNames) =>
+            Promise.all(
+              cacheNames
+                .filter((cacheName) => cacheName.startsWith("netflixlight-"))
+                .map((cacheName) => window.caches.delete(cacheName))
+            )
+          )
+          .catch((error) => {
+            console.warn("Service worker cache cleanup failed", error);
+          });
+      }
+    });
+    return;
+  }
+
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch((error) => {
       console.warn("Service worker registration failed", error);
@@ -2004,6 +2784,25 @@ function registerServiceWorker() {
 }
 
 document.addEventListener("click", (event) => {
+  if (!event.target.closest("[data-header-menu]")) {
+    closeHeaderMenu();
+  }
+
+  const colorPresetButton = event.target.closest("[data-profile-color-preset]");
+
+  if (colorPresetButton) {
+    const picker = colorPresetButton.closest("[data-profile-color-picker]");
+    const colorInput = picker?.querySelector("[data-profile-color-input]");
+
+    if (colorInput) {
+      updateProfileColorPicker(
+        colorInput,
+        colorPresetButton.getAttribute("data-profile-color-preset")
+      );
+    }
+    return;
+  }
+
   const retryHeroButton = event.target.closest("[data-retry-hero]");
 
   if (retryHeroButton) {
@@ -2058,7 +2857,9 @@ document.addEventListener("click", (event) => {
     );
 
     if ((type === "movie" || type === "tv") && Number.isInteger(tmdbId)) {
-      void removeWatchlistItemFromList(type, tmdbId);
+      void runWithoutPageAnimations(() =>
+        removeWatchlistItemFromList(type, tmdbId)
+      );
     }
     return;
   }
@@ -2073,7 +2874,7 @@ document.addEventListener("click", (event) => {
   const favoriteToggleButton = event.target.closest("[data-toggle-favorite]");
 
   if (favoriteToggleButton) {
-    void toggleFavoriteFromDetail();
+    void runWithoutPageAnimations(toggleFavoriteFromDetail);
     return;
   }
 
@@ -2085,7 +2886,7 @@ document.addEventListener("click", (event) => {
       10
     );
 
-    void setPersonalRatingFromDetail(rating);
+    void runWithoutPageAnimations(() => setPersonalRatingFromDetail(rating));
     return;
   }
 
@@ -2101,10 +2902,28 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const profileCreateButton = event.target.closest(
+    "[data-open-profile-create]"
+  );
+
+  if (profileCreateButton) {
+    openProfileCreation();
+    return;
+  }
+
   const themeToggleButton = event.target.closest("[data-toggle-theme]");
 
   if (themeToggleButton) {
     toggleThemePreference();
+    return;
+  }
+
+  const languageButton = event.target.closest("[data-set-language]");
+
+  if (languageButton) {
+    applyLanguagePreference(languageButton.getAttribute("data-set-language"), {
+      reload: true,
+    });
     return;
   }
 
@@ -2159,10 +2978,24 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  closeHeaderMenu();
   navigate(targetPath);
 });
 
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeHeaderMenu();
+  }
+});
+
 document.addEventListener("input", (event) => {
+  const colorInput = event.target.closest("[data-profile-color-input]");
+
+  if (colorInput) {
+    updateProfileColorPicker(colorInput);
+    return;
+  }
+
   const searchInput = event.target.closest('#global-search[name="query"]');
 
   if (!searchInput) {
@@ -2200,10 +3033,12 @@ document.addEventListener("submit", async (event) => {
 
     if (!searchQuery) {
       navigate("/recherche");
+      closeHeaderMenu();
       return;
     }
 
     navigate(`/recherche?q=${encodeURIComponent(searchQuery)}&page=1`);
+    closeHeaderMenu();
     return;
   }
 
@@ -2213,6 +3048,7 @@ document.addEventListener("submit", async (event) => {
     event.preventDefault();
     await createProfileFromForm(new FormData(profileForm));
     profileForm.reset();
+    resetProfileColorPickers(profileForm);
     return;
   }
 
@@ -2257,7 +3093,7 @@ document.addEventListener("submit", async (event) => {
       await loadUserRatings({ force: true });
       await loadProfiles({ force: true });
       resetAuthFormState();
-      setFlashMessage("Connexion réussie.");
+      openProfileOverlay();
       navigate(nextPath);
       return;
     }
@@ -2296,6 +3132,7 @@ subscribeRoute(() => {
 });
 subscribeState(scheduleRenderApp);
 applyThemePreference(getStoredThemePreference());
+applyLanguagePreference(getStoredLanguagePreference());
 resetAuthFormState();
 void initializeSession();
 registerServiceWorker();

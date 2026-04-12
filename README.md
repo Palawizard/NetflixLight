@@ -10,7 +10,6 @@ Prérequis :
 
 - Node.js récent
 - npm
-- SQLite CLI pour `npm run db:setup`
 - Un compte TMDB avec clé API et Read Access Token
 
 Installation locale :

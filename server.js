@@ -9,6 +9,9 @@ const watchProgressRoutes = require("./src/routes/watch-progress.routes");
 const viewingHistoryRoutes = require("./src/routes/viewing-history.routes");
 const userRatingsRoutes = require("./src/routes/user-ratings.routes");
 const profilesRoutes = require("./src/routes/profiles.routes");
+const {
+  SqliteSessionStore,
+} = require("./src/data-access/sqlite/session-store");
 const { apiRequestLogger } = require("./src/middlewares/api-logger.middleware");
 const {
   apiNotFoundHandler,
@@ -25,6 +28,9 @@ app.use(
   session({
     name: config.session.cookieName,
     secret: config.session.secret,
+    store: new SqliteSessionStore({
+      ttlMs: config.session.maxAgeMs,
+    }),
     resave: false,
     saveUninitialized: false,
     cookie: {

@@ -1,4 +1,7 @@
-const CACHE_NAME = "netflixlight-shell-v1";
+const CACHE_NAME = "netflixlight-shell-v3";
+const IS_LOCAL_HOST = ["localhost", "127.0.0.1"].includes(
+  self.location.hostname
+);
 const SHELL_ASSETS = [
   "/",
   "/css/app.css",
@@ -9,8 +12,6 @@ const SHELL_ASSETS = [
   "/js/state.js",
   "/js/views.js",
   "/js/tmdb-images.js",
-  "/js/player-controls.js",
-  "/js/player-sources.js",
   "/js/components/carousel.js",
   "/js/components/poster-card.js",
   "/manifest.webmanifest",
@@ -18,6 +19,23 @@ const SHELL_ASSETS = [
 ];
 
 self.addEventListener("install", (event) => {
+  if (IS_LOCAL_HOST) {
+    event.waitUntil(
+      caches
+        .keys()
+        .then((cacheNames) =>
+          Promise.all(
+            cacheNames
+              .filter((cacheName) => cacheName.startsWith("netflixlight-"))
+              .map((cacheName) => caches.delete(cacheName))
+          )
+        )
+        .then(() => self.registration.unregister())
+    );
+    self.skipWaiting();
+    return;
+  }
+
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS))
   );
@@ -25,6 +43,12 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  if (IS_LOCAL_HOST) {
+    event.waitUntil(self.registration.unregister());
+    self.clients.claim();
+    return;
+  }
+
   event.waitUntil(
     caches
       .keys()
@@ -40,6 +64,10 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  if (IS_LOCAL_HOST) {
+    return;
+  }
+
   const { request } = event;
   const requestUrl = new URL(request.url);
 

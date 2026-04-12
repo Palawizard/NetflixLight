@@ -17,6 +17,12 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+CREATE TABLE IF NOT EXISTS express_sessions (
+                                                sid TEXT PRIMARY KEY,
+                                                session_json TEXT NOT NULL,
+                                                expires_at INTEGER NOT NULL
+    );
+
 CREATE TABLE IF NOT EXISTS favorites (
                                          id INTEGER PRIMARY KEY AUTOINCREMENT,
                                          user_id INTEGER NOT NULL,
@@ -93,6 +99,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     );
 
 CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_express_sessions_expires_at ON express_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_video_sources_media ON video_sources(media_type, tmdb_id);
 CREATE INDEX IF NOT EXISTS idx_watchlist_items_user ON watchlist_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_viewing_history_user ON viewing_history(user_id, viewed_at DESC);

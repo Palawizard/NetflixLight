@@ -31,7 +31,7 @@ export function renderCarousel({ id, title, items }) {
 
       <div class="relative overflow-hidden" data-carousel-root="${id}">
         <div
-          class="flex gap-5 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          class="carousel-edge-mask flex gap-5 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           data-carousel-track="${id}"
         >
           ${items

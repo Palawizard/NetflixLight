@@ -1,7 +1,22 @@
 import { renderCarousel } from "./components/carousel.js";
 import { renderPosterCard } from "./components/poster-card.js";
-import { getPlaybackSources } from "./player-sources.js";
-import { buildTmdbImageUrl, renderTmdbImage } from "./tmdb-images.js";
+import { renderTmdbImage } from "./tmdb-images.js";
+
+const DEFAULT_PROFILE_COLOR = "#fb7185";
+const PROFILE_COLOR_PRESETS = [
+  "#fb7185",
+  "#f43f5e",
+  "#f97316",
+  "#f59e0b",
+  "#22c55e",
+  "#14b8a6",
+  "#38bdf8",
+  "#3b82f6",
+  "#8b5cf6",
+  "#d946ef",
+  "#ec4899",
+  "#f8fafc",
+];
 
 /**
  * @typedef {object} TmdbMediaItem
@@ -29,36 +44,13 @@ import { buildTmdbImageUrl, renderTmdbImage } from "./tmdb-images.js";
  * @property {number} [order]
  */
 
-function createFeatureTile({ eyebrow, title, description }) {
-  return `
-    <article class="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur">
-      <p class="text-xs uppercase tracking-[0.3em] text-rose-300">${eyebrow}</p>
-      <h3 class="mt-3 text-2xl font-semibold tracking-tight text-white">${title}</h3>
-      <p class="mt-3 text-sm leading-7 text-white/70">${description}</p>
-    </article>
-  `;
-}
-
 function renderHomeView(state) {
   return `
     <section class="space-y-8">
       ${renderHomeHero(state.hero)}
-      ${renderContinueWatchingSection(state.watchProgress)}
+      ${renderContinueWatchingSection(state.watchProgress, state.userRatings)}
       ${renderGenreRecommendationsSection(state.genreRecommendations)}
       ${renderHomeCarousels(state.catalog.home)}
-
-      <div class="grid gap-5 lg:grid-cols-2">
-        ${createFeatureTile({
-          eyebrow: "À la une",
-          title: "Les titres du moment",
-          description: "Retrouve rapidement ce qui fait parler en ce moment.",
-        })}
-        ${createFeatureTile({
-          eyebrow: "Ma liste",
-          title: "Tout garder sous la main",
-          description: "Ajoute les titres que tu veux retrouver plus tard.",
-        })}
-      </div>
     </section>
   `;
 }
@@ -83,6 +75,26 @@ function renderMoviesView(state) {
   `;
 }
 
+function renderSeriesView(state) {
+  const seriesState = state.catalog.series;
+  const genreState = state.catalog.seriesGenres;
+
+  return `
+    <section class="space-y-6">
+      <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Séries</p>
+        <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">À suivre</h1>
+        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+          Retrouve les séries populaires du moment et garde de côté celles qui te tentent.
+        </p>
+      </header>
+
+      ${renderSeriesCatalog(seriesState)}
+      ${renderSeriesGenreCarousels(genreState)}
+    </section>
+  `;
+}
+
 function renderFavoritesView(state) {
   const username = state.session.user?.username || "utilisateur";
   const watchlistState = state.watchlist;
@@ -91,28 +103,21 @@ function renderFavoritesView(state) {
   return `
     <section class="space-y-6">
       <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
-            <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ma liste</h1>
-            <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-              Connecté en tant que ${escapeHtml(username)}. Retrouve ici les titres que tu veux garder de côté.
-            </p>
-          </div>
-          <div class="rounded-3xl border border-white/10 bg-black/20 px-5 py-4">
-            <p class="text-xs uppercase tracking-[0.3em] text-white/40">Tri</p>
-            <p class="mt-2 text-sm font-medium text-white">Ajout le plus récent</p>
-          </div>
+        <div>
+          <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
+          <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ma liste</h1>
+          <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+            Connecté en tant que ${escapeHtml(username)}. Retrouve ici les titres que tu veux garder de côté.
+          </p>
         </div>
-        ${renderWatchlistFeedback(watchlistState)}
       </header>
 
-      ${renderWatchlistContent(watchlistState, items)}
+      ${renderWatchlistContent(watchlistState, state.userRatings, items)}
     </section>
   `;
 }
 
-function renderWatchlistContent(watchlistState, items) {
+function renderWatchlistContent(watchlistState, userRatingsState, items) {
   if (watchlistState.status === "idle" || watchlistState.status === "loading") {
     return renderWatchlistLoading();
   }
@@ -127,12 +132,16 @@ function renderWatchlistContent(watchlistState, items) {
 
   return `
     <section class="grid gap-5 md:grid-cols-2">
-      ${items.map((item) => renderWatchlistCard(item, watchlistState)).join("")}
+      ${items
+        .map((item) =>
+          renderWatchlistCard(item, watchlistState, userRatingsState)
+        )
+        .join("")}
     </section>
   `;
 }
 
-function renderContinueWatchingSection(watchProgressState) {
+function renderContinueWatchingSection(watchProgressState, userRatingsState) {
   if (
     watchProgressState.status !== "success" ||
     !Array.isArray(watchProgressState.items) ||
@@ -148,7 +157,8 @@ function renderContinueWatchingSection(watchProgressState) {
       media_type: item.type,
       title: item.snapshot.title,
       poster_path: item.snapshot.poster,
-      navigation_path: `/lecture/${item.type}/${item.tmdbId}`,
+      navigation_path: `/${item.type}/${item.tmdbId}`,
+      personal_rating_label: getPersonalRatingLabel(userRatingsState, item),
       vote_average: null,
       release_date: item.updatedAt,
     }));
@@ -170,17 +180,7 @@ function renderGenreRecommendationsSection(recommendationsState) {
   }
 
   if (recommendationsState.status === "empty") {
-    return `
-      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-teal-300">Recommandations</p>
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
-          Des idées selon tes genres
-        </h2>
-        <p class="mt-5 max-w-3xl text-base leading-8">
-          Consulte ou note quelques fiches pour que NetflixLight repère tes genres favoris.
-        </p>
-      </section>
-    `;
+    return "";
   }
 
   if (recommendationsState.status === "loading") {
@@ -281,12 +281,13 @@ function renderWatchlistEmpty() {
   `;
 }
 
-function renderWatchlistCard(item, watchlistState) {
+function renderWatchlistCard(item, watchlistState, userRatingsState) {
   const watchlistKey = createFavoriteKey(item.type, item.tmdbId);
   const isPending = Boolean(watchlistState.pendingKeys[watchlistKey]);
   const title = escapeHtml(item.snapshot?.title || "Titre inconnu");
   const typeLabel = item.type === "movie" ? "Film" : "Série";
   const detailPath = `/${item.type}/${item.tmdbId}`;
+  const personalRatingLabel = getPersonalRatingLabel(userRatingsState, item);
   const posterMarkup = item.snapshot?.poster
     ? renderTmdbImage({
         path: item.snapshot.poster,
@@ -335,6 +336,15 @@ function renderWatchlistCard(item, watchlistState) {
             <p class="mt-3 text-sm text-white/55">
               Ajouté le ${formatLongDate(item.addedAt)}
             </p>
+            ${
+              personalRatingLabel
+                ? `
+                  <p class="mt-4 inline-flex rounded-full border border-amber-300/40 bg-amber-400/20 px-3 py-1 text-xs font-medium text-amber-200">
+                    Ma note ${personalRatingLabel}
+                  </p>
+                `
+                : ""
+            }
           </button>
 
           <button
@@ -351,25 +361,6 @@ function renderWatchlistCard(item, watchlistState) {
         </div>
       </div>
     </article>
-  `;
-}
-
-function renderWatchlistFeedback(watchlistState) {
-  if (!watchlistState.lastAction?.message) {
-    return "";
-  }
-
-  const toneClass =
-    watchlistState.lastAction.tone === "error"
-      ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
-      : watchlistState.lastAction.tone === "success"
-        ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
-        : "border-white/10 bg-white/5 text-white/75";
-
-  return `
-    <p class="mt-6 rounded-2xl border px-4 py-3 text-sm ${toneClass}">
-      ${watchlistState.lastAction.message}
-    </p>
   `;
 }
 
@@ -427,7 +418,7 @@ function renderProfileView(state) {
       </dl>
 
       ${renderProfilesSection(state.profiles)}
-      ${renderViewingHistorySection(state.viewingHistory)}
+      ${renderViewingHistorySection(state.viewingHistory, state.userRatings)}
     </section>
   `;
 }
@@ -436,7 +427,6 @@ function renderProfilesSection(profilesState) {
   const profiles = Array.isArray(profilesState.items)
     ? profilesState.items
     : [];
-  const colors = ["#fb7185", "#38bdf8", "#34d399", "#f59e0b", "#a78bfa"];
 
   return `
     <section class="space-y-6 rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
@@ -482,17 +472,10 @@ function renderProfilesSection(profilesState) {
             placeholder="Ex: Salon"
           />
         </label>
-        <label class="space-y-2">
+        <div class="space-y-2">
           <span class="text-sm font-medium text-white/80">Couleur</span>
-          <select
-            name="avatarColor"
-            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-violet-400"
-          >
-            ${colors
-              .map((color) => `<option value="${color}">${color}</option>`)
-              .join("")}
-          </select>
-        </label>
+          ${renderProfileColorPicker("bg-black/30")}
+        </div>
         <button
           type="submit"
           class="rounded-full bg-violet-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
@@ -538,7 +521,7 @@ function renderAccountProfileCard(profile, profilesState) {
       <div class="flex items-center gap-4">
         <span
           aria-hidden="true"
-          class="grid h-14 w-14 place-items-center rounded-2xl text-lg font-semibold text-white shadow-lg"
+          class="solid-on-color grid h-14 w-14 place-items-center rounded-2xl text-lg font-semibold text-white shadow-lg"
           style="background-color: ${escapeHtml(profile.avatarColor)}"
         >
           ${profileName.slice(0, 1).toUpperCase()}
@@ -566,7 +549,7 @@ function renderAccountProfileCard(profile, profilesState) {
   `;
 }
 
-function renderViewingHistorySection(historyState) {
+function renderViewingHistorySection(historyState, userRatingsState) {
   if (!historyState || historyState.status === "idle") {
     return renderViewingHistoryLoading();
   }
@@ -596,6 +579,7 @@ function renderViewingHistorySection(historyState) {
           title: item.snapshot.title,
           poster_path: item.snapshot.poster,
           release_date: item.viewedAt,
+          personal_rating_label: getPersonalRatingLabel(userRatingsState, item),
           vote_average: null,
         }))
     : [];
@@ -616,15 +600,6 @@ function renderViewingHistorySection(historyState) {
 
   return `
     <section class="space-y-6">
-      <div class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Historique</p>
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
-          Derniers contenus consultés
-        </h2>
-        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Reviens rapidement sur les fiches que tu as ouvertes récemment.
-        </p>
-      </div>
       ${renderCarousel({
         id: "viewing-history",
         title: "Historique",
@@ -651,6 +626,76 @@ function renderViewingHistoryLoading() {
       </div>
     </section>
   `;
+}
+
+function renderProfileColorPicker(backgroundClass) {
+  const presets = PROFILE_COLOR_PRESETS.map(
+    (color) => `
+      <button
+        type="button"
+        data-profile-color-preset="${color}"
+        aria-label="Choisir la couleur ${color}"
+        aria-pressed="${color === DEFAULT_PROFILE_COLOR ? "true" : "false"}"
+        class="h-7 w-7 rounded-lg border border-white/20 transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${color === DEFAULT_PROFILE_COLOR ? "ring-2 ring-white" : ""}"
+        style="background-color: ${color}"
+      ></button>
+    `
+  ).join("");
+
+  return `
+    <div
+      data-profile-color-picker
+      style="--profile-color: ${DEFAULT_PROFILE_COLOR}"
+      class="grid gap-3 rounded-2xl border border-white/10 ${backgroundClass} p-3 transition focus-within:border-violet-400"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          class="h-10 w-10 shrink-0 rounded-xl border border-white/20 shadow-lg shadow-black/20"
+          style="background-color: var(--profile-color)"
+        ></span>
+        <span class="min-w-0">
+          <span class="block text-sm font-medium text-white">Couleur du profil</span>
+          <span data-profile-color-value class="block text-xs uppercase tracking-[0.2em] text-white/45">${DEFAULT_PROFILE_COLOR}</span>
+        </span>
+      </div>
+
+      <div class="grid grid-cols-6 gap-2">
+        ${presets}
+      </div>
+
+      <label class="relative inline-flex min-h-10 cursor-pointer items-center justify-center rounded-2xl border border-white/10 bg-white/10 px-4 text-sm font-medium text-white transition hover:bg-white/15 focus-within:border-white/40">
+        Autre couleur
+        <input
+          type="color"
+          name="avatarColor"
+          value="${DEFAULT_PROFILE_COLOR}"
+          data-profile-color-input
+          aria-label="Choisir une autre couleur de profil"
+          class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </label>
+    </div>
+  `;
+}
+
+function getPersonalRatingLabel(userRatingsState, historyItem) {
+  const isLoading =
+    userRatingsState?.status === "idle" ||
+    userRatingsState?.status === "loading";
+
+  if (isLoading) {
+    return "";
+  }
+
+  const ratingKey = createFavoriteKey(historyItem.type, historyItem.tmdbId);
+  const ratingItem = userRatingsState?.itemKeys?.[ratingKey];
+
+  if (!Number.isInteger(ratingItem?.rating)) {
+    return "";
+  }
+
+  return `${ratingItem.rating}/5`;
 }
 
 function renderLogoutFeedback(logoutState) {
@@ -799,6 +844,10 @@ export const routeViews = {
     title: "Films",
     render: renderMoviesView,
   },
+  "/series": {
+    title: "Séries",
+    render: renderSeriesView,
+  },
   "/favoris": {
     title: "Favoris",
     render: renderFavoritesView,
@@ -835,17 +884,6 @@ export function resolveView(pathname) {
     };
   }
 
-  const playerMatch = pathname.match(/^\/lecture\/(movie|tv)\/(\d+)$/);
-
-  if (playerMatch) {
-    const [, type, id] = playerMatch;
-
-    return {
-      title: "Lecture",
-      render: (state) => renderPlayerView(state, type, Number.parseInt(id, 10)),
-    };
-  }
-
   return {
     title: "404",
     render: () => renderNotFoundView(pathname),
@@ -877,6 +915,14 @@ function renderMoviesCatalog(moviesState) {
     id: "movies-popular",
     title: "Films populaires",
     retryKey: "movies-popular",
+  });
+}
+
+function renderSeriesCatalog(seriesState) {
+  return renderCatalogCarouselSection(seriesState, {
+    id: "series-popular",
+    title: "Séries populaires",
+    retryKey: "series-popular",
   });
 }
 
@@ -967,17 +1013,7 @@ function renderHomeHero(heroState) {
   }
 
   if (!heroState.item) {
-    return `
-      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
-        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
-        <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
-          Regarde ce qui te tente ce soir.
-        </h1>
-        <p class="mt-6 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
-          Parcours les films du moment et trouve ton prochain visionnage.
-        </p>
-      </section>
-    `;
+    return "";
   }
 
   /** @type {TmdbMediaItem} */
@@ -991,7 +1027,7 @@ function renderHomeHero(heroState) {
   const detailPath = `/${mediaType}/${item.id}`;
 
   return `
-    <section class="relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
+    <section class="media-surface relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
       <div class="absolute inset-0">
         ${renderTmdbImage({
           path: backdropPath,
@@ -1089,9 +1125,9 @@ function renderDetailLoading() {
 
 function renderDetailError(type, id, errorMessage) {
   const detailPath = `/${type}/${id}`;
-  const returnPath = type === "movie" ? "/films" : "/";
+  const returnPath = type === "movie" ? "/films" : "/series";
   const returnLabel =
-    type === "movie" ? "Retour aux films" : "Retour à l'accueil";
+    type === "movie" ? "Retour aux films" : "Retour aux séries";
 
   return `
     <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
@@ -1130,13 +1166,13 @@ function renderDetailContent(state, item, type) {
   const backdropPath = item.backdrop_path || item.poster_path;
   const dateLabel = type === "movie" ? "Date de sortie" : "Première diffusion";
   const durationLabel = type === "movie" ? "Durée" : "Saisons";
-  const returnPath = type === "movie" ? "/films" : "/";
+  const returnPath = type === "movie" ? "/films" : "/series";
   const returnLabel =
-    type === "movie" ? "Retour aux films" : "Retour à l'accueil";
-  const playerPath = `/lecture/${type}/${item.id}`;
+    type === "movie" ? "Retour aux films" : "Retour aux séries";
   const genres = getGenreNames(item.genres);
   const mainCast = getMainCast(item.credits?.cast);
   const similarItems = getSimilarItems(item.similar?.results, type, item.id);
+  const trailer = findBestYoutubeTrailer(item.videos?.results);
 
   return `
     <section class="space-y-8">
@@ -1148,7 +1184,7 @@ function renderDetailContent(state, item, type) {
         ${returnLabel}
       </button>
 
-      <article class="relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
+      <article class="media-surface relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
         <div class="absolute inset-0">
           ${
             backdropPath
@@ -1177,7 +1213,7 @@ function renderDetailContent(state, item, type) {
               <span class="rounded-full bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-rose-200">
                 ${type === "movie" ? "Film" : "Série"}
               </span>
-              <span class="rounded-full bg-amber-400/15 px-4 py-2 text-sm font-medium text-amber-200">
+              <span class="media-chip rounded-full px-4 py-2 text-sm font-medium">
                 Note ${formatVoteAverage(item.vote_average)}
               </span>
             </div>
@@ -1194,13 +1230,6 @@ function renderDetailContent(state, item, type) {
             ${renderPersonalRating(state, item, type)}
 
             <div class="mt-8 flex flex-wrap gap-3">
-              <button
-                type="button"
-                data-nav-path="${playerPath}"
-                class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
-              >
-                Lire
-              </button>
               ${renderDetailBadge(dateLabel, formatLongDate(item.release_date || item.first_air_date))}
               ${renderDetailBadge(durationLabel, type === "movie" ? formatRuntime(item.runtime) : formatSeasonCount(item.number_of_seasons))}
               ${renderDetailBadge("Genres", formatGenreSummary(genres))}
@@ -1231,188 +1260,22 @@ function renderDetailContent(state, item, type) {
         </aside>
       </div>
 
+      ${renderYoutubeTrailerOption(trailer)}
       ${renderSimilarContentSection(similarItems, type, item.id)}
       ${renderMainCastSection(mainCast)}
     </section>
   `;
 }
 
-function renderPlayerView(state, type, id) {
-  const detailState = state.detail;
-  const isMatchingDetail = detailState.type === type && detailState.id === id;
-
-  if (
-    !isMatchingDetail ||
-    detailState.status === "idle" ||
-    detailState.status === "loading"
-  ) {
-    return renderPlayerLoading();
-  }
-
-  if (detailState.status === "error") {
-    return renderDetailError(type, id, detailState.error);
-  }
-
-  if (!detailState.item) {
-    return renderPlayerLoading();
-  }
-
-  return renderPlayerContent(state, detailState.item, type);
-}
-
-function renderPlayerLoading() {
-  return `
-    <section class="space-y-6">
-      <div class="h-10 w-40 animate-pulse rounded-full bg-white/10"></div>
-      <article class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30">
-        <div class="aspect-video animate-pulse bg-white/10"></div>
-        <div class="space-y-4 p-8">
-          <div class="h-5 w-36 animate-pulse rounded-full bg-white/10"></div>
-          <div class="h-10 w-full max-w-xl animate-pulse rounded-2xl bg-white/10"></div>
-        </div>
-      </article>
-    </section>
-  `;
-}
-
-function renderPlayerContent(state, item, type) {
-  const title = escapeHtml(item.title || item.name || "Titre inconnu");
-  const returnPath = `/${type}/${item.id}`;
-  const { sample, trailer } = getPlaybackSources(item);
-  const posterPath = item.backdrop_path
-    ? buildTmdbImageUrl(item.backdrop_path, "w1280")
-    : sample.poster;
-  const progressKey = `${type}:${item.id}`;
-  const resumeProgress = state.watchProgress.itemKeys[progressKey];
-  const resumePosition = resumeProgress?.positionSeconds || 0;
-
-  return `
-    <section class="space-y-6">
-      <button
-        type="button"
-        data-nav-path="${returnPath}"
-        class="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
-      >
-        Retour au détail
-      </button>
-
-      <article
-        data-player
-        data-player-type="${type}"
-        data-player-id="${item.id}"
-        data-player-resume="${resumePosition}"
-        role="region"
-        aria-label="Lecteur vidéo"
-        tabindex="0"
-        class="overflow-hidden rounded-4xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30 outline-none backdrop-blur focus-visible:ring-2 focus-visible:ring-rose-300"
-      >
-        <div class="relative bg-black">
-          <video
-            data-player-video
-            aria-label="Extrait vidéo ${title}"
-            class="aspect-video w-full bg-black object-contain"
-            src="${sample.src}"
-            poster="${posterPath}"
-            preload="metadata"
-          ></video>
-          <div
-            data-player-controls
-            class="border-t border-white/10 bg-black/85 px-4 py-4 transition-opacity duration-300"
-          >
-            <div class="flex flex-col gap-4">
-              <div class="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  data-player-play
-                  aria-label="Lancer la lecture"
-                  aria-pressed="false"
-                  class="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
-                >
-                  Lecture
-                </button>
-                <span
-                  data-player-time
-                  aria-live="polite"
-                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75"
-                >
-                  0:00 / 0:00
-                </span>
-                <button
-                  type="button"
-                  data-player-mute
-                  aria-label="Couper le son"
-                  aria-pressed="false"
-                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
-                >
-                  Son
-                </button>
-                <label class="flex items-center gap-2 text-sm text-white/65" for="player-volume-${type}-${item.id}">
-                  Volume
-                  <input
-                    id="player-volume-${type}-${item.id}"
-                    data-player-volume
-                    type="range"
-                    aria-label="Volume"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value="0.8"
-                    class="w-28 accent-rose-400"
-                  />
-                </label>
-                <button
-                  type="button"
-                  data-player-fullscreen
-                  aria-label="Passer en plein écran"
-                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
-                >
-                  Plein écran
-                </button>
-              </div>
-              <label class="space-y-2 text-sm text-white/65" for="player-seek-${type}-${item.id}">
-                Progression
-                <input
-                  id="player-seek-${type}-${item.id}"
-                  data-player-seek
-                  type="range"
-                  aria-label="Progression de la vidéo"
-                  min="0"
-                  max="0"
-                  step="0.1"
-                  value="0"
-                  class="w-full accent-rose-400"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="space-y-4 p-8 sm:p-10">
-          <p class="text-sm uppercase tracking-[0.3em] text-rose-300">Lecture</p>
-          <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">${title}</h1>
-          <p class="max-w-3xl text-sm leading-7 text-white/65">
-            Source de lecture: ${sample.title}. ${sample.attribution}
-          </p>
-        </div>
-      </article>
-
-      ${renderYoutubeTrailerOption(trailer)}
-    </section>
-  `;
-}
-
 function renderYoutubeTrailerOption(trailer) {
   if (!trailer) {
-    return `
-      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
-        Aucune bande-annonce YouTube n'est disponible pour ce titre.
-      </section>
-    `;
+    return "";
   }
 
   return `
     <section class="space-y-4 rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
       <div>
-        <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Option YouTube</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Bande-annonce</p>
         <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
           ${escapeHtml(trailer.title)}
         </h2>
@@ -1429,6 +1292,43 @@ function renderYoutubeTrailerOption(trailer) {
       </div>
     </section>
   `;
+}
+
+const YOUTUBE_TRAILER_TYPES = new Set(["Trailer", "Teaser"]);
+const YOUTUBE_TRAILER_LANGUAGES = ["fr", "en"];
+
+function findBestYoutubeTrailer(videos) {
+  if (!Array.isArray(videos)) {
+    return null;
+  }
+
+  const youtubeVideos = videos.filter(
+    (video) =>
+      video &&
+      video.site === "YouTube" &&
+      typeof video.key === "string" &&
+      video.key.trim() &&
+      YOUTUBE_TRAILER_TYPES.has(video.type)
+  );
+
+  if (youtubeVideos.length === 0) {
+    return null;
+  }
+
+  const bestVideo =
+    youtubeVideos.find((video) => video.official && video.iso_639_1 === "fr") ||
+    youtubeVideos.find((video) => video.iso_639_1 === "fr") ||
+    youtubeVideos.find((video) => video.official && video.type === "Trailer") ||
+    youtubeVideos.find((video) => video.type === "Trailer") ||
+    youtubeVideos.find((video) =>
+      YOUTUBE_TRAILER_LANGUAGES.includes(video.iso_639_1)
+    ) ||
+    youtubeVideos[0];
+
+  return {
+    title: bestVideo.name || "Bande-annonce",
+    key: bestVideo.key.trim(),
+  };
 }
 
 function renderFavoriteToggle(state, item, type) {
@@ -1455,6 +1355,14 @@ function renderFavoriteToggle(state, item, type) {
   const buttonClass = isFavorite
     ? "bg-rose-500 text-white hover:bg-rose-400"
     : "bg-white text-neutral-950 hover:bg-white/90";
+  const helperMessage =
+    lastAction?.message ||
+    (isHydratingWatchlist
+      ? "On vérifie si ce titre est déjà dans tes favoris."
+      : null) ||
+    (isAuthenticated
+      ? ""
+      : "Connecte-toi pour enregistrer ce titre dans tes favoris.");
 
   return `
     <div class="mt-8 space-y-3">
@@ -1467,23 +1375,21 @@ function renderFavoriteToggle(state, item, type) {
       >
         ${buttonLabel}
       </button>
-      <p class="text-sm ${
-        lastAction?.tone === "error"
-          ? "text-rose-200"
-          : lastAction?.tone === "success"
-            ? "text-emerald-200"
-            : "text-white/65"
-      }">
-        ${
-          lastAction?.message ||
-          (isHydratingWatchlist
-            ? "On vérifie si ce titre est déjà dans tes favoris."
-            : null) ||
-          (isAuthenticated
-            ? "Ajoute ce titre à ta liste ou retire-le en un clic."
-            : "Connecte-toi pour enregistrer ce titre dans tes favoris.")
-        }
-      </p>
+      ${
+        helperMessage
+          ? `
+            <p class="text-sm ${
+              lastAction?.tone === "error"
+                ? "text-rose-200"
+                : lastAction?.tone === "success"
+                  ? "text-emerald-200"
+                  : "text-white/65"
+            }">
+              ${helperMessage}
+            </p>
+          `
+          : ""
+      }
     </div>
   `;
 }
@@ -1503,9 +1409,18 @@ function renderPersonalRating(state, item, type) {
     state.userRatings.lastAction?.key === ratingKey
       ? state.userRatings.lastAction
       : null;
+  const helperMessage =
+    lastAction?.message ||
+    (isHydratingRatings
+      ? "On charge ta note personnelle."
+      : selectedRating > 0
+        ? ""
+        : isAuthenticated
+          ? "Note ce titre de 1 à 5 étoiles."
+          : "Connecte-toi pour noter ce titre.");
 
   return `
-    <section class="mt-8 rounded-3xl border border-white/10 bg-black/20 p-5">
+    <section class="media-panel mt-8 rounded-3xl border border-white/10 p-5">
       <p class="text-xs uppercase tracking-[0.3em] text-amber-300">Ta note</p>
       <div class="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Notation personnelle">
         ${[1, 2, 3, 4, 5]
@@ -1518,24 +1433,21 @@ function renderPersonalRating(state, item, type) {
           )
           .join("")}
       </div>
-      <p class="mt-4 text-sm ${
-        lastAction?.tone === "error"
-          ? "text-rose-200"
-          : lastAction?.tone === "success"
-            ? "text-emerald-200"
-            : "text-white/65"
-      }">
-        ${
-          lastAction?.message ||
-          (isHydratingRatings
-            ? "On charge ta note personnelle."
-            : selectedRating > 0
-              ? `Tu as mis ${selectedRating}/5 à ce titre.`
-              : isAuthenticated
-                ? "Note ce titre de 1 à 5 étoiles."
-                : "Connecte-toi pour noter ce titre.")
-        }
-      </p>
+      ${
+        helperMessage
+          ? `
+            <p class="mt-4 text-sm ${
+              lastAction?.tone === "error"
+                ? "text-rose-200"
+                : lastAction?.tone === "success"
+                  ? "text-emerald-200"
+                  : "text-white/65"
+            }">
+              ${helperMessage}
+            </p>
+          `
+          : ""
+      }
     </section>
   `;
 }
@@ -1589,25 +1501,121 @@ function renderHomeCarousels(homeCatalogState) {
 }
 
 function renderGenreCarousels(genreState) {
+  const genreSections = [
+    { key: "action", id: "genre-action", title: "Action" },
+    { key: "adventure", id: "genre-adventure", title: "Aventure" },
+    { key: "animation", id: "genre-animation", title: "Animation" },
+    { key: "comedy", id: "genre-comedy", title: "Comédie" },
+    { key: "crime", id: "genre-crime", title: "Crime" },
+    { key: "drama", id: "genre-drama", title: "Drame" },
+    { key: "family", id: "genre-family", title: "Famille" },
+    { key: "fantasy", id: "genre-fantasy", title: "Fantastique" },
+    { key: "horror", id: "genre-horror", title: "Horreur" },
+    { key: "romance", id: "genre-romance", title: "Romance" },
+    {
+      key: "scienceFiction",
+      id: "genre-science-fiction",
+      title: "Science-fiction",
+    },
+    { key: "thriller", id: "genre-thriller", title: "Thriller" },
+  ];
+  const isLoading = genreSections.some((genreSection) => {
+    const sectionState = genreState[genreSection.key];
+
+    return (
+      !sectionState ||
+      sectionState.status === "idle" ||
+      sectionState.status === "loading"
+    );
+  });
+  const carouselMarkup = genreSections
+    .map((genreSection) =>
+      renderGenreCarouselSection(genreState[genreSection.key], genreSection)
+    )
+    .filter(Boolean)
+    .join("");
+
   return `
     <div class="space-y-8">
-      ${renderCatalogCarouselSection(genreState.action, {
-        id: "genre-action",
-        title: "Action",
-        retryKey: "genre-action",
-      })}
-      ${renderCatalogCarouselSection(genreState.comedy, {
-        id: "genre-comedy",
-        title: "Comédie",
-        retryKey: "genre-comedy",
-      })}
-      ${renderCatalogCarouselSection(genreState.horror, {
-        id: "genre-horror",
-        title: "Horreur",
-        retryKey: "genre-horror",
-      })}
+      ${isLoading ? renderCarouselSkeleton("Genres de films") : ""}
+      ${carouselMarkup || (isLoading ? "" : renderCarouselEmpty("Genres de films"))}
     </div>
   `;
+}
+
+function renderSeriesGenreCarousels(genreState) {
+  const genreSections = [
+    {
+      key: "actionAdventure",
+      id: "series-genre-action-adventure",
+      title: "Action & aventure",
+    },
+    { key: "animation", id: "series-genre-animation", title: "Animation" },
+    { key: "comedy", id: "series-genre-comedy", title: "Comédie" },
+    { key: "crime", id: "series-genre-crime", title: "Crime" },
+    {
+      key: "documentary",
+      id: "series-genre-documentary",
+      title: "Documentaire",
+    },
+    { key: "drama", id: "series-genre-drama", title: "Drame" },
+    { key: "family", id: "series-genre-family", title: "Famille" },
+    { key: "kids", id: "series-genre-kids", title: "Jeunesse" },
+    { key: "mystery", id: "series-genre-mystery", title: "Mystère" },
+    { key: "reality", id: "series-genre-reality", title: "Télé-réalité" },
+    {
+      key: "scifiFantasy",
+      id: "series-genre-scifi-fantasy",
+      title: "Science-fiction & fantastique",
+    },
+    { key: "talk", id: "series-genre-talk", title: "Talk-show" },
+    {
+      key: "warPolitics",
+      id: "series-genre-war-politics",
+      title: "Guerre & politique",
+    },
+  ];
+  const isLoading = genreSections.some((genreSection) => {
+    const sectionState = genreState[genreSection.key];
+
+    return (
+      !sectionState ||
+      sectionState.status === "idle" ||
+      sectionState.status === "loading"
+    );
+  });
+  const carouselMarkup = genreSections
+    .map((genreSection) =>
+      renderGenreCarouselSection(genreState[genreSection.key], genreSection)
+    )
+    .filter(Boolean)
+    .join("");
+
+  return `
+    <div class="space-y-8">
+      ${isLoading ? renderCarouselSkeleton("Genres de séries") : ""}
+      ${carouselMarkup || (isLoading ? "" : renderCarouselEmpty("Genres de séries"))}
+    </div>
+  `;
+}
+
+function renderGenreCarouselSection(sectionState, { id, title }) {
+  if (
+    !sectionState ||
+    sectionState.status === "idle" ||
+    sectionState.status === "loading" ||
+    sectionState.status === "error" ||
+    !Array.isArray(sectionState.items) ||
+    sectionState.items.length === 0
+  ) {
+    return "";
+  }
+
+  return renderCarousel({
+    id,
+    title,
+    items: sectionState.items,
+  });
 }
 
 function renderCatalogCarouselSection(sectionState, { id, title, retryKey }) {
@@ -1856,33 +1864,11 @@ function renderSimilarContentSection(similarItems, type, itemId) {
     type === "movie" ? "Films similaires" : "Séries similaires";
 
   if (!Array.isArray(similarItems) || similarItems.length === 0) {
-    return `
-      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">À voir aussi</p>
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
-          ${sectionTitle}
-        </h2>
-        <p class="mt-5 text-base leading-8 text-white/70">
-          Aucun contenu similaire n'est disponible pour ce ${
-            type === "movie" ? "film" : "titre"
-          }.
-        </p>
-      </section>
-    `;
+    return "";
   }
 
   return `
     <section class="space-y-6">
-      <div class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">À voir aussi</p>
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
-          ${sectionTitle}
-        </h2>
-        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Continue avec des titres proches et ouvre leur fiche détail directement depuis le carrousel.
-        </p>
-      </div>
-
       ${renderCarousel({
         id: `detail-similar-${type}-${itemId}`,
         title: sectionTitle,
