@@ -132,6 +132,33 @@ html[data-theme="light"] .solid-on-color {
   text-shadow: none;
 }
 
+.header-menu-panel {
+  animation: header-menu-in 140ms ease-out;
+  background: rgb(9 9 11 / 0.97);
+  border-color: rgb(255 255 255 / 0.14);
+  color: #f8fafc;
+  transform-origin: top right;
+}
+
+html[data-theme="light"] .header-menu-panel {
+  background: rgb(255 255 255 / 0.98);
+  border-color: rgb(15 23 42 / 0.14);
+  color: #172033;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 0.22);
+}
+
+@keyframes header-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .media-surface {
   color: #f8fafc;
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.55);

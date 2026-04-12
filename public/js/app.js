@@ -201,8 +201,8 @@ function renderShell(content, currentPath) {
   return `
     <div class="min-h-screen">
       <header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
-        <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[1fr_minmax(20rem,34rem)_1fr]">
+          <div class="lg:col-start-1 lg:row-start-1">
             <button
               type="button"
               data-nav-path="/"
@@ -211,15 +211,15 @@ function renderShell(content, currentPath) {
             >
               NetflixLight
             </button>
-            ${renderThemeToggle()}
-            ${renderSessionBadge()}
           </div>
 
-          <div class="flex flex-1 flex-col gap-4 lg:flex-row lg:items-center lg:justify-end">
+          <div class="flex items-center justify-end gap-2 lg:col-start-3 lg:row-start-1">
+            ${renderThemeToggle()}
+            ${renderHeaderMenu(currentPath)}
+          </div>
+
+          <div class="col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:w-full">
             ${renderSearchForm(currentSearchQuery)}
-            <nav class="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
-            ${navItems.map((item) => renderNavLink(item, currentPath)).join("")}
-            </nav>
           </div>
         </div>
       </header>
@@ -231,9 +231,47 @@ function renderShell(content, currentPath) {
   `;
 }
 
+function renderHeaderMenu(currentPath) {
+  const primaryNavItems = navItems.filter(
+    (item) => !guestOnlyPaths.has(item.path)
+  );
+  const authNavItems = navItems.filter((item) => guestOnlyPaths.has(item.path));
+
+  return `
+    <details data-header-menu class="group relative shrink-0">
+      <summary class="inline-flex cursor-pointer list-none items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white/80 transition duration-200 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 [&::-webkit-details-marker]:hidden">
+        <span class="flex h-4 w-5 flex-col justify-between" aria-hidden="true">
+          <span class="h-0.5 w-full origin-left rounded-full bg-current transition duration-200 group-open:translate-x-0.5 group-open:rotate-45"></span>
+          <span class="h-0.5 w-full rounded-full bg-current transition duration-200 group-open:opacity-0"></span>
+          <span class="h-0.5 w-full origin-left rounded-full bg-current transition duration-200 group-open:translate-x-0.5 group-open:-rotate-45"></span>
+        </span>
+        Menu
+      </summary>
+
+      <div data-header-menu-panel class="header-menu-panel absolute right-0 top-full z-30 mt-3 w-[min(18rem,calc(100vw-2rem))] rounded-3xl border p-3 shadow-2xl">
+        <div class="mb-3 flex flex-wrap items-center gap-2 border-b border-white/10 pb-3">
+          ${renderSessionBadge()}
+        </div>
+        <nav class="grid gap-2" aria-label="Navigation principale">
+          ${primaryNavItems.map((item) => renderNavLink(item, currentPath)).join("")}
+          <div class="mt-2 grid gap-2 border-t border-white/10 pt-3">
+            ${authNavItems.map((item) => renderNavLink(item, currentPath)).join("")}
+          </div>
+        </nav>
+      </div>
+    </details>
+  `;
+}
+
+function closeHeaderMenu() {
+  appElement.querySelectorAll("[data-header-menu][open]").forEach((menu) => {
+    menu.open = false;
+  });
+}
+
 function renderSearchForm(currentQuery) {
   return `
-    <form data-search-form class="w-full lg:max-w-md">
+    <form data-search-form class="w-full lg:max-w-lg">
       <label class="sr-only" for="global-search">Rechercher un film ou une série</label>
       <div class="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:rounded-full sm:py-2">
         <input
@@ -443,6 +481,18 @@ function renderThemeToggle() {
   const label = isLightTheme
     ? "Passer au thème sombre"
     : "Passer au thème clair";
+  const icon = isLightTheme
+    ? `
+      <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `
+    : `
+      <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M12 2.5v2M12 19.5v2M4.5 12h-2M21.5 12h-2M5.6 5.6 4.2 4.2M19.8 19.8l-1.4-1.4M18.4 5.6l1.4-1.4M4.2 19.8l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    `;
 
   return `
     <button
@@ -450,9 +500,11 @@ function renderThemeToggle() {
       data-toggle-theme
       aria-label="${label}"
       aria-pressed="${isLightTheme ? "true" : "false"}"
-      class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
+      title="${label}"
+      class="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 transition duration-200 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
     >
-      ${isLightTheme ? "Clair" : "Sombre"}
+      ${icon}
+      <span class="sr-only">${label}</span>
     </button>
   `;
 }
@@ -496,7 +548,7 @@ function renderNavLink(item, currentPath) {
       type="button"
       data-nav-path="${item.path}"
       aria-label="Aller vers ${item.label}"
-      class="rounded-full px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 ${
+      class="w-full rounded-full px-4 py-2 text-left text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 ${
         isActive
           ? "bg-white text-neutral-950"
           : "bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
@@ -2004,6 +2056,10 @@ function registerServiceWorker() {
 }
 
 document.addEventListener("click", (event) => {
+  if (!event.target.closest("[data-header-menu]")) {
+    closeHeaderMenu();
+  }
+
   const retryHeroButton = event.target.closest("[data-retry-hero]");
 
   if (retryHeroButton) {
@@ -2159,7 +2215,14 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  closeHeaderMenu();
   navigate(targetPath);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeHeaderMenu();
+  }
 });
 
 document.addEventListener("input", (event) => {
@@ -2200,10 +2263,12 @@ document.addEventListener("submit", async (event) => {
 
     if (!searchQuery) {
       navigate("/recherche");
+      closeHeaderMenu();
       return;
     }
 
     navigate(`/recherche?q=${encodeURIComponent(searchQuery)}&page=1`);
+    closeHeaderMenu();
     return;
   }
 
