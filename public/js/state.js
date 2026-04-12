@@ -69,6 +69,15 @@ function createSearchState() {
   };
 }
 
+function createGenreRecommendationsState() {
+  return {
+    status: "idle",
+    genre: null,
+    items: [],
+    error: null,
+  };
+}
+
 function createLogoutState() {
   return {
     pending: false,
@@ -93,6 +102,7 @@ export const appState = {
   viewingHistory: createViewingHistoryState(),
   userRatings: createUserRatingsState(),
   search: createSearchState(),
+  genreRecommendations: createGenreRecommendationsState(),
   catalog: {
     home: {
       trending: createCatalogSectionState(),
@@ -302,5 +312,14 @@ export function setSearchState(nextSearchState) {
 export function resetSearchState() {
   updateState((state) => {
     state.search = createSearchState();
+  });
+}
+
+export function setGenreRecommendationsState(nextRecommendationsState) {
+  updateState((state) => {
+    state.genreRecommendations = {
+      ...state.genreRecommendations,
+      ...nextRecommendationsState,
+    };
   });
 }

@@ -25,6 +25,7 @@ import {
   resetUserRatingsState,
   setSearchState,
   resetSearchState,
+  setGenreRecommendationsState,
   subscribeState,
   updateState,
 } from "./state.js";
@@ -56,6 +57,7 @@ const protectedPaths = new Set(["/favoris", "/profil"]);
 const guestOnlyPaths = new Set(["/login", "/register"]);
 const SEARCH_DEBOUNCE_MS = 350;
 const THEME_STORAGE_KEY = "netflixlight.theme";
+const GENRE_PREFERENCES_STORAGE_KEY = "netflixlight.genrePreferences";
 let currentDetailRequestId = 0;
 let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
@@ -93,6 +95,13 @@ const GENRE_SECTION_CONFIG = {
     genreId: 27,
     mediaType: "movie",
   },
+};
+
+const EMPTY_GENRE_RECOMMENDATION = {
+  status: "empty",
+  genre: null,
+  items: [],
+  error: null,
 };
 
 const navItems = [
@@ -285,6 +294,145 @@ function toggleThemePreference() {
   const nextTheme = appState.ui.theme === "light" ? "dark" : "light";
 
   applyThemePreference(nextTheme);
+}
+
+function readStoredGenrePreferences() {
+  try {
+    const storedPreferences = JSON.parse(
+      window.localStorage.getItem(GENRE_PREFERENCES_STORAGE_KEY) || "[]"
+    );
+
+    if (!Array.isArray(storedPreferences)) {
+      return [];
+    }
+
+    return storedPreferences
+      .filter(
+        (preference) =>
+          preference &&
+          (preference.type === "movie" || preference.type === "tv") &&
+          Number.isInteger(preference.id) &&
+          typeof preference.name === "string" &&
+          typeof preference.score === "number"
+      )
+      .sort((leftPreference, rightPreference) => {
+        if (rightPreference.score !== leftPreference.score) {
+          return rightPreference.score - leftPreference.score;
+        }
+
+        return leftPreference.name.localeCompare(rightPreference.name, "fr");
+      })
+      .slice(0, 12);
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredGenrePreferences(preferences) {
+  window.localStorage.setItem(
+    GENRE_PREFERENCES_STORAGE_KEY,
+    JSON.stringify(preferences.slice(0, 12))
+  );
+}
+
+function rememberGenrePreferencesFromDetail(item, type, scoreIncrement = 1) {
+  if (
+    !(type === "movie" || type === "tv") ||
+    !Array.isArray(item?.genres) ||
+    item.genres.length === 0
+  ) {
+    return;
+  }
+
+  const preferenceMap = new Map(
+    readStoredGenrePreferences().map((preference) => [
+      `${preference.type}:${preference.id}`,
+      preference,
+    ])
+  );
+
+  item.genres.forEach((genre) => {
+    if (!Number.isInteger(genre?.id) || typeof genre.name !== "string") {
+      return;
+    }
+
+    const preferenceKey = `${type}:${genre.id}`;
+    const existingPreference = preferenceMap.get(preferenceKey);
+
+    preferenceMap.set(preferenceKey, {
+      type,
+      id: genre.id,
+      name: genre.name,
+      score: (existingPreference?.score || 0) + scoreIncrement,
+    });
+  });
+
+  const nextPreferences = Array.from(preferenceMap.values()).sort(
+    (leftPreference, rightPreference) => {
+      if (rightPreference.score !== leftPreference.score) {
+        return rightPreference.score - leftPreference.score;
+      }
+
+      return leftPreference.name.localeCompare(rightPreference.name, "fr");
+    }
+  );
+
+  writeStoredGenrePreferences(nextPreferences);
+  void loadGenreRecommendations({ force: true });
+}
+
+function getTopGenrePreference() {
+  return readStoredGenrePreferences()[0] || null;
+}
+
+async function loadGenreRecommendations({ force = false } = {}) {
+  const topPreference = getTopGenrePreference();
+
+  if (!topPreference) {
+    setGenreRecommendationsState(EMPTY_GENRE_RECOMMENDATION);
+    return;
+  }
+
+  const recommendationsState = appState.genreRecommendations;
+  const isSameGenre =
+    recommendationsState.genre?.type === topPreference.type &&
+    recommendationsState.genre?.id === topPreference.id;
+
+  if (
+    !force &&
+    isSameGenre &&
+    (recommendationsState.status === "loading" ||
+      recommendationsState.status === "success")
+  ) {
+    return;
+  }
+
+  setGenreRecommendationsState({
+    status: "loading",
+    genre: topPreference,
+    items: [],
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(
+      `/api/tmdb/discover?type=${topPreference.type}&genre=${topPreference.id}&page=1&language=fr-FR`
+    );
+
+    setGenreRecommendationsState({
+      status: "success",
+      genre: topPreference,
+      items: normalizeCatalogResults(response.results, topPreference.type),
+      error: null,
+    });
+  } catch (error) {
+    setGenreRecommendationsState({
+      status: "error",
+      genre: topPreference,
+      items: [],
+      error: formatApiError(error),
+    });
+  }
 }
 
 function renderThemeToggle() {
@@ -871,6 +1019,7 @@ async function setPersonalRatingFromDetail(rating) {
         message: "Ta note est enregistrée.",
       };
     });
+    rememberGenrePreferencesFromDetail(appState.detail.item, type, rating);
   } catch (error) {
     updateState((state) => {
       delete state.userRatings.pendingKeys[ratingKey];
@@ -1591,6 +1740,7 @@ async function loadDetailPage(pathname) {
       item: response,
       error: null,
     });
+    rememberGenrePreferencesFromDetail(response, type);
     void saveViewingHistoryFromDetail(response, type);
   } catch (error) {
     if (requestId !== currentDetailRequestId) {
@@ -1643,6 +1793,7 @@ function handleRouteEffects(currentPath) {
   if (currentPath === "/") {
     void loadHomeHero();
     loadHomeCarousels();
+    void loadGenreRecommendations();
   }
 
   if (currentPath === "/films") {
