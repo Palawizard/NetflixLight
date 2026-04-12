@@ -13,7 +13,7 @@ import {
   setAuthFormState,
   resetLogoutState,
   setLogoutState,
-  setFlashMessage,
+  setFlashMessage as setFlashMessageState,
   setDetailState,
   setWatchlistState,
   resetWatchlistState,
@@ -61,12 +61,15 @@ const SEARCH_DEBOUNCE_MS = 350;
 const THEME_STORAGE_KEY = "netflixlight.theme";
 const GENRE_PREFERENCES_STORAGE_KEY = "netflixlight.genrePreferences";
 const ACTIVE_PROFILE_STORAGE_PREFIX = "netflixlight.activeProfile";
+const FLASH_MESSAGE_TIMEOUT_MS = 3500;
 let currentDetailRequestId = 0;
 let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
 let currentSearchRequestId = 0;
 let lastRenderedMarkup = "";
 let scheduledRenderId = null;
+let flashMessageTimeoutId = null;
+let flashMessageToken = 0;
 const HOME_SECTION_CONFIG = {
   trending: {
     endpoint:
@@ -232,10 +235,18 @@ function renderShell(content, currentPath) {
 }
 
 function renderHeaderMenu(currentPath) {
+  const isAuthenticated =
+    appState.session.status === "authenticated" &&
+    Boolean(appState.session.user);
   const primaryNavItems = navItems.filter(
     (item) => !guestOnlyPaths.has(item.path)
   );
-  const authNavItems = navItems.filter((item) => guestOnlyPaths.has(item.path));
+  const authMenuContent = isAuthenticated
+    ? renderLogoutMenuButton()
+    : navItems
+        .filter((item) => guestOnlyPaths.has(item.path))
+        .map((item) => renderNavLink(item, currentPath))
+        .join("");
 
   return `
     <details data-header-menu class="group relative shrink-0">
@@ -255,11 +266,27 @@ function renderHeaderMenu(currentPath) {
         <nav class="grid gap-2" aria-label="Navigation principale">
           ${primaryNavItems.map((item) => renderNavLink(item, currentPath)).join("")}
           <div class="mt-2 grid gap-2 border-t border-white/10 pt-3">
-            ${authNavItems.map((item) => renderNavLink(item, currentPath)).join("")}
+            ${authMenuContent}
           </div>
         </nav>
       </div>
     </details>
+  `;
+}
+
+function renderLogoutMenuButton() {
+  const logoutState = appState.ui.logout;
+
+  return `
+    <button
+      type="button"
+      data-logout
+      aria-label="Se déconnecter du compte"
+      class="w-full rounded-full bg-rose-500 px-4 py-2 text-left text-sm font-medium text-white transition hover:bg-rose-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
+      ${logoutState.pending ? "disabled" : ""}
+    >
+      ${logoutState.pending ? "Déconnexion..." : "Déconnexion"}
+    </button>
   `;
 }
 
@@ -572,6 +599,29 @@ function renderFlash(flashMessage) {
   `;
 }
 
+function setFlashMessage(message) {
+  flashMessageToken += 1;
+  const currentToken = flashMessageToken;
+
+  if (flashMessageTimeoutId !== null) {
+    window.clearTimeout(flashMessageTimeoutId);
+    flashMessageTimeoutId = null;
+  }
+
+  setFlashMessageState(message);
+
+  if (!message) {
+    return;
+  }
+
+  flashMessageTimeoutId = window.setTimeout(() => {
+    if (currentToken === flashMessageToken) {
+      setFlashMessageState(null);
+      flashMessageTimeoutId = null;
+    }
+  }, FLASH_MESSAGE_TIMEOUT_MS);
+}
+
 function renderSessionLoading() {
   return `
     <section class="grid min-h-[60vh] place-items-center">
@@ -593,7 +643,7 @@ function ensureRouteAccess(currentPath) {
 
   if (!isAuthenticated && protectedPaths.has(currentPath)) {
     appState.session.redirectAfterLogin = currentPath;
-    appState.ui.flash = "Connecte-toi pour accéder à cette page.";
+    setFlashMessage("Connecte-toi pour accéder à cette page.");
     navigate("/login");
     return false;
   }
