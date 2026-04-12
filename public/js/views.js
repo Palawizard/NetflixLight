@@ -566,15 +566,6 @@ function renderViewingHistorySection(historyState, userRatingsState) {
 
   return `
     <section class="space-y-6">
-      <div class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Historique</p>
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
-          Derniers contenus consultés
-        </h2>
-        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Reviens rapidement sur les fiches que tu as ouvertes récemment.
-        </p>
-      </div>
       ${renderCarousel({
         id: "viewing-history",
         title: "Historique",
@@ -1318,6 +1309,14 @@ function renderFavoriteToggle(state, item, type) {
   const buttonClass = isFavorite
     ? "bg-rose-500 text-white hover:bg-rose-400"
     : "bg-white text-neutral-950 hover:bg-white/90";
+  const helperMessage =
+    lastAction?.message ||
+    (isHydratingWatchlist
+      ? "On vérifie si ce titre est déjà dans tes favoris."
+      : null) ||
+    (isAuthenticated
+      ? ""
+      : "Connecte-toi pour enregistrer ce titre dans tes favoris.");
 
   return `
     <div class="mt-8 space-y-3">
@@ -1330,23 +1329,21 @@ function renderFavoriteToggle(state, item, type) {
       >
         ${buttonLabel}
       </button>
-      <p class="text-sm ${
-        lastAction?.tone === "error"
-          ? "text-rose-200"
-          : lastAction?.tone === "success"
-            ? "text-emerald-200"
-            : "text-white/65"
-      }">
-        ${
-          lastAction?.message ||
-          (isHydratingWatchlist
-            ? "On vérifie si ce titre est déjà dans tes favoris."
-            : null) ||
-          (isAuthenticated
-            ? "Ajoute ce titre à ta liste ou retire-le en un clic."
-            : "Connecte-toi pour enregistrer ce titre dans tes favoris.")
-        }
-      </p>
+      ${
+        helperMessage
+          ? `
+            <p class="text-sm ${
+              lastAction?.tone === "error"
+                ? "text-rose-200"
+                : lastAction?.tone === "success"
+                  ? "text-emerald-200"
+                  : "text-white/65"
+            }">
+              ${helperMessage}
+            </p>
+          `
+          : ""
+      }
     </div>
   `;
 }
@@ -1366,6 +1363,15 @@ function renderPersonalRating(state, item, type) {
     state.userRatings.lastAction?.key === ratingKey
       ? state.userRatings.lastAction
       : null;
+  const helperMessage =
+    lastAction?.message ||
+    (isHydratingRatings
+      ? "On charge ta note personnelle."
+      : selectedRating > 0
+        ? ""
+        : isAuthenticated
+          ? "Note ce titre de 1 à 5 étoiles."
+          : "Connecte-toi pour noter ce titre.");
 
   return `
     <section class="media-panel mt-8 rounded-3xl border border-white/10 p-5">
@@ -1381,24 +1387,21 @@ function renderPersonalRating(state, item, type) {
           )
           .join("")}
       </div>
-      <p class="mt-4 text-sm ${
-        lastAction?.tone === "error"
-          ? "text-rose-200"
-          : lastAction?.tone === "success"
-            ? "text-emerald-200"
-            : "text-white/65"
-      }">
-        ${
-          lastAction?.message ||
-          (isHydratingRatings
-            ? "On charge ta note personnelle."
-            : selectedRating > 0
-              ? `Tu as mis ${selectedRating}/5 à ce titre.`
-              : isAuthenticated
-                ? "Note ce titre de 1 à 5 étoiles."
-                : "Connecte-toi pour noter ce titre.")
-        }
-      </p>
+      ${
+        helperMessage
+          ? `
+            <p class="mt-4 text-sm ${
+              lastAction?.tone === "error"
+                ? "text-rose-200"
+                : lastAction?.tone === "success"
+                  ? "text-emerald-200"
+                  : "text-white/65"
+            }">
+              ${helperMessage}
+            </p>
+          `
+          : ""
+      }
     </section>
   `;
 }
@@ -1759,33 +1762,11 @@ function renderSimilarContentSection(similarItems, type, itemId) {
     type === "movie" ? "Films similaires" : "Séries similaires";
 
   if (!Array.isArray(similarItems) || similarItems.length === 0) {
-    return `
-      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">À voir aussi</p>
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
-          ${sectionTitle}
-        </h2>
-        <p class="mt-5 text-base leading-8 text-white/70">
-          Aucun contenu similaire n'est disponible pour ce ${
-            type === "movie" ? "film" : "titre"
-          }.
-        </p>
-      </section>
-    `;
+    return "";
   }
 
   return `
     <section class="space-y-6">
-      <div class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">À voir aussi</p>
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
-          ${sectionTitle}
-        </h2>
-        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Continue avec des titres proches et ouvre leur fiche détail directement depuis le carrousel.
-        </p>
-      </div>
-
       ${renderCarousel({
         id: `detail-similar-${type}-${itemId}`,
         title: sectionTitle,
