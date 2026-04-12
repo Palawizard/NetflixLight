@@ -433,7 +433,7 @@ function renderShell(content, currentPath) {
 
   return `
     <div class="min-h-screen">
-      <header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
+      <header data-app-header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
         <div class="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[1fr_minmax(20rem,34rem)_1fr]">
           <div class="lg:col-start-1 lg:row-start-1">
             <button

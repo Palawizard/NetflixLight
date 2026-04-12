@@ -1804,6 +1804,9 @@ html[data-theme="light"] .text-white\/70 {
 html[data-theme="light"] .text-white\/65 {
   color: rgb(30 41 59 / 0.65);
 }
+html[data-theme="light"] .text-white\/60 {
+  color: rgb(30 41 59 / 0.6);
+}
 html[data-theme="light"] .text-white\/55 {
   color: rgb(30 41 59 / 0.55);
 }
@@ -1840,6 +1843,13 @@ html[data-theme="light"] [aria-modal="true"] input::placeholder, html[data-theme
 }
 html[data-theme="light"] .border-white\/10 {
   border-color: rgb(15 23 42 / 0.12);
+}
+html[data-theme="light"] [data-app-header] .bg-white.text-neutral-950 {
+  background-color: #172033;
+  color: #f8fafc;
+}
+html[data-theme="light"] [data-app-header] .hover\:bg-white\/90:hover {
+  background-color: #0f172a;
 }
 html[data-theme="light"] .shadow-black\/20, html[data-theme="light"] .shadow-black\/30 {
   --tw-shadow-color: rgb(15 23 42 / 0.12);
