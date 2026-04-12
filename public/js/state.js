@@ -132,6 +132,9 @@ export const appState = {
     movies: {
       ...createCatalogSectionState(),
     },
+    series: {
+      ...createCatalogSectionState(),
+    },
     genres: {
       action: createCatalogSectionState(),
       adventure: createCatalogSectionState(),
@@ -145,6 +148,21 @@ export const appState = {
       romance: createCatalogSectionState(),
       scienceFiction: createCatalogSectionState(),
       thriller: createCatalogSectionState(),
+    },
+    seriesGenres: {
+      actionAdventure: createCatalogSectionState(),
+      animation: createCatalogSectionState(),
+      comedy: createCatalogSectionState(),
+      crime: createCatalogSectionState(),
+      documentary: createCatalogSectionState(),
+      drama: createCatalogSectionState(),
+      family: createCatalogSectionState(),
+      kids: createCatalogSectionState(),
+      mystery: createCatalogSectionState(),
+      reality: createCatalogSectionState(),
+      scifiFantasy: createCatalogSectionState(),
+      talk: createCatalogSectionState(),
+      warPolitics: createCatalogSectionState(),
     },
   },
   ui: {
@@ -234,6 +252,15 @@ export function setMoviesCatalogState(nextMoviesState) {
   });
 }
 
+export function setSeriesCatalogState(nextSeriesState) {
+  updateState((state) => {
+    state.catalog.series = {
+      ...state.catalog.series,
+      ...nextSeriesState,
+    };
+  });
+}
+
 export function setHomeCatalogState(sectionKey, nextSectionState) {
   updateState((state) => {
     state.catalog.home[sectionKey] = {
@@ -247,6 +274,15 @@ export function setGenreCatalogState(sectionKey, nextSectionState) {
   updateState((state) => {
     state.catalog.genres[sectionKey] = {
       ...state.catalog.genres[sectionKey],
+      ...nextSectionState,
+    };
+  });
+}
+
+export function setSeriesGenreCatalogState(sectionKey, nextSectionState) {
+  updateState((state) => {
+    state.catalog.seriesGenres[sectionKey] = {
+      ...state.catalog.seriesGenres[sectionKey],
       ...nextSectionState,
     };
   });

@@ -7,6 +7,7 @@ import {
   setHomeCatalogState,
   setSessionState,
   setMoviesCatalogState,
+  setSeriesCatalogState,
   setHeroState,
   resetAuthFormState,
   setAuthFormState,
@@ -27,6 +28,7 @@ import {
   setSearchState,
   resetSearchState,
   setGenreRecommendationsState,
+  setSeriesGenreCatalogState,
   subscribeState,
   updateState,
 } from "./state.js";
@@ -86,6 +88,7 @@ let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
 let currentSearchRequestId = 0;
 let currentGenreCatalogRequestId = 0;
+let currentSeriesGenreCatalogRequestId = 0;
 let lastRenderedMarkup = "";
 let scheduledRenderId = null;
 let flashMessageTimeoutId = null;
@@ -159,6 +162,61 @@ const GENRE_SECTION_CONFIG = {
   },
 };
 const GENRE_SECTION_KEYS = Object.keys(GENRE_SECTION_CONFIG);
+const SERIES_GENRE_SECTION_CONFIG = {
+  actionAdventure: {
+    genreId: 10759,
+    mediaType: "tv",
+  },
+  animation: {
+    genreId: 16,
+    mediaType: "tv",
+  },
+  comedy: {
+    genreId: 35,
+    mediaType: "tv",
+  },
+  crime: {
+    genreId: 80,
+    mediaType: "tv",
+  },
+  documentary: {
+    genreId: 99,
+    mediaType: "tv",
+  },
+  drama: {
+    genreId: 18,
+    mediaType: "tv",
+  },
+  family: {
+    genreId: 10751,
+    mediaType: "tv",
+  },
+  kids: {
+    genreId: 10762,
+    mediaType: "tv",
+  },
+  mystery: {
+    genreId: 9648,
+    mediaType: "tv",
+  },
+  reality: {
+    genreId: 10764,
+    mediaType: "tv",
+  },
+  scifiFantasy: {
+    genreId: 10765,
+    mediaType: "tv",
+  },
+  talk: {
+    genreId: 10767,
+    mediaType: "tv",
+  },
+  warPolitics: {
+    genreId: 10768,
+    mediaType: "tv",
+  },
+};
+const SERIES_GENRE_SECTION_KEYS = Object.keys(SERIES_GENRE_SECTION_CONFIG);
 
 const EMPTY_GENRE_RECOMMENDATION = {
   status: "empty",
@@ -170,6 +228,7 @@ const EMPTY_GENRE_RECOMMENDATION = {
 const navItems = [
   { path: "/", label: "Accueil" },
   { path: "/films", label: "Films" },
+  { path: "/series", label: "Séries" },
   { path: "/favoris", label: "Favoris" },
   { path: "/profil", label: "Profil" },
   { path: "/login", label: "Connexion" },
@@ -1956,6 +2015,35 @@ async function loadMoviesCatalog() {
   }
 }
 
+async function loadSeriesCatalog() {
+  if (
+    appState.catalog.series.status === "loading" ||
+    appState.catalog.series.status === "success"
+  ) {
+    return;
+  }
+
+  setSeriesCatalogState({
+    status: "loading",
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(withTmdbLanguage("/api/tmdb/tv/popular"));
+
+    setSeriesCatalogState({
+      status: "success",
+      items: normalizeCatalogResults(response.results, "tv"),
+      error: null,
+    });
+  } catch (error) {
+    setSeriesCatalogState({
+      status: "error",
+      error: formatApiError(error),
+    });
+  }
+}
+
 function normalizeSearchResults(results) {
   if (!Array.isArray(results)) {
     return [];
@@ -2209,6 +2297,79 @@ async function loadGenreCatalogBatchItem(sectionKey) {
   }
 }
 
+async function loadSeriesGenreCatalogSection(sectionKey) {
+  const sectionState = appState.catalog.seriesGenres[sectionKey];
+  const sectionConfig = SERIES_GENRE_SECTION_CONFIG[sectionKey];
+
+  if (
+    !sectionConfig ||
+    !sectionState ||
+    sectionState.status === "loading" ||
+    sectionState.status === "success"
+  ) {
+    return;
+  }
+
+  setSeriesGenreCatalogState(sectionKey, {
+    status: "loading",
+    items: [],
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest(
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=tv&genre=${sectionConfig.genreId}&page=1`
+      )
+    );
+
+    setSeriesGenreCatalogState(sectionKey, {
+      status: "success",
+      items: normalizeCatalogResults(response.results, sectionConfig.mediaType),
+      error: null,
+    });
+  } catch (error) {
+    setSeriesGenreCatalogState(sectionKey, {
+      status: "error",
+      items: [],
+      error: formatApiError(error),
+    });
+  }
+}
+
+async function loadSeriesGenreCatalogBatchItem(sectionKey) {
+  const sectionConfig = SERIES_GENRE_SECTION_CONFIG[sectionKey];
+
+  try {
+    const response = await apiRequest(
+      withTmdbLanguage(
+        `/api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1`
+      )
+    );
+
+    return {
+      key: sectionKey,
+      nextState: {
+        status: "success",
+        items: normalizeCatalogResults(
+          response.results,
+          sectionConfig.mediaType
+        ),
+        error: null,
+      },
+    };
+  } catch (error) {
+    return {
+      key: sectionKey,
+      nextState: {
+        status: "error",
+        items: [],
+        error: formatApiError(error),
+      },
+    };
+  }
+}
+
 async function runLimitedBatch(items, limit, task) {
   const results = [];
   let nextIndex = 0;
@@ -2275,8 +2436,67 @@ async function loadGenreCarousels() {
   });
 }
 
+async function loadSeriesGenreCarousels() {
+  const genreKeysToLoad = SERIES_GENRE_SECTION_KEYS.filter((sectionKey) => {
+    const sectionState = appState.catalog.seriesGenres[sectionKey];
+
+    return (
+      sectionState &&
+      sectionState.status !== "loading" &&
+      sectionState.status !== "success"
+    );
+  });
+
+  if (genreKeysToLoad.length === 0) {
+    return;
+  }
+
+  const requestId = ++currentSeriesGenreCatalogRequestId;
+
+  updateState((state) => {
+    genreKeysToLoad.forEach((sectionKey) => {
+      state.catalog.seriesGenres[sectionKey] = {
+        ...state.catalog.seriesGenres[sectionKey],
+        status: "loading",
+        items: [],
+        error: null,
+      };
+    });
+  });
+
+  const results = await runLimitedBatch(
+    genreKeysToLoad,
+    GENRE_CATALOG_BATCH_SIZE,
+    loadSeriesGenreCatalogBatchItem
+  );
+
+  if (requestId !== currentSeriesGenreCatalogRequestId) {
+    return;
+  }
+
+  updateState((state) => {
+    results.forEach(({ key, nextState }) => {
+      state.catalog.seriesGenres[key] = {
+        ...state.catalog.seriesGenres[key],
+        ...nextState,
+      };
+    });
+  });
+}
+
 function retryCatalogSection(retryKey) {
   const genreRetryPrefix = "genre-";
+  const seriesGenreRetryPrefix = "series-genre-";
+
+  if (retryKey.startsWith(seriesGenreRetryPrefix)) {
+    const genreKey = retryKey.slice(seriesGenreRetryPrefix.length);
+
+    if (SERIES_GENRE_SECTION_CONFIG[genreKey]) {
+      void loadSeriesGenreCatalogSection(genreKey);
+    }
+
+    return;
+  }
 
   if (retryKey.startsWith(genreRetryPrefix)) {
     const genreKey = retryKey.slice(genreRetryPrefix.length);
@@ -2303,6 +2523,9 @@ function retryCatalogSection(retryKey) {
       return;
     case "movies-popular":
       void loadMoviesCatalog();
+      return;
+    case "series-popular":
+      void loadSeriesCatalog();
       return;
     default:
   }
@@ -2490,6 +2713,11 @@ function handleRouteEffects(currentPath) {
   if (currentPath === "/films") {
     void loadMoviesCatalog();
     void loadGenreCarousels();
+  }
+
+  if (currentPath === "/series") {
+    void loadSeriesCatalog();
+    void loadSeriesGenreCarousels();
   }
 
   if (currentPath === "/favoris") {

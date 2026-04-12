@@ -10,7 +10,14 @@ const prefersReducedMotion = window.matchMedia(
 );
 
 export function initializeAnimations(container) {
-  const elements = Array.from(container.querySelectorAll(ANIMATION_SELECTOR));
+  const elements = Array.from(
+    container.querySelectorAll(ANIMATION_SELECTOR)
+  ).filter((element) => {
+    const isSectionDiv =
+      element.parentElement?.tagName === "SECTION" && element.tagName === "DIV";
+
+    return !isSectionDiv || !element.querySelector("[data-carousel-root]");
+  });
 
   if (elements.length === 0) {
     return;
@@ -33,8 +40,8 @@ export function initializeAnimations(container) {
       });
     },
     {
-      threshold: 0.12,
-      rootMargin: "0px 0px -8% 0px",
+      threshold: 0.01,
+      rootMargin: "0px 0px 20% 0px",
     }
   );
 

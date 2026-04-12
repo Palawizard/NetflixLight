@@ -75,6 +75,26 @@ function renderMoviesView(state) {
   `;
 }
 
+function renderSeriesView(state) {
+  const seriesState = state.catalog.series;
+  const genreState = state.catalog.seriesGenres;
+
+  return `
+    <section class="space-y-6">
+      <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Séries</p>
+        <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">À suivre</h1>
+        <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+          Retrouve les séries populaires du moment et garde de côté celles qui te tentent.
+        </p>
+      </header>
+
+      ${renderSeriesCatalog(seriesState)}
+      ${renderSeriesGenreCarousels(genreState)}
+    </section>
+  `;
+}
+
 function renderFavoritesView(state) {
   const username = state.session.user?.username || "utilisateur";
   const watchlistState = state.watchlist;
@@ -810,6 +830,10 @@ export const routeViews = {
     title: "Films",
     render: renderMoviesView,
   },
+  "/series": {
+    title: "Séries",
+    render: renderSeriesView,
+  },
   "/favoris": {
     title: "Favoris",
     render: renderFavoritesView,
@@ -877,6 +901,14 @@ function renderMoviesCatalog(moviesState) {
     id: "movies-popular",
     title: "Films populaires",
     retryKey: "movies-popular",
+  });
+}
+
+function renderSeriesCatalog(seriesState) {
+  return renderCatalogCarouselSection(seriesState, {
+    id: "series-popular",
+    title: "Séries populaires",
+    retryKey: "series-popular",
   });
 }
 
@@ -1079,9 +1111,9 @@ function renderDetailLoading() {
 
 function renderDetailError(type, id, errorMessage) {
   const detailPath = `/${type}/${id}`;
-  const returnPath = type === "movie" ? "/films" : "/";
+  const returnPath = type === "movie" ? "/films" : "/series";
   const returnLabel =
-    type === "movie" ? "Retour aux films" : "Retour à l'accueil";
+    type === "movie" ? "Retour aux films" : "Retour aux séries";
 
   return `
     <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
@@ -1120,9 +1152,9 @@ function renderDetailContent(state, item, type) {
   const backdropPath = item.backdrop_path || item.poster_path;
   const dateLabel = type === "movie" ? "Date de sortie" : "Première diffusion";
   const durationLabel = type === "movie" ? "Durée" : "Saisons";
-  const returnPath = type === "movie" ? "/films" : "/";
+  const returnPath = type === "movie" ? "/films" : "/series";
   const returnLabel =
-    type === "movie" ? "Retour aux films" : "Retour à l'accueil";
+    type === "movie" ? "Retour aux films" : "Retour aux séries";
   const genres = getGenreNames(item.genres);
   const mainCast = getMainCast(item.credits?.cast);
   const similarItems = getSimilarItems(item.similar?.results, type, item.id);
@@ -1493,6 +1525,62 @@ function renderGenreCarousels(genreState) {
     <div class="space-y-8">
       ${isLoading ? renderCarouselSkeleton("Genres de films") : ""}
       ${carouselMarkup || (isLoading ? "" : renderCarouselEmpty("Genres de films"))}
+    </div>
+  `;
+}
+
+function renderSeriesGenreCarousels(genreState) {
+  const genreSections = [
+    {
+      key: "actionAdventure",
+      id: "series-genre-action-adventure",
+      title: "Action & aventure",
+    },
+    { key: "animation", id: "series-genre-animation", title: "Animation" },
+    { key: "comedy", id: "series-genre-comedy", title: "Comédie" },
+    { key: "crime", id: "series-genre-crime", title: "Crime" },
+    {
+      key: "documentary",
+      id: "series-genre-documentary",
+      title: "Documentaire",
+    },
+    { key: "drama", id: "series-genre-drama", title: "Drame" },
+    { key: "family", id: "series-genre-family", title: "Famille" },
+    { key: "kids", id: "series-genre-kids", title: "Jeunesse" },
+    { key: "mystery", id: "series-genre-mystery", title: "Mystère" },
+    { key: "reality", id: "series-genre-reality", title: "Télé-réalité" },
+    {
+      key: "scifiFantasy",
+      id: "series-genre-scifi-fantasy",
+      title: "Science-fiction & fantastique",
+    },
+    { key: "talk", id: "series-genre-talk", title: "Talk-show" },
+    {
+      key: "warPolitics",
+      id: "series-genre-war-politics",
+      title: "Guerre & politique",
+    },
+  ];
+  const isLoading = genreSections.some((genreSection) => {
+    const sectionState = genreState[genreSection.key];
+
+    return (
+      !sectionState ||
+      sectionState.status === "idle" ||
+      sectionState.status === "loading"
+    );
+  });
+  const carouselMarkup = genreSections
+    .map((genreSection) =>
+      renderGenreCarouselSection(genreState[genreSection.key], genreSection)
+    )
+    .filter(Boolean)
+    .join("");
+
+  return `
+    <div class="space-y-8">
+      ${isLoading ? renderCarouselSkeleton("Genres de séries") : ""}
+      ${carouselMarkup || (isLoading ? "" : renderCarouselEmpty("Genres de séries"))}
     </div>
   `;
 }
