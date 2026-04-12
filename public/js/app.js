@@ -23,6 +23,8 @@ import {
   resetViewingHistoryState,
   setUserRatingsState,
   resetUserRatingsState,
+  setProfilesState,
+  resetProfilesState,
   setSearchState,
   resetSearchState,
   setGenreRecommendationsState,
@@ -58,6 +60,7 @@ const guestOnlyPaths = new Set(["/login", "/register"]);
 const SEARCH_DEBOUNCE_MS = 350;
 const THEME_STORAGE_KEY = "netflixlight.theme";
 const GENRE_PREFERENCES_STORAGE_KEY = "netflixlight.genrePreferences";
+const ACTIVE_PROFILE_STORAGE_PREFIX = "netflixlight.activeProfile";
 let currentDetailRequestId = 0;
 let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
@@ -572,6 +575,7 @@ async function initializeSession() {
     void loadWatchProgress();
     void loadViewingHistory();
     void loadUserRatings();
+    void loadProfiles();
   } catch (error) {
     if (error.status !== 401) {
       setFlashMessage("Impossible de charger ton espace.");
@@ -585,6 +589,7 @@ async function initializeSession() {
     resetWatchProgressState();
     resetViewingHistoryState();
     resetUserRatingsState();
+    resetProfilesState();
   }
 }
 
@@ -823,6 +828,158 @@ async function loadUserRatings({ force = false } = {}) {
     setUserRatingsState({
       status: "error",
       error: formatApiError(error),
+    });
+  }
+}
+
+function getActiveProfileStorageKey(userId) {
+  return `${ACTIVE_PROFILE_STORAGE_PREFIX}.${userId}`;
+}
+
+function getStoredActiveProfileId(userId) {
+  const storedProfileId = Number.parseInt(
+    window.localStorage.getItem(getActiveProfileStorageKey(userId)) || "",
+    10
+  );
+
+  return Number.isInteger(storedProfileId) && storedProfileId > 0
+    ? storedProfileId
+    : null;
+}
+
+function persistActiveProfileId(userId, profileId) {
+  window.localStorage.setItem(
+    getActiveProfileStorageKey(userId),
+    String(profileId)
+  );
+}
+
+function selectActiveProfile(profileId) {
+  if (
+    appState.session.status !== "authenticated" ||
+    !appState.session.user ||
+    !Number.isInteger(profileId)
+  ) {
+    return;
+  }
+
+  const activeProfile = appState.profiles.items.find(
+    (profile) => profile.id === profileId
+  );
+
+  if (!activeProfile) {
+    return;
+  }
+
+  persistActiveProfileId(appState.session.user.id, profileId);
+  setProfilesState({
+    activeProfileId: profileId,
+    lastAction: {
+      tone: "success",
+      message: `Profil actif: ${activeProfile.name}.`,
+    },
+  });
+}
+
+async function loadProfiles({ force = false } = {}) {
+  if (appState.session.status !== "authenticated" || !appState.session.user) {
+    resetProfilesState();
+    return;
+  }
+
+  if (
+    !force &&
+    (appState.profiles.status === "loading" ||
+      appState.profiles.status === "success")
+  ) {
+    return;
+  }
+
+  setProfilesState({
+    status: "loading",
+    error: null,
+  });
+
+  try {
+    const response = await apiRequest("/api/profiles");
+    const profiles = Array.isArray(response.items) ? response.items : [];
+    const storedProfileId = getStoredActiveProfileId(appState.session.user.id);
+    const activeProfile =
+      profiles.find((profile) => profile.id === storedProfileId) || profiles[0];
+
+    if (activeProfile) {
+      persistActiveProfileId(appState.session.user.id, activeProfile.id);
+    }
+
+    setProfilesState({
+      status: "success",
+      items: profiles,
+      activeProfileId: activeProfile?.id || null,
+      pending: false,
+      error: null,
+    });
+  } catch (error) {
+    setProfilesState({
+      status: "error",
+      pending: false,
+      error: formatApiError(error),
+    });
+  }
+}
+
+async function createProfileFromForm(formData) {
+  if (appState.session.status !== "authenticated" || !appState.session.user) {
+    setFlashMessage("Connecte-toi pour gérer les profils.");
+    navigate("/login");
+    return;
+  }
+
+  if (appState.profiles.pending) {
+    return;
+  }
+
+  setProfilesState({
+    pending: true,
+    error: null,
+    lastAction: null,
+  });
+
+  try {
+    const response = await apiRequest("/api/profiles", {
+      method: "POST",
+      body: {
+        name: formData.get("profileName"),
+        avatarColor: formData.get("avatarColor"),
+      },
+    });
+
+    const nextProfiles = response?.item
+      ? [...appState.profiles.items, response.item]
+      : appState.profiles.items;
+
+    if (response?.item) {
+      persistActiveProfileId(appState.session.user.id, response.item.id);
+    }
+
+    setProfilesState({
+      status: "success",
+      items: nextProfiles,
+      activeProfileId: response?.item?.id || appState.profiles.activeProfileId,
+      pending: false,
+      error: null,
+      lastAction: {
+        tone: "success",
+        message: "Profil créé et sélectionné.",
+      },
+    });
+  } catch (error) {
+    setProfilesState({
+      pending: false,
+      error: formatApiError(error),
+      lastAction: {
+        tone: "error",
+        message: formatApiError(error),
+      },
     });
   }
 }
@@ -1137,6 +1294,7 @@ async function logoutUser() {
     resetWatchProgressState();
     resetViewingHistoryState();
     resetUserRatingsState();
+    resetProfilesState();
     resetAuthFormState();
     resetLogoutState();
     setFlashMessage("Tu es déconnecté.");
@@ -1790,6 +1948,14 @@ function handleRouteEffects(currentPath) {
     void loadUserRatings();
   }
 
+  if (
+    appState.session.status === "authenticated" &&
+    (appState.profiles.status === "idle" ||
+      appState.profiles.status === "error")
+  ) {
+    void loadProfiles();
+  }
+
   if (currentPath === "/") {
     void loadHomeHero();
     loadHomeCarousels();
@@ -1923,6 +2089,18 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const profileButton = event.target.closest("[data-select-profile]");
+
+  if (profileButton) {
+    const profileId = Number.parseInt(
+      profileButton.getAttribute("data-select-profile") || "",
+      10
+    );
+
+    selectActiveProfile(profileId);
+    return;
+  }
+
   const themeToggleButton = event.target.closest("[data-toggle-theme]");
 
   if (themeToggleButton) {
@@ -2029,6 +2207,15 @@ document.addEventListener("submit", async (event) => {
     return;
   }
 
+  const profileForm = event.target.closest("[data-profile-form]");
+
+  if (profileForm) {
+    event.preventDefault();
+    await createProfileFromForm(new FormData(profileForm));
+    profileForm.reset();
+    return;
+  }
+
   const form = event.target.closest("[data-auth-form]");
 
   if (!form) {
@@ -2068,6 +2255,7 @@ document.addEventListener("submit", async (event) => {
       await loadWatchProgress({ force: true });
       await loadViewingHistory({ force: true });
       await loadUserRatings({ force: true });
+      await loadProfiles({ force: true });
       resetAuthFormState();
       setFlashMessage("Connexion réussie.");
       navigate(nextPath);
