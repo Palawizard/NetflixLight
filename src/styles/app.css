@@ -24,6 +24,11 @@ html[data-theme="light"] [data-app-background] {
     linear-gradient(180deg, #f8fafc, #e2e8f0);
 }
 
+button:not(:disabled),
+summary {
+  cursor: pointer;
+}
+
 html[data-theme="light"] .text-white {
   color: #172033;
 }
@@ -72,6 +77,29 @@ html[data-theme="light"] .bg-black\/20,
 html[data-theme="light"] .bg-black\/30,
 html[data-theme="light"] .bg-black\/40 {
   background-color: rgb(255 255 255 / 0.74);
+}
+
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  color: #172033;
+}
+
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder {
+  color: rgb(30 41 59 / 0.6);
+  opacity: 1;
+}
+
+html[data-theme="light"] [aria-modal="true"] input,
+html[data-theme="light"] [aria-modal="true"] select,
+html[data-theme="light"] [aria-modal="true"] textarea {
+  color: #f8fafc;
+}
+
+html[data-theme="light"] [aria-modal="true"] input::placeholder,
+html[data-theme="light"] [aria-modal="true"] textarea::placeholder {
+  color: rgb(248 250 252 / 0.58);
 }
 
 html[data-theme="light"] .border-white\/10 {

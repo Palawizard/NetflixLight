@@ -71,6 +71,7 @@ let lastRenderedMarkup = "";
 let scheduledRenderId = null;
 let flashMessageTimeoutId = null;
 let flashMessageToken = 0;
+let pageAnimationSuppressionCount = 0;
 const HOME_SECTION_CONFIG = {
   trending: {
     endpoint:
@@ -195,7 +196,9 @@ function commitAppMarkup(nextMarkup) {
 
   appElement.innerHTML = nextMarkup;
   lastRenderedMarkup = nextMarkup;
-  initializeAnimations(appElement);
+  if (pageAnimationSuppressionCount === 0) {
+    initializeAnimations(appElement);
+  }
   initializeCarousels(appElement);
 }
 
@@ -207,6 +210,31 @@ function scheduleRenderApp() {
   scheduledRenderId = window.requestAnimationFrame(() => {
     scheduledRenderId = null;
     renderApp();
+  });
+}
+
+function runWithoutPageAnimations(action) {
+  pageAnimationSuppressionCount += 1;
+
+  let result;
+
+  try {
+    result = action();
+  } catch (error) {
+    pageAnimationSuppressionCount = Math.max(
+      0,
+      pageAnimationSuppressionCount - 1
+    );
+    throw error;
+  }
+
+  return Promise.resolve(result).finally(() => {
+    window.requestAnimationFrame(() => {
+      pageAnimationSuppressionCount = Math.max(
+        0,
+        pageAnimationSuppressionCount - 1
+      );
+    });
   });
 }
 
@@ -482,7 +510,6 @@ function rememberGenrePreferencesFromDetail(item, type, scoreIncrement = 1) {
   );
 
   writeStoredGenrePreferences(nextPreferences);
-  void loadGenreRecommendations({ force: true });
 }
 
 function getTopGenrePreference() {
@@ -2394,7 +2421,9 @@ document.addEventListener("click", (event) => {
     );
 
     if ((type === "movie" || type === "tv") && Number.isInteger(tmdbId)) {
-      void removeWatchlistItemFromList(type, tmdbId);
+      void runWithoutPageAnimations(() =>
+        removeWatchlistItemFromList(type, tmdbId)
+      );
     }
     return;
   }
@@ -2409,7 +2438,7 @@ document.addEventListener("click", (event) => {
   const favoriteToggleButton = event.target.closest("[data-toggle-favorite]");
 
   if (favoriteToggleButton) {
-    void toggleFavoriteFromDetail();
+    void runWithoutPageAnimations(toggleFavoriteFromDetail);
     return;
   }
 
@@ -2421,7 +2450,7 @@ document.addEventListener("click", (event) => {
       10
     );
 
-    void setPersonalRatingFromDetail(rating);
+    void runWithoutPageAnimations(() => setPersonalRatingFromDetail(rating));
     return;
   }
 

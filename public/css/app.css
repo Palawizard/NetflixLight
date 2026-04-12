@@ -15,7 +15,6 @@
     --color-emerald-300: oklch(84.5% 0.143 164.978);
     --color-emerald-400: oklch(76.5% 0.177 163.223);
     --color-emerald-500: oklch(69.6% 0.17 162.48);
-    --color-teal-300: oklch(85.5% 0.138 181.071);
     --color-cyan-300: oklch(86.5% 0.127 207.078);
     --color-sky-300: oklch(82.8% 0.111 230.318);
     --color-violet-300: oklch(81.1% 0.111 293.571);
@@ -1684,6 +1683,9 @@ html[data-theme="light"] body {
 html[data-theme="light"] [data-app-background] {
   background: radial-gradient(circle at top, rgba(20, 184, 166, 0.18), transparent 32%), linear-gradient(180deg, #f8fafc, #e2e8f0);
 }
+button:not(:disabled), summary {
+  cursor: pointer;
+}
 html[data-theme="light"] .text-white {
   color: #172033;
 }
@@ -1719,6 +1721,19 @@ html[data-theme="light"] .bg-white\/10 {
 }
 html[data-theme="light"] .bg-black\/20, html[data-theme="light"] .bg-black\/30, html[data-theme="light"] .bg-black\/40 {
   background-color: rgb(255 255 255 / 0.74);
+}
+html[data-theme="light"] input, html[data-theme="light"] select, html[data-theme="light"] textarea {
+  color: #172033;
+}
+html[data-theme="light"] input::placeholder, html[data-theme="light"] textarea::placeholder {
+  color: rgb(30 41 59 / 0.6);
+  opacity: 1;
+}
+html[data-theme="light"] [aria-modal="true"] input, html[data-theme="light"] [aria-modal="true"] select, html[data-theme="light"] [aria-modal="true"] textarea {
+  color: #f8fafc;
+}
+html[data-theme="light"] [aria-modal="true"] input::placeholder, html[data-theme="light"] [aria-modal="true"] textarea::placeholder {
+  color: rgb(248 250 252 / 0.58);
 }
 html[data-theme="light"] .border-white\/10 {
   border-color: rgb(15 23 42 / 0.12);
