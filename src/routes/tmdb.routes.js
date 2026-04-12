@@ -66,6 +66,7 @@ router.get("/discover", async (req, res, next) => {
     const type = parseRequiredTmdbString(req.query.type, "type");
     const genreId = parseRequiredPositiveInt(req.query["genre"], "genre");
     const page = parseTmdbPage(req.query.page);
+    const language = parseOptionalTmdbString(req.query.language, "language");
 
     if (!ALLOWED_DISCOVER_TYPES.has(type)) {
       return next(
@@ -77,6 +78,7 @@ router.get("/discover", async (req, res, next) => {
       query: {
         with_genres: genreId,
         page,
+        language,
       },
     });
 

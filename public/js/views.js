@@ -44,6 +44,7 @@ function renderHomeView(state) {
     <section class="space-y-8">
       ${renderHomeHero(state.hero)}
       ${renderContinueWatchingSection(state.watchProgress)}
+      ${renderGenreRecommendationsSection(state.genreRecommendations)}
       ${renderHomeCarousels(state.catalog.home)}
 
       <div class="grid gap-5 lg:grid-cols-2">
@@ -160,6 +161,59 @@ function renderContinueWatchingSection(watchProgressState) {
     id: "continue-watching",
     title: "Continuer à regarder",
     items,
+  });
+}
+
+function renderGenreRecommendationsSection(recommendationsState) {
+  if (!recommendationsState || recommendationsState.status === "idle") {
+    return "";
+  }
+
+  if (recommendationsState.status === "empty") {
+    return `
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/70 shadow-xl shadow-black/20 backdrop-blur">
+        <p class="text-sm uppercase tracking-[0.3em] text-teal-300">Recommandations</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">
+          Des idées selon tes genres
+        </h2>
+        <p class="mt-5 max-w-3xl text-base leading-8">
+          Consulte ou note quelques fiches pour que NetflixLight repère tes genres favoris.
+        </p>
+      </section>
+    `;
+  }
+
+  if (recommendationsState.status === "loading") {
+    return renderCarouselSkeleton(
+      `Recommandé: ${recommendationsState.genre?.name || "genre favori"}`
+    );
+  }
+
+  if (recommendationsState.status === "error") {
+    return `
+      <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 text-rose-100 shadow-xl shadow-black/20">
+        <p class="text-sm uppercase tracking-[0.3em] text-rose-200">Recommandations</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight">
+          Impossible de charger tes recommandations
+        </h2>
+        <p class="mt-5 text-base leading-8">
+          ${recommendationsState.error || "Une erreur est survenue pendant le chargement."}
+        </p>
+      </section>
+    `;
+  }
+
+  if (
+    !Array.isArray(recommendationsState.items) ||
+    recommendationsState.items.length === 0
+  ) {
+    return "";
+  }
+
+  return renderCarousel({
+    id: "genre-recommendations",
+    title: `Parce que tu aimes ${recommendationsState.genre?.name || "ce genre"}`,
+    items: recommendationsState.items,
   });
 }
 
