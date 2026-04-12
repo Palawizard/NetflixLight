@@ -27,8 +27,10 @@ const db = new Database(dbPath);
 db.exec(migrationSql);
 
 const { app } = require("../server");
+const appDb = require("../src/data-access/sqlite/client");
 
 test.after(() => {
+  appDb.close();
   db.close();
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
