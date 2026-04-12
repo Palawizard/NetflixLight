@@ -68,20 +68,13 @@ function renderFavoritesView(state) {
   return `
     <section class="space-y-6">
       <header class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
-            <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ma liste</h1>
-            <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-              Connecté en tant que ${escapeHtml(username)}. Retrouve ici les titres que tu veux garder de côté.
-            </p>
-          </div>
-          <div class="rounded-3xl border border-white/10 bg-black/20 px-5 py-4">
-            <p class="text-xs uppercase tracking-[0.3em] text-white/40">Tri</p>
-            <p class="mt-2 text-sm font-medium text-white">Ajout le plus récent</p>
-          </div>
+        <div>
+          <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
+          <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ma liste</h1>
+          <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
+            Connecté en tant que ${escapeHtml(username)}. Retrouve ici les titres que tu veux garder de côté.
+          </p>
         </div>
-        ${renderWatchlistFeedback(watchlistState)}
       </header>
 
       ${renderWatchlistContent(watchlistState, items)}
@@ -318,25 +311,6 @@ function renderWatchlistCard(item, watchlistState) {
         </div>
       </div>
     </article>
-  `;
-}
-
-function renderWatchlistFeedback(watchlistState) {
-  if (!watchlistState.lastAction?.message) {
-    return "";
-  }
-
-  const toneClass =
-    watchlistState.lastAction.tone === "error"
-      ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
-      : watchlistState.lastAction.tone === "success"
-        ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
-        : "border-white/10 bg-white/5 text-white/75";
-
-  return `
-    <p class="mt-6 rounded-2xl border px-4 py-3 text-sm ${toneClass}">
-      ${watchlistState.lastAction.message}
-    </p>
   `;
 }
 

@@ -665,10 +665,6 @@ async function initializeSession() {
   try {
     const response = await apiRequest("/api/auth/me");
 
-    setWatchlistState({
-      status: "loading",
-      error: null,
-    });
     setSessionState({
       status: "authenticated",
       user: response.user,
