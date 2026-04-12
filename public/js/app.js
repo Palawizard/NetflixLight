@@ -1825,6 +1825,18 @@ function handleRouteEffects(currentPath) {
   }
 }
 
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((error) => {
+      console.warn("Service worker registration failed", error);
+    });
+  });
+}
+
 document.addEventListener("click", (event) => {
   const retryHeroButton = event.target.closest("[data-retry-hero]");
 
@@ -2098,6 +2110,7 @@ subscribeState(scheduleRenderApp);
 applyThemePreference(getStoredThemePreference());
 resetAuthFormState();
 void initializeSession();
+registerServiceWorker();
 startRouter();
 
 function escapeHtml(value) {
