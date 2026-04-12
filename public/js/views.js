@@ -32,7 +32,7 @@ function renderHomeView(state) {
   return `
     <section class="space-y-8">
       ${renderHomeHero(state.hero)}
-      ${renderContinueWatchingSection(state.watchProgress)}
+      ${renderContinueWatchingSection(state.watchProgress, state.userRatings)}
       ${renderGenreRecommendationsSection(state.genreRecommendations)}
       ${renderHomeCarousels(state.catalog.home)}
     </section>
@@ -101,7 +101,7 @@ function renderWatchlistContent(watchlistState, items) {
   `;
 }
 
-function renderContinueWatchingSection(watchProgressState) {
+function renderContinueWatchingSection(watchProgressState, userRatingsState) {
   if (
     watchProgressState.status !== "success" ||
     !Array.isArray(watchProgressState.items) ||
@@ -118,6 +118,7 @@ function renderContinueWatchingSection(watchProgressState) {
       title: item.snapshot.title,
       poster_path: item.snapshot.poster,
       navigation_path: `/${item.type}/${item.tmdbId}`,
+      personal_rating_label: getPersonalRatingLabel(userRatingsState, item),
       vote_average: null,
       release_date: item.updatedAt,
     }));
@@ -367,7 +368,7 @@ function renderProfileView(state) {
       </dl>
 
       ${renderProfilesSection(state.profiles)}
-      ${renderViewingHistorySection(state.viewingHistory)}
+      ${renderViewingHistorySection(state.viewingHistory, state.userRatings)}
     </section>
   `;
 }
@@ -506,7 +507,7 @@ function renderAccountProfileCard(profile, profilesState) {
   `;
 }
 
-function renderViewingHistorySection(historyState) {
+function renderViewingHistorySection(historyState, userRatingsState) {
   if (!historyState || historyState.status === "idle") {
     return renderViewingHistoryLoading();
   }
@@ -536,6 +537,7 @@ function renderViewingHistorySection(historyState) {
           title: item.snapshot.title,
           poster_path: item.snapshot.poster,
           release_date: item.viewedAt,
+          personal_rating_label: getPersonalRatingLabel(userRatingsState, item),
           vote_average: null,
         }))
     : [];
@@ -591,6 +593,25 @@ function renderViewingHistoryLoading() {
       </div>
     </section>
   `;
+}
+
+function getPersonalRatingLabel(userRatingsState, historyItem) {
+  const isLoading =
+    userRatingsState?.status === "idle" ||
+    userRatingsState?.status === "loading";
+
+  if (isLoading) {
+    return "";
+  }
+
+  const ratingKey = createFavoriteKey(historyItem.type, historyItem.tmdbId);
+  const ratingItem = userRatingsState?.itemKeys?.[ratingKey];
+
+  if (!Number.isInteger(ratingItem?.rating)) {
+    return "";
+  }
+
+  return `${ratingItem.rating}/5`;
 }
 
 function renderLogoutFeedback(logoutState) {

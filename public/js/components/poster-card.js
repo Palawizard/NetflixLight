@@ -5,6 +5,7 @@
  * @property {string} [title]
  * @property {string} [name]
  * @property {number} [vote_average]
+ * @property {string} [personal_rating_label]
  * @property {string} [release_date]
  * @property {string} [first_air_date]
  * @property {string} [poster_path]
@@ -20,7 +21,7 @@ import { renderTmdbImage } from "../tmdb-images.js";
  */
 export function renderPosterCard(item) {
   const title = escapeHtml(item.title || item.name || "Titre inconnu");
-  const rating = formatRating(item.vote_average);
+  const ratingChips = renderRatingChips(item);
   const year = getReleaseYear(item.release_date || item.first_air_date);
   const detailPath = getDetailPath(item);
   const posterMarkup = item.poster_path
@@ -58,10 +59,8 @@ export function renderPosterCard(item) {
         <div class="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           <div class="translate-y-2 transition duration-300 group-hover:translate-y-0">
               <h3 class="text-base font-semibold text-white sm:text-lg">${title}</h3>
-              <div class="mt-3 flex items-center gap-3 text-xs text-white/75 sm:text-sm">
-                <span class="media-chip rounded-full px-3 py-1">
-                  ${rating}
-                </span>
+              <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/75 sm:text-sm">
+                ${ratingChips}
                 <span>${year}</span>
               </div>
             </div>
@@ -80,10 +79,8 @@ export function renderPosterCard(item) {
         <div class="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           <div class="translate-y-2 transition duration-300 group-hover:translate-y-0">
             <h3 class="text-base font-semibold text-white sm:text-lg">${title}</h3>
-            <div class="mt-3 flex items-center gap-3 text-xs text-white/75 sm:text-sm">
-              <span class="media-chip rounded-full px-3 py-1">
-                ${rating}
-              </span>
+            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/75 sm:text-sm">
+              ${ratingChips}
               <span>${year}</span>
             </div>
           </div>
@@ -93,9 +90,36 @@ export function renderPosterCard(item) {
   `;
 }
 
-function formatRating(voteAverage) {
+function renderRatingChips(item) {
+  const chips = [];
+  const tmdbRating = formatTmdbRating(item.vote_average);
+  const personalRating =
+    typeof item.personal_rating_label === "string"
+      ? item.personal_rating_label.trim()
+      : "";
+
+  if (tmdbRating) {
+    chips.push(`TMDB ${tmdbRating}`);
+  }
+
+  if (personalRating) {
+    chips.push(`Ma note ${personalRating}`);
+  }
+
+  return chips
+    .map(
+      (chip) => `
+        <span class="media-chip rounded-full px-3 py-1">
+          ${escapeHtml(chip)}
+        </span>
+      `
+    )
+    .join("");
+}
+
+function formatTmdbRating(voteAverage) {
   if (typeof voteAverage !== "number" || Number.isNaN(voteAverage)) {
-    return "N/A";
+    return null;
   }
 
   return `${voteAverage.toFixed(1)}/10`;
