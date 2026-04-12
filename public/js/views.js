@@ -1372,25 +1372,65 @@ function renderHomeCarousels(homeCatalogState) {
 }
 
 function renderGenreCarousels(genreState) {
+  const genreSections = [
+    { key: "action", id: "genre-action", title: "Action" },
+    { key: "adventure", id: "genre-adventure", title: "Aventure" },
+    { key: "animation", id: "genre-animation", title: "Animation" },
+    { key: "comedy", id: "genre-comedy", title: "Comédie" },
+    { key: "crime", id: "genre-crime", title: "Crime" },
+    { key: "drama", id: "genre-drama", title: "Drame" },
+    { key: "family", id: "genre-family", title: "Famille" },
+    { key: "fantasy", id: "genre-fantasy", title: "Fantastique" },
+    { key: "horror", id: "genre-horror", title: "Horreur" },
+    { key: "romance", id: "genre-romance", title: "Romance" },
+    {
+      key: "scienceFiction",
+      id: "genre-science-fiction",
+      title: "Science-fiction",
+    },
+    { key: "thriller", id: "genre-thriller", title: "Thriller" },
+  ];
+  const isLoading = genreSections.some((genreSection) => {
+    const sectionState = genreState[genreSection.key];
+
+    return (
+      !sectionState ||
+      sectionState.status === "idle" ||
+      sectionState.status === "loading"
+    );
+  });
+  const carouselMarkup = genreSections
+    .map((genreSection) =>
+      renderGenreCarouselSection(genreState[genreSection.key], genreSection)
+    )
+    .filter(Boolean)
+    .join("");
+
   return `
     <div class="space-y-8">
-      ${renderCatalogCarouselSection(genreState.action, {
-        id: "genre-action",
-        title: "Action",
-        retryKey: "genre-action",
-      })}
-      ${renderCatalogCarouselSection(genreState.comedy, {
-        id: "genre-comedy",
-        title: "Comédie",
-        retryKey: "genre-comedy",
-      })}
-      ${renderCatalogCarouselSection(genreState.horror, {
-        id: "genre-horror",
-        title: "Horreur",
-        retryKey: "genre-horror",
-      })}
+      ${isLoading ? renderCarouselSkeleton("Genres de films") : ""}
+      ${carouselMarkup || (isLoading ? "" : renderCarouselEmpty("Genres de films"))}
     </div>
   `;
+}
+
+function renderGenreCarouselSection(sectionState, { id, title }) {
+  if (
+    !sectionState ||
+    sectionState.status === "idle" ||
+    sectionState.status === "loading" ||
+    sectionState.status === "error" ||
+    !Array.isArray(sectionState.items) ||
+    sectionState.items.length === 0
+  ) {
+    return "";
+  }
+
+  return renderCarousel({
+    id,
+    title,
+    items: sectionState.items,
+  });
 }
 
 function renderCatalogCarouselSection(sectionState, { id, title, retryKey }) {

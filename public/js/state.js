@@ -127,8 +127,17 @@ export const appState = {
     },
     genres: {
       action: createCatalogSectionState(),
+      adventure: createCatalogSectionState(),
+      animation: createCatalogSectionState(),
       comedy: createCatalogSectionState(),
+      crime: createCatalogSectionState(),
+      drama: createCatalogSectionState(),
+      family: createCatalogSectionState(),
+      fantasy: createCatalogSectionState(),
       horror: createCatalogSectionState(),
+      romance: createCatalogSectionState(),
+      scienceFiction: createCatalogSectionState(),
+      thriller: createCatalogSectionState(),
     },
   },
   ui: {

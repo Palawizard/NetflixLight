@@ -61,10 +61,12 @@ const THEME_STORAGE_KEY = "netflixlight.theme";
 const GENRE_PREFERENCES_STORAGE_KEY = "netflixlight.genrePreferences";
 const ACTIVE_PROFILE_STORAGE_PREFIX = "netflixlight.activeProfile";
 const FLASH_MESSAGE_TIMEOUT_MS = 3500;
+const GENRE_CATALOG_BATCH_SIZE = 4;
 let currentDetailRequestId = 0;
 let currentSearchDebounceId = null;
 let currentSearchAbortController = null;
 let currentSearchRequestId = 0;
+let currentGenreCatalogRequestId = 0;
 let lastRenderedMarkup = "";
 let scheduledRenderId = null;
 let flashMessageTimeoutId = null;
@@ -92,15 +94,52 @@ const GENRE_SECTION_CONFIG = {
     genreId: 28,
     mediaType: "movie",
   },
+  adventure: {
+    genreId: 12,
+    mediaType: "movie",
+  },
+  animation: {
+    genreId: 16,
+    mediaType: "movie",
+  },
   comedy: {
     genreId: 35,
+    mediaType: "movie",
+  },
+  crime: {
+    genreId: 80,
+    mediaType: "movie",
+  },
+  drama: {
+    genreId: 18,
+    mediaType: "movie",
+  },
+  family: {
+    genreId: 10751,
+    mediaType: "movie",
+  },
+  fantasy: {
+    genreId: 14,
     mediaType: "movie",
   },
   horror: {
     genreId: 27,
     mediaType: "movie",
   },
+  romance: {
+    genreId: 10749,
+    mediaType: "movie",
+  },
+  scienceFiction: {
+    genreId: 878,
+    mediaType: "movie",
+  },
+  thriller: {
+    genreId: 53,
+    mediaType: "movie",
+  },
 };
+const GENRE_SECTION_KEYS = Object.keys(GENRE_SECTION_CONFIG);
 
 const EMPTY_GENRE_RECOMMENDATION = {
   status: "empty",
@@ -1761,13 +1800,116 @@ async function loadGenreCatalogSection(sectionKey) {
   }
 }
 
-function loadGenreCarousels() {
-  void loadGenreCatalogSection("action");
-  void loadGenreCatalogSection("comedy");
-  void loadGenreCatalogSection("horror");
+async function loadGenreCatalogBatchItem(sectionKey) {
+  const sectionConfig = GENRE_SECTION_CONFIG[sectionKey];
+
+  try {
+    const response = await apiRequest(
+      `/api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1&language=fr-FR`
+    );
+
+    return {
+      key: sectionKey,
+      nextState: {
+        status: "success",
+        items: normalizeCatalogResults(
+          response.results,
+          sectionConfig.mediaType
+        ),
+        error: null,
+      },
+    };
+  } catch (error) {
+    return {
+      key: sectionKey,
+      nextState: {
+        status: "error",
+        items: [],
+        error: formatApiError(error),
+      },
+    };
+  }
+}
+
+async function runLimitedBatch(items, limit, task) {
+  const results = [];
+  let nextIndex = 0;
+  const workerCount = Math.min(limit, items.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < items.length) {
+        const item = items[nextIndex];
+        nextIndex += 1;
+        results.push(await task(item));
+      }
+    })
+  );
+
+  return results;
+}
+
+async function loadGenreCarousels() {
+  const genreKeysToLoad = GENRE_SECTION_KEYS.filter((sectionKey) => {
+    const sectionState = appState.catalog.genres[sectionKey];
+
+    return (
+      sectionState &&
+      sectionState.status !== "loading" &&
+      sectionState.status !== "success"
+    );
+  });
+
+  if (genreKeysToLoad.length === 0) {
+    return;
+  }
+
+  const requestId = ++currentGenreCatalogRequestId;
+
+  updateState((state) => {
+    genreKeysToLoad.forEach((sectionKey) => {
+      state.catalog.genres[sectionKey] = {
+        ...state.catalog.genres[sectionKey],
+        status: "loading",
+        items: [],
+        error: null,
+      };
+    });
+  });
+
+  const results = await runLimitedBatch(
+    genreKeysToLoad,
+    GENRE_CATALOG_BATCH_SIZE,
+    loadGenreCatalogBatchItem
+  );
+
+  if (requestId !== currentGenreCatalogRequestId) {
+    return;
+  }
+
+  updateState((state) => {
+    results.forEach(({ key, nextState }) => {
+      state.catalog.genres[key] = {
+        ...state.catalog.genres[key],
+        ...nextState,
+      };
+    });
+  });
 }
 
 function retryCatalogSection(retryKey) {
+  const genreRetryPrefix = "genre-";
+
+  if (retryKey.startsWith(genreRetryPrefix)) {
+    const genreKey = retryKey.slice(genreRetryPrefix.length);
+
+    if (GENRE_SECTION_CONFIG[genreKey]) {
+      void loadGenreCatalogSection(genreKey);
+    }
+
+    return;
+  }
+
   switch (retryKey) {
     case "home-trending":
       void loadHomeCatalogSection("trending");
@@ -1783,15 +1925,6 @@ function retryCatalogSection(retryKey) {
       return;
     case "movies-popular":
       void loadMoviesCatalog();
-      return;
-    case "genre-action":
-      void loadGenreCatalogSection("action");
-      return;
-    case "genre-comedy":
-      void loadGenreCatalogSection("comedy");
-      return;
-    case "genre-horror":
-      void loadGenreCatalogSection("horror");
       return;
     default:
   }
@@ -1976,7 +2109,7 @@ function handleRouteEffects(currentPath) {
 
   if (currentPath === "/films") {
     void loadMoviesCatalog();
-    loadGenreCarousels();
+    void loadGenreCarousels();
   }
 
   if (currentPath === "/favoris") {
@@ -2001,6 +2134,37 @@ function handleRouteEffects(currentPath) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  if (["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) =>
+          Promise.all(
+            registrations.map((registration) => registration.unregister())
+          )
+        )
+        .catch((error) => {
+          console.warn("Service worker cleanup failed", error);
+        });
+
+      if ("caches" in window) {
+        window.caches
+          .keys()
+          .then((cacheNames) =>
+            Promise.all(
+              cacheNames
+                .filter((cacheName) => cacheName.startsWith("netflixlight-"))
+                .map((cacheName) => window.caches.delete(cacheName))
+            )
+          )
+          .catch((error) => {
+            console.warn("Service worker cache cleanup failed", error);
+          });
+      }
+    });
     return;
   }
 

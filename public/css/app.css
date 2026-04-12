@@ -15,7 +15,6 @@
     --color-emerald-300: oklch(84.5% 0.143 164.978);
     --color-emerald-400: oklch(76.5% 0.177 163.223);
     --color-emerald-500: oklch(69.6% 0.17 162.48);
-    --color-teal-300: oklch(85.5% 0.138 181.071);
     --color-cyan-300: oklch(86.5% 0.127 207.078);
     --color-sky-300: oklch(82.8% 0.111 230.318);
     --color-violet-300: oklch(81.1% 0.111 293.571);
@@ -34,7 +33,6 @@
     --color-white: #fff;
     --spacing: 0.25rem;
     --container-xs: 20rem;
-    --container-md: 28rem;
     --container-lg: 32rem;
     --container-xl: 36rem;
     --container-2xl: 42rem;

@@ -16,6 +16,7 @@ export async function apiRequest(
 
   const response = await fetch(pathname, {
     method: normalizedMethod,
+    cache: "no-store",
     headers: body
       ? {
           "Content-Type": "application/json",
