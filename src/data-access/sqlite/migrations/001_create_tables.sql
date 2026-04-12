@@ -82,8 +82,19 @@ CREATE TABLE IF NOT EXISTS user_ratings (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+CREATE TABLE IF NOT EXISTS profiles (
+                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                        user_id INTEGER NOT NULL,
+                                        name TEXT NOT NULL,
+                                        avatar_color TEXT NOT NULL DEFAULT '#fb7185',
+                                        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (user_id, name),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
 CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_video_sources_media ON video_sources(media_type, tmdb_id);
 CREATE INDEX IF NOT EXISTS idx_watchlist_items_user ON watchlist_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_viewing_history_user ON viewing_history(user_id, viewed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_ratings_user ON user_ratings(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_profiles_user ON profiles(user_id);
