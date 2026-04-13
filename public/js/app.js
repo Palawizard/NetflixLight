@@ -1,6 +1,7 @@
 import { apiRequest, formatApiError } from "./api.js";
 import { initializeAnimations } from "./animations.js";
 import { initializeCarousels, scrollCarousel } from "./components/carousel.js";
+import { initializeYoutubePlayer } from "./components/youtube-player.js";
 import {
   appState,
   setGenreCatalogState,
@@ -238,6 +239,7 @@ function commitAppMarkup(nextMarkup) {
     initializeAnimations(appElement);
   }
   initializeCarousels(appElement);
+  initializeYoutubePlayer(appElement);
 }
 
 function scheduleRenderApp() {
