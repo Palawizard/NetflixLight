@@ -1,6 +1,6 @@
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p";
 
-export function buildTmdbImageUrl(path, size) {
+function buildTmdbImageUrl(path, size) {
   if (!path) {
     return "";
   }
@@ -8,7 +8,7 @@ export function buildTmdbImageUrl(path, size) {
   return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
 }
 
-export function buildTmdbSrcSet(path, sizes) {
+function buildTmdbSrcSet(path, sizes) {
   if (!path || !Array.isArray(sizes)) {
     return "";
   }
