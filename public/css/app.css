@@ -1760,11 +1760,6 @@
       grid-template-columns: 1fr minmax(20rem,34rem) 1fr;
     }
   }
-  .lg\:grid-cols-\[minmax\(0\,1\.6fr\)_minmax\(280px\,1fr\)\] {
-    @media (width >= 64rem) {
-      grid-template-columns: minmax(0,1.6fr) minmax(280px,1fr);
-    }
-  }
   .lg\:flex-row {
     @media (width >= 64rem) {
       flex-direction: row;
