@@ -67,7 +67,7 @@ export function renderPosterCard(item) {
                 ${ratingChips}
                 <span>${year}</span>
               </div>
-              ${overview ? `<p class="mt-2 line-clamp-2 text-xs leading-relaxed text-white/60 opacity-0 transition duration-300 group-hover:opacity-100">${overview}</p>` : ""}
+              ${overview ? `<div class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 group-hover:grid-rows-[1fr]"><div class="overflow-hidden"><p class="mt-2 line-clamp-2 text-xs leading-relaxed text-white/60">${overview}</p></div></div>` : ""}
             </div>
           </div>
         </div>
@@ -88,7 +88,7 @@ export function renderPosterCard(item) {
               ${ratingChips}
               <span>${year}</span>
             </div>
-            ${overview ? `<p class="mt-2 line-clamp-2 text-xs leading-relaxed text-white/60 opacity-0 transition duration-300 group-hover:opacity-100">${overview}</p>` : ""}
+            ${overview ? `<div class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 group-hover:grid-rows-[1fr]"><div class="overflow-hidden"><p class="mt-2 line-clamp-2 text-xs leading-relaxed text-white/60">${overview}</p></div></div>` : ""}
           </div>
         </div>
       </div>
