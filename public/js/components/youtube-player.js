@@ -148,7 +148,10 @@ function mountPlayer(container, videoKey) {
   function refreshProgress() {
     const duration = ytPlayer.getDuration?.() ?? 0;
     const current = ytPlayer.getCurrentTime?.() ?? 0;
+    applyProgressUI(current, duration);
+  }
 
+  function applyProgressUI(current, duration) {
     if (duration > 0 && progressFill) {
       progressFill.style.width = `${((current / duration) * 100).toFixed(2)}%`;
     }
@@ -229,8 +232,11 @@ function mountPlayer(container, videoKey) {
       const duration = ytPlayer.getDuration?.() ?? 0;
 
       if (duration > 0) {
-        ytPlayer.seekTo(ratio * duration, true);
-        refreshProgress();
+        const newTime = ratio * duration;
+        ytPlayer.seekTo(newTime, true);
+        // Update immediately — seekTo is async, getCurrentTime() would still
+        // return the old position for several frames.
+        applyProgressUI(newTime, duration);
       }
 
       resetInactivity();
@@ -246,18 +252,17 @@ function mountPlayer(container, videoKey) {
       const step = duration * 0.05;
 
       if (event.key === "ArrowRight") {
-        ytPlayer.seekTo(
-          Math.min(duration, ytPlayer.getCurrentTime() + step),
-          true
-        );
-        refreshProgress();
+        const newTime = Math.min(duration, ytPlayer.getCurrentTime() + step);
+        ytPlayer.seekTo(newTime, true);
+        applyProgressUI(newTime, duration);
         resetInactivity();
         event.preventDefault();
       }
 
       if (event.key === "ArrowLeft") {
-        ytPlayer.seekTo(Math.max(0, ytPlayer.getCurrentTime() - step), true);
-        refreshProgress();
+        const newTime = Math.max(0, ytPlayer.getCurrentTime() - step);
+        ytPlayer.seekTo(newTime, true);
+        applyProgressUI(newTime, duration);
         resetInactivity();
         event.preventDefault();
       }
@@ -281,13 +286,12 @@ function mountPlayer(container, videoKey) {
 
       ytPlayer.setVolume(vol);
 
-      if (vol > 0 && ytPlayer.isMuted()) {
+      if (vol === 0) {
+        ytPlayer.mute();
+        setMuteIcons(true);
+      } else {
         ytPlayer.unMute();
         setMuteIcons(false);
-      }
-
-      if (vol === 0) {
-        setMuteIcons(true);
       }
 
       resetInactivity();
