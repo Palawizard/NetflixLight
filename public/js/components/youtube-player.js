@@ -88,6 +88,7 @@ function mountPlayer(container, videoKey) {
   const volumeSlider = controls?.querySelector("[data-player-volume]");
 
   let progressIntervalId = null;
+  let lastVolumeBeforeMute = 100;
 
   const ytPlayer = new YT.Player(iframeTarget, {
     height: "100%",
@@ -110,8 +111,15 @@ function mountPlayer(container, videoKey) {
         }
 
         if (volumeSlider) {
-          volumeSlider.value = String(ytPlayer.getVolume());
+          const initialVolume = ytPlayer.getVolume();
+          volumeSlider.value = String(initialVolume);
+
+          if (initialVolume > 0) {
+            lastVolumeBeforeMute = initialVolume;
+          }
         }
+
+        setMuteIcons(ytPlayer.isMuted() || ytPlayer.getVolume() === 0);
 
         resetInactivity();
         bindControls();
@@ -269,15 +277,37 @@ function mountPlayer(container, videoKey) {
     });
 
     muteBtn?.addEventListener("click", () => {
-      const nowMuted = !ytPlayer.isMuted();
+      const shouldMute = !ytPlayer.isMuted() && ytPlayer.getVolume() > 0;
 
-      if (nowMuted) {
+      if (shouldMute) {
+        const currentVolume = ytPlayer.getVolume();
+
+        if (currentVolume > 0) {
+          lastVolumeBeforeMute = currentVolume;
+        }
+
+        ytPlayer.setVolume(0);
         ytPlayer.mute();
+
+        if (volumeSlider) {
+          volumeSlider.value = "0";
+        }
+
+        setMuteIcons(true);
       } else {
+        const restoredVolume =
+          lastVolumeBeforeMute > 0 ? lastVolumeBeforeMute : 100;
+
         ytPlayer.unMute();
+        ytPlayer.setVolume(restoredVolume);
+
+        if (volumeSlider) {
+          volumeSlider.value = String(restoredVolume);
+        }
+
+        setMuteIcons(false);
       }
 
-      setMuteIcons(nowMuted);
       resetInactivity();
     });
 
@@ -285,6 +315,10 @@ function mountPlayer(container, videoKey) {
       const vol = Number(volumeSlider.value);
 
       ytPlayer.setVolume(vol);
+
+      if (vol > 0) {
+        lastVolumeBeforeMute = vol;
+      }
 
       if (vol === 0) {
         ytPlayer.mute();
