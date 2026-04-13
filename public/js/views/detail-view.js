@@ -204,7 +204,7 @@ function renderYoutubeTrailerOption(trailer) {
         <div
           data-player-controls
           hidden
-          class="flex items-center gap-3 border-t border-white/10 bg-black/90 px-4 py-3"
+          class="flex items-center gap-3 border-t border-white/10 bg-black/90 px-4 py-3 transition-opacity duration-300"
           aria-label="Contrôles du lecteur vidéo"
         >
           <button

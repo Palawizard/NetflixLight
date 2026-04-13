@@ -6,7 +6,7 @@ const ytReadyQueue = [];
 let currentPlayer = null;
 let inactivityTimerId = null;
 
-const INACTIVITY_TIMEOUT_MS = 300_000;
+const INACTIVITY_TIMEOUT_MS = 5_000;
 
 window.onYouTubeIframeAPIReady = function () {
   ytApiReady = true;
@@ -135,6 +135,7 @@ function mountPlayer(container, videoKey) {
 
           if (event.data === YT.PlayerState.PAUSED) {
             clearInactivityTimer();
+            showControls();
           }
         }
       },
@@ -194,17 +195,18 @@ function mountPlayer(container, videoKey) {
       ?.classList.toggle("hidden", !isPlaying);
   }
 
+  function showControls() {
+    controls?.classList.remove("opacity-0", "pointer-events-none");
+  }
+
+  function hideControls() {
+    controls?.classList.add("opacity-0", "pointer-events-none");
+  }
+
   function resetInactivity() {
     clearInactivityTimer();
-    inactivityTimerId = window.setTimeout(() => {
-      try {
-        if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-          ytPlayer.pauseVideo();
-        }
-      } catch {
-        // ignore if player is gone
-      }
-    }, INACTIVITY_TIMEOUT_MS);
+    showControls();
+    inactivityTimerId = window.setTimeout(hideControls, INACTIVITY_TIMEOUT_MS);
   }
 
   function setMuteIcons(isMuted) {
