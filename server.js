@@ -65,7 +65,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/movies", (req, res) => {
-  res.sendFile(path.join(publicDir, "movies.html"));
+  res.redirect(301, "/#/films");
 });
 
 app.use(apiNotFoundHandler);

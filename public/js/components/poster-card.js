@@ -21,6 +21,10 @@ import { renderTmdbImage } from "../tmdb-images.js";
  */
 export function renderPosterCard(item) {
   const title = escapeHtml(item.title || item.name || "Titre inconnu");
+  const overview =
+    typeof item.overview === "string" && item.overview.trim()
+      ? escapeHtml(item.overview.trim())
+      : "";
   const ratingChips = renderRatingChips(item);
   const year = getReleaseYear(item.release_date || item.first_air_date);
   const detailPath = getDetailPath(item);
@@ -63,6 +67,7 @@ export function renderPosterCard(item) {
                 ${ratingChips}
                 <span>${year}</span>
               </div>
+              ${overview ? `<p class="mt-2 line-clamp-2 text-xs leading-relaxed text-white/60 opacity-0 transition duration-300 group-hover:opacity-100">${overview}</p>` : ""}
             </div>
           </div>
         </div>
@@ -83,6 +88,7 @@ export function renderPosterCard(item) {
               ${ratingChips}
               <span>${year}</span>
             </div>
+            ${overview ? `<p class="mt-2 line-clamp-2 text-xs leading-relaxed text-white/60 opacity-0 transition duration-300 group-hover:opacity-100">${overview}</p>` : ""}
           </div>
         </div>
       </div>

@@ -6,7 +6,7 @@ const ytReadyQueue = [];
 let currentPlayer = null;
 let inactivityTimerId = null;
 
-const INACTIVITY_TIMEOUT_MS = 300_000;
+const INACTIVITY_TIMEOUT_MS = 5_000;
 
 window.onYouTubeIframeAPIReady = function () {
   ytApiReady = true;
@@ -63,6 +63,7 @@ function destroyCurrentPlayer() {
 
   try {
     currentPlayer.stopUpdater();
+    currentPlayer.stopFullscreen?.();
     currentPlayer.ytPlayer.destroy();
   } catch {
     // player may already be gone if innerHTML was replaced
@@ -86,6 +87,7 @@ function mountPlayer(container, videoKey) {
   const timeDisplay = controls?.querySelector("[data-player-time]");
   const muteBtn = controls?.querySelector("[data-player-mute]");
   const volumeSlider = controls?.querySelector("[data-player-volume]");
+  const fullscreenBtn = controls?.querySelector("[data-player-fullscreen]");
 
   let progressIntervalId = null;
   let lastVolumeBeforeMute = 100;
@@ -135,6 +137,7 @@ function mountPlayer(container, videoKey) {
 
           if (event.data === YT.PlayerState.PAUSED) {
             clearInactivityTimer();
+            showControls();
           }
         }
       },
@@ -171,6 +174,10 @@ function mountPlayer(container, videoKey) {
     if (progressBar) {
       const pct = duration > 0 ? Math.round((current / duration) * 100) : 0;
       progressBar.setAttribute("aria-valuenow", String(pct));
+      progressBar.setAttribute(
+        "aria-valuetext",
+        `${formatTime(current)} sur ${formatTime(duration)}`
+      );
     }
   }
 
@@ -194,17 +201,18 @@ function mountPlayer(container, videoKey) {
       ?.classList.toggle("hidden", !isPlaying);
   }
 
+  function showControls() {
+    controls?.classList.remove("opacity-0", "pointer-events-none");
+  }
+
+  function hideControls() {
+    controls?.classList.add("opacity-0", "pointer-events-none");
+  }
+
   function resetInactivity() {
     clearInactivityTimer();
-    inactivityTimerId = window.setTimeout(() => {
-      try {
-        if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-          ytPlayer.pauseVideo();
-        }
-      } catch {
-        // ignore if player is gone
-      }
-    }, INACTIVITY_TIMEOUT_MS);
+    showControls();
+    inactivityTimerId = window.setTimeout(hideControls, INACTIVITY_TIMEOUT_MS);
   }
 
   function setMuteIcons(isMuted) {
@@ -335,9 +343,39 @@ function mountPlayer(container, videoKey) {
     container.addEventListener("touchstart", resetInactivity, {
       passive: true,
     });
+
+    fullscreenBtn?.addEventListener("click", () => {
+      if (!document.fullscreenElement) {
+        container.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+      resetInactivity();
+    });
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
   }
 
-  currentPlayer = { videoKey, ytPlayer, stopUpdater: stopProgressUpdater };
+  function handleFullscreenChange() {
+    const isFullscreen = Boolean(document.fullscreenElement);
+    fullscreenBtn?.setAttribute("aria-pressed", isFullscreen ? "true" : "false");
+    fullscreenBtn?.setAttribute(
+      "aria-label",
+      isFullscreen ? "Quitter le plein écran" : "Plein écran"
+    );
+    fullscreenBtn
+      ?.querySelector("[data-icon-fullscreen]")
+      ?.classList.toggle("hidden", isFullscreen);
+    fullscreenBtn
+      ?.querySelector("[data-icon-exit-fullscreen]")
+      ?.classList.toggle("hidden", !isFullscreen);
+  }
+
+  function stopFullscreen() {
+    document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }
+
+  currentPlayer = { videoKey, ytPlayer, stopUpdater: stopProgressUpdater, stopFullscreen };
 }
 
 function clearInactivityTimer() {
