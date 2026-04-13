@@ -56,20 +56,39 @@ function renderMainCastSection(cast) {
 }
 
 function renderCastCard(member) {
-  const actorName = escapeHtml(member.name || "Nom inconnu");
+  const actorNameText =
+    typeof member.name === "string" && member.name.trim()
+      ? member.name.trim()
+      : "Nom inconnu";
+  const actorName = escapeHtml(actorNameText);
   const characterName = escapeHtml(formatCharacterName(member.character));
+  const wikipediaUrl = buildWikipediaPersonSearchUrl(actorNameText);
+  const wikipediaLabel = escapeHtml(
+    `Rechercher ${actorNameText} sur Wikipédia`
+  );
   const photoMarkup = member.profile_path
-    ? renderTmdbImage({
-        path: member.profile_path,
-        alt: actorName,
-        size: "w185",
-        srcSetSizes: [
-          { size: "w185", width: 185 },
-          { size: "h632", width: 421 },
-        ],
-        sizes: "(max-width: 640px) 50vw, 20rem",
-        className: "h-full w-full object-cover",
-      })
+    ? `
+      <a
+        href="${wikipediaUrl}"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="${wikipediaLabel}"
+        title="${wikipediaLabel}"
+        class="block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+      >
+        ${renderTmdbImage({
+          path: member.profile_path,
+          alt: actorName,
+          size: "w185",
+          srcSetSizes: [
+            { size: "w185", width: 185 },
+            { size: "h632", width: 421 },
+          ],
+          sizes: "(max-width: 640px) 50vw, 20rem",
+          className: "h-full w-full object-cover",
+        })}
+      </a>
+    `
     : `
       <div class="flex h-full items-center justify-center bg-linear-to-br from-white/10 via-white/5 to-black/40 px-6 text-center text-sm uppercase tracking-[0.3em] text-white/40">
         ${actorName}
@@ -88,6 +107,10 @@ function renderCastCard(member) {
       </div>
     </article>
   `;
+}
+
+function buildWikipediaPersonSearchUrl(actorName) {
+  return `https://fr.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(actorName)}`;
 }
 
 function getMainCast(cast) {
