@@ -2,6 +2,7 @@ const db = require("../sqlite/client");
 const {
   toViewingHistoryItem,
 } = require("../../models/viewing-history-item.model");
+const { ensureProfileScopedTables } = require("./profile-scoped-tables");
 
 function ensureViewingHistoryTable() {
   db.prepare(
@@ -24,54 +25,69 @@ function ensureViewingHistoryTable() {
 }
 
 ensureViewingHistoryTable();
+ensureProfileScopedTables();
 
-function listViewingHistoryByUserId(userId) {
+function listViewingHistoryByUserId({ userId, profileId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, viewed_at, snapshot_title, snapshot_poster
     FROM viewing_history
-    WHERE user_id = ?
+    WHERE user_id = ? AND profile_id = ?
     ORDER BY viewed_at DESC, tmdb_id DESC
     LIMIT 12;`
   );
 
-  return statement.all(userId).map(toViewingHistoryItem);
+  return statement.all(userId, profileId).map(toViewingHistoryItem);
 }
 
-function upsertViewingHistoryItem({ userId, type, tmdbId, title, poster }) {
+function upsertViewingHistoryItem({
+  userId,
+  profileId,
+  type,
+  tmdbId,
+  title,
+  poster,
+}) {
   const statement = db.prepare(
     `INSERT INTO viewing_history (
       user_id,
+      profile_id,
       media_type,
       tmdb_id,
       snapshot_title,
       snapshot_poster,
       viewed_at
     )
-    VALUES (?, ?, ?, ?, ?, datetime('now'))
-    ON CONFLICT(user_id, media_type, tmdb_id)
+    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(user_id, profile_id, media_type, tmdb_id)
     DO UPDATE SET
       snapshot_title = excluded.snapshot_title,
       snapshot_poster = excluded.snapshot_poster,
       viewed_at = datetime('now');`
   );
 
-  statement.run(userId, type, tmdbId, title, poster || null);
+  statement.run(userId, profileId, type, tmdbId, title, poster || null);
 
   return findViewingHistoryItemByUserAndMedia({
     userId,
+    profileId,
     type,
     tmdbId,
   });
 }
 
-function findViewingHistoryItemByUserAndMedia({ userId, type, tmdbId }) {
+function findViewingHistoryItemByUserAndMedia({
+  userId,
+  profileId,
+  type,
+  tmdbId,
+}) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, viewed_at, snapshot_title, snapshot_poster
     FROM viewing_history
-    WHERE user_id = ? AND media_type = ? AND tmdb_id = ?;`
+    WHERE user_id = ? AND profile_id = ? AND media_type = ? AND tmdb_id = ?;`
   );
 
-  return toViewingHistoryItem(statement.get(userId, type, tmdbId));
+  return toViewingHistoryItem(statement.get(userId, profileId, type, tmdbId));
 }
 
 module.exports = {

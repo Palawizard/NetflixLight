@@ -37,9 +37,66 @@ function createUserDataController(dependencies) {
     updateState,
   } = dependencies;
 
+  function buildActiveProfileHeaders() {
+    if (!Number.isInteger(appState.profiles.activeProfileId)) {
+      return {};
+    }
+
+    return {
+      "X-Profile-Id": String(appState.profiles.activeProfileId),
+    };
+  }
+
+  function isActiveProfileStill(profileId) {
+    return appState.profiles.activeProfileId === profileId;
+  }
+
+  function profileApiRequest(pathname, options = {}) {
+    return apiRequest(pathname, {
+      ...options,
+      headers: {
+        ...buildActiveProfileHeaders(),
+        ...(options.headers || {}),
+      },
+    });
+  }
+
+  function resetProfileScopedDataStates() {
+    resetWatchlistState();
+    resetWatchProgressState();
+    resetViewingHistoryState();
+    resetUserRatingsState();
+  }
+
+  function loadProfileScopedData({ force = true } = {}) {
+    void loadWatchlist({ force });
+    void loadWatchProgress({ force });
+    void loadViewingHistory({ force });
+    void loadUserRatings({ force });
+  }
+
+  function shouldWaitForActiveProfile() {
+    if (Number.isInteger(appState.profiles.activeProfileId)) {
+      return false;
+    }
+
+    if (
+      appState.profiles.status === "idle" ||
+      appState.profiles.status === "error"
+    ) {
+      void loadProfiles();
+    }
+
+    return true;
+  }
+
   async function loadWatchlist({ force = false } = {}) {
     if (appState.session.status !== "authenticated" || !appState.session.user) {
       resetWatchlistState();
+      return;
+    }
+
+    if (shouldWaitForActiveProfile()) {
       return;
     }
 
@@ -59,8 +116,13 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      const response = await apiRequest("/api/watchlist");
+      const requestProfileId = appState.profiles.activeProfileId;
+      const response = await profileApiRequest("/api/watchlist");
       const items = sortWatchlistItemsByAddedAt(response.items);
+
+      if (!isActiveProfileStill(requestProfileId)) {
+        return;
+      }
 
       setWatchlistState({
         status: "success",
@@ -93,6 +155,10 @@ function createUserDataController(dependencies) {
       return;
     }
 
+    if (shouldWaitForActiveProfile()) {
+      return;
+    }
+
     const progressState = appState.watchProgress;
 
     if (
@@ -108,8 +174,13 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      const response = await apiRequest("/api/watch-progress");
+      const requestProfileId = appState.profiles.activeProfileId;
+      const response = await profileApiRequest("/api/watch-progress");
       const items = Array.isArray(response.items) ? response.items : [];
+
+      if (!isActiveProfileStill(requestProfileId)) {
+        return;
+      }
 
       setWatchProgressState({
         status: "success",
@@ -137,6 +208,10 @@ function createUserDataController(dependencies) {
       return;
     }
 
+    if (shouldWaitForActiveProfile()) {
+      return;
+    }
+
     const historyState = appState.viewingHistory;
 
     if (
@@ -152,8 +227,13 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      const response = await apiRequest("/api/viewing-history");
+      const requestProfileId = appState.profiles.activeProfileId;
+      const response = await profileApiRequest("/api/viewing-history");
       const items = Array.isArray(response.items) ? response.items : [];
+
+      if (!isActiveProfileStill(requestProfileId)) {
+        return;
+      }
 
       setViewingHistoryState({
         status: "success",
@@ -180,6 +260,10 @@ function createUserDataController(dependencies) {
       return;
     }
 
+    if (shouldWaitForActiveProfile()) {
+      return;
+    }
+
     const ratingsState = appState.userRatings;
 
     if (
@@ -195,8 +279,13 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      const response = await apiRequest("/api/user-ratings");
+      const requestProfileId = appState.profiles.activeProfileId;
+      const response = await profileApiRequest("/api/user-ratings");
       const items = Array.isArray(response.items) ? response.items : [];
+
+      if (!isActiveProfileStill(requestProfileId)) {
+        return;
+      }
 
       setUserRatingsState({
         status: "success",
@@ -277,6 +366,7 @@ function createUserDataController(dependencies) {
     }
 
     persistActiveProfileId(appState.session.user.id, profileId);
+    resetProfileScopedDataStates();
     setProfilesState({
       activeProfileId: profileId,
       lastAction: {
@@ -285,6 +375,7 @@ function createUserDataController(dependencies) {
       },
     });
     closeProfileOverlay();
+    loadProfileScopedData();
   }
 
   async function loadProfiles({ force = false } = {}) {
@@ -315,6 +406,7 @@ function createUserDataController(dependencies) {
       const activeProfile =
         profiles.find((profile) => profile.id === storedProfileId) ||
         profiles[0];
+      const previousActiveProfileId = appState.profiles.activeProfileId;
 
       if (activeProfile) {
         persistActiveProfileId(appState.session.user.id, activeProfile.id);
@@ -327,6 +419,11 @@ function createUserDataController(dependencies) {
         pending: false,
         error: null,
       });
+
+      if (activeProfile?.id && previousActiveProfileId !== activeProfile.id) {
+        resetProfileScopedDataStates();
+        loadProfileScopedData();
+      }
     } catch (error) {
       setProfilesState({
         status: "error",
@@ -370,6 +467,10 @@ function createUserDataController(dependencies) {
         persistActiveProfileId(appState.session.user.id, response.item.id);
       }
 
+      if (response?.item) {
+        resetProfileScopedDataStates();
+      }
+
       setProfilesState({
         status: "success",
         items: nextProfiles,
@@ -383,6 +484,9 @@ function createUserDataController(dependencies) {
         },
       });
       closeProfileOverlay();
+      if (response?.item) {
+        loadProfileScopedData();
+      }
     } catch (error) {
       setProfilesState({
         pending: false,
@@ -416,7 +520,7 @@ function createUserDataController(dependencies) {
     const snapshot = buildProgressSnapshotItem(item);
 
     try {
-      const response = await apiRequest("/api/viewing-history", {
+      const response = await profileApiRequest("/api/viewing-history", {
         method: "POST",
         body: {
           type,
@@ -491,12 +595,15 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      const response = await apiRequest(`/api/user-ratings/${type}/${id}`, {
-        method: "PUT",
-        body: {
-          rating,
-        },
-      });
+      const response = await profileApiRequest(
+        `/api/user-ratings/${type}/${id}`,
+        {
+          method: "PUT",
+          body: {
+            rating,
+          },
+        }
+      );
 
       updateState((state) => {
         delete state.userRatings.pendingKeys[ratingKey];
@@ -568,7 +675,7 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      await apiRequest(`/api/watchlist/${type}/${tmdbId}`, {
+      await profileApiRequest(`/api/watchlist/${type}/${tmdbId}`, {
         method: "DELETE",
       });
 
@@ -714,7 +821,7 @@ function createUserDataController(dependencies) {
       });
 
       try {
-        await apiRequest(`/api/watchlist/${type}/${id}`, {
+        await profileApiRequest(`/api/watchlist/${type}/${id}`, {
           method: "DELETE",
         });
 
@@ -774,7 +881,7 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      const response = await apiRequest("/api/watchlist", {
+      const response = await profileApiRequest("/api/watchlist", {
         method: "POST",
         body: {
           tmdbId: id,

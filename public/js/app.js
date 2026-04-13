@@ -430,10 +430,6 @@ async function initializeSession() {
       status: "authenticated",
       user: response.user,
     });
-    void loadWatchlist();
-    void loadWatchProgress();
-    void loadViewingHistory();
-    void loadUserRatings();
     void loadProfiles();
   } catch (error) {
     if (error.status !== 401) {
@@ -453,37 +449,9 @@ async function initializeSession() {
 }
 
 function handleRouteEffects(currentPath) {
-  if (
+  const canLoadProfileScopedData =
     appState.session.status === "authenticated" &&
-    (appState.watchlist.status === "idle" ||
-      appState.watchlist.status === "error")
-  ) {
-    void loadWatchlist();
-  }
-
-  if (
-    appState.session.status === "authenticated" &&
-    (appState.watchProgress.status === "idle" ||
-      appState.watchProgress.status === "error")
-  ) {
-    void loadWatchProgress();
-  }
-
-  if (
-    appState.session.status === "authenticated" &&
-    (appState.viewingHistory.status === "idle" ||
-      appState.viewingHistory.status === "error")
-  ) {
-    void loadViewingHistory();
-  }
-
-  if (
-    appState.session.status === "authenticated" &&
-    (appState.userRatings.status === "idle" ||
-      appState.userRatings.status === "error")
-  ) {
-    void loadUserRatings();
-  }
+    Number.isInteger(appState.profiles.activeProfileId);
 
   if (
     appState.session.status === "authenticated" &&
@@ -491,6 +459,38 @@ function handleRouteEffects(currentPath) {
       appState.profiles.status === "error")
   ) {
     void loadProfiles();
+  }
+
+  if (
+    canLoadProfileScopedData &&
+    (appState.watchlist.status === "idle" ||
+      appState.watchlist.status === "error")
+  ) {
+    void loadWatchlist();
+  }
+
+  if (
+    canLoadProfileScopedData &&
+    (appState.watchProgress.status === "idle" ||
+      appState.watchProgress.status === "error")
+  ) {
+    void loadWatchProgress();
+  }
+
+  if (
+    canLoadProfileScopedData &&
+    (appState.viewingHistory.status === "idle" ||
+      appState.viewingHistory.status === "error")
+  ) {
+    void loadViewingHistory();
+  }
+
+  if (
+    canLoadProfileScopedData &&
+    (appState.userRatings.status === "idle" ||
+      appState.userRatings.status === "error")
+  ) {
+    void loadUserRatings();
   }
 
   if (currentPath === "/") {
@@ -509,7 +509,7 @@ function handleRouteEffects(currentPath) {
     void loadSeriesGenreCarousels();
   }
 
-  if (currentPath === "/favoris") {
+  if (currentPath === "/favoris" && canLoadProfileScopedData) {
     void loadWatchlist();
   }
 

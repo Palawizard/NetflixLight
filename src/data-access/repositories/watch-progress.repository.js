@@ -1,49 +1,34 @@
 const db = require("../sqlite/client");
 const { toWatchProgress } = require("../../models/watch-progress.model");
+const { ensureProfileScopedTables } = require("./profile-scoped-tables");
 
-function ensureWatchProgressSnapshotColumns() {
-  const columns = db.prepare(`PRAGMA table_info(watch_progress);`).all();
-  const columnNames = new Set(columns.map((column) => column.name));
+ensureProfileScopedTables();
 
-  if (!columnNames.has("snapshot_title")) {
-    db.prepare(
-      `ALTER TABLE watch_progress ADD COLUMN snapshot_title TEXT;`
-    ).run();
-  }
-
-  if (!columnNames.has("snapshot_poster")) {
-    db.prepare(
-      `ALTER TABLE watch_progress ADD COLUMN snapshot_poster TEXT;`
-    ).run();
-  }
-}
-
-ensureWatchProgressSnapshotColumns();
-
-function findWatchProgressByUserAndMedia({ userId, type, tmdbId }) {
+function findWatchProgressByUserAndMedia({ userId, profileId, type, tmdbId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, position_seconds, duration_seconds, updated_at, snapshot_title, snapshot_poster
     FROM watch_progress
-    WHERE user_id = ? AND media_type = ? AND tmdb_id = ?;`
+    WHERE user_id = ? AND profile_id = ? AND media_type = ? AND tmdb_id = ?;`
   );
 
-  return toWatchProgress(statement.get(userId, type, tmdbId));
+  return toWatchProgress(statement.get(userId, profileId, type, tmdbId));
 }
 
-function listWatchProgressByUserId(userId) {
+function listWatchProgressByUserId({ userId, profileId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, position_seconds, duration_seconds, updated_at, snapshot_title, snapshot_poster
     FROM watch_progress
-    WHERE user_id = ?
+    WHERE user_id = ? AND profile_id = ?
     ORDER BY updated_at DESC
     LIMIT 12;`
   );
 
-  return statement.all(userId).map(toWatchProgress);
+  return statement.all(userId, profileId).map(toWatchProgress);
 }
 
 function upsertWatchProgress({
   userId,
+  profileId,
   type,
   tmdbId,
   positionSeconds,
@@ -54,6 +39,7 @@ function upsertWatchProgress({
   const statement = db.prepare(
     `INSERT INTO watch_progress (
       user_id,
+      profile_id,
       media_type,
       tmdb_id,
       position_seconds,
@@ -62,8 +48,8 @@ function upsertWatchProgress({
       snapshot_poster,
       updated_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    ON CONFLICT(user_id, media_type, tmdb_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(user_id, profile_id, media_type, tmdb_id)
     DO UPDATE SET
       position_seconds = excluded.position_seconds,
       duration_seconds = excluded.duration_seconds,
@@ -74,6 +60,7 @@ function upsertWatchProgress({
 
   statement.run(
     userId,
+    profileId,
     type,
     tmdbId,
     positionSeconds,
@@ -82,16 +69,16 @@ function upsertWatchProgress({
     poster || null
   );
 
-  return findWatchProgressByUserAndMedia({ userId, type, tmdbId });
+  return findWatchProgressByUserAndMedia({ userId, profileId, type, tmdbId });
 }
 
-function removeWatchProgress({ userId, type, tmdbId }) {
+function removeWatchProgress({ userId, profileId, type, tmdbId }) {
   const statement = db.prepare(
     `DELETE FROM watch_progress
-    WHERE user_id = ? AND media_type = ? AND tmdb_id = ?;`
+    WHERE user_id = ? AND profile_id = ? AND media_type = ? AND tmdb_id = ?;`
   );
 
-  return statement.run(userId, type, tmdbId);
+  return statement.run(userId, profileId, type, tmdbId);
 }
 
 module.exports = {

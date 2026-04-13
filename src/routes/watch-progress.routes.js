@@ -1,5 +1,8 @@
 const express = require("express");
 const { requireAuth } = require("../middlewares/require-auth.middleware");
+const {
+  requireActiveProfile,
+} = require("../middlewares/active-profile.middleware");
 const { createApiError } = require("../utils/api-error");
 const {
   findWatchProgressByUserAndMedia,
@@ -70,25 +73,12 @@ function validateProgressPayload(payload) {
   };
 }
 
-router.get("/", requireAuth, (req, res, next) => {
+router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     return res.status(200).json({
-      items: listWatchProgressByUserId(req.authUser.id),
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
-
-router.get("/:type/:id", requireAuth, (req, res, next) => {
-  try {
-    const { type, tmdbId } = validateMediaParams(req.params);
-
-    return res.status(200).json({
-      item: findWatchProgressByUserAndMedia({
+      items: listWatchProgressByUserId({
         userId: req.authUser.id,
-        type,
-        tmdbId,
+        profileId: req.activeProfile.id,
       }),
     });
   } catch (error) {
@@ -96,35 +86,64 @@ router.get("/:type/:id", requireAuth, (req, res, next) => {
   }
 });
 
-router.put("/:type/:id", requireAuth, (req, res, next) => {
-  try {
-    const { type, tmdbId } = validateMediaParams(req.params);
-    const payload = validateProgressPayload(req.body);
+router.get(
+  "/:type/:id",
+  requireAuth,
+  requireActiveProfile,
+  (req, res, next) => {
+    try {
+      const { type, tmdbId } = validateMediaParams(req.params);
 
-    if (
-      payload.durationSeconds !== null &&
-      payload.durationSeconds > 0 &&
-      payload.positionSeconds >= payload.durationSeconds - 3
-    ) {
-      removeWatchProgress({
-        userId: req.authUser.id,
-        type,
-        tmdbId,
+      return res.status(200).json({
+        item: findWatchProgressByUserAndMedia({
+          userId: req.authUser.id,
+          profileId: req.activeProfile.id,
+          type,
+          tmdbId,
+        }),
       });
-      return res.status(204).send();
+    } catch (error) {
+      return next(error);
     }
-
-    return res.status(200).json({
-      item: upsertWatchProgress({
-        userId: req.authUser.id,
-        type,
-        tmdbId,
-        ...payload,
-      }),
-    });
-  } catch (error) {
-    return next(error);
   }
-});
+);
+
+router.put(
+  "/:type/:id",
+  requireAuth,
+  requireActiveProfile,
+  (req, res, next) => {
+    try {
+      const { type, tmdbId } = validateMediaParams(req.params);
+      const payload = validateProgressPayload(req.body);
+
+      if (
+        payload.durationSeconds !== null &&
+        payload.durationSeconds > 0 &&
+        payload.positionSeconds >= payload.durationSeconds - 3
+      ) {
+        removeWatchProgress({
+          userId: req.authUser.id,
+          profileId: req.activeProfile.id,
+          type,
+          tmdbId,
+        });
+        return res.status(204).send();
+      }
+
+      return res.status(200).json({
+        item: upsertWatchProgress({
+          userId: req.authUser.id,
+          profileId: req.activeProfile.id,
+          type,
+          tmdbId,
+          ...payload,
+        }),
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
 
 module.exports = router;
