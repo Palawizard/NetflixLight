@@ -174,6 +174,10 @@ function mountPlayer(container, videoKey) {
     if (progressBar) {
       const pct = duration > 0 ? Math.round((current / duration) * 100) : 0;
       progressBar.setAttribute("aria-valuenow", String(pct));
+      progressBar.setAttribute(
+        "aria-valuetext",
+        `${formatTime(current)} sur ${formatTime(duration)}`
+      );
     }
   }
 
