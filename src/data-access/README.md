@@ -1,14 +1,12 @@
 # Data Access
 
-This project uses:
+This directory contains the SQLite persistence layer and repository modules used by the Express routes.
 
-- `SQLite` as the persistence layer
-- `better-sqlite3` as the SQLite driver
-- a `Repository` layer as the application-facing data-access abstraction
+## Structure
 
-Directory intent:
+- `sqlite/`: SQLite client, session store, and SQL migrations.
+- `repositories/`: domain repositories for users, sessions, profiles, watchlist, watch progress, viewing history, and ratings.
 
-- `sqlite/`: SQLite-specific connection and adapter code
-- `repositories/`: domain repositories such as users, movies, or favorites
+The main schema is defined in `sqlite/migrations/001_create_tables.sql`. Runtime compatibility helpers live next to the repositories when older local databases need lightweight migration, for example profile-scoped user data.
 
-No tables or repository implementations are defined yet.
+Application routes should call repositories instead of issuing SQL directly.

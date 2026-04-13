@@ -2,7 +2,7 @@ const protectedPaths = new Set(["/favoris", "/profil"]);
 
 const guestOnlyPaths = new Set(["/login", "/register"]);
 
-const SEARCH_DEBOUNCE_MS = 350;
+const SEARCH_DEBOUNCE_MS = 300;
 
 const DEFAULT_PROFILE_COLOR = "#fb7185";
 
@@ -178,14 +178,14 @@ export {
   GENRE_CATALOG_BATCH_SIZE,
   GENRE_SECTION_CONFIG,
   GENRE_SECTION_KEYS,
+  guestOnlyPaths,
   HEX_COLOR_PATTERN,
   HOME_SECTION_CONFIG,
+  navItems,
   PROFILE_COLOR_PRESETS,
+  protectedPaths,
   SEARCH_DEBOUNCE_MS,
   SERIES_GENRE_SECTION_CONFIG,
   SERIES_GENRE_SECTION_KEYS,
   SUPPORTED_LANGUAGES,
-  guestOnlyPaths,
-  navItems,
-  protectedPaths,
 };

@@ -242,10 +242,37 @@ function renderSessionBadge(appState) {
     `;
   }
 
+  const activeProfile = appState.profiles.items.find(
+    (profile) => profile.id === appState.profiles.activeProfileId
+  );
+  const profileNameText = activeProfile?.name || "Profil";
+  const profileName = escapeHtml(profileNameText);
+  const profileInitial = escapeHtml(profileNameText.slice(0, 1).toUpperCase());
+  const avatarColor = escapeHtml(
+    normalizeProfileColor(activeProfile?.avatarColor || DEFAULT_PROFILE_COLOR)
+  );
+  const username = escapeHtml(appState.session.user.username || "Compte");
+
   return `
-    <span class="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs uppercase tracking-[0.2em] text-emerald-100">
-      ${appState.session.user.username}
-    </span>
+    <button
+      type="button"
+      data-open-profile-overlay
+      aria-label="Changer de profil"
+      title="Changer de profil"
+      class="flex w-full min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:border-white/20 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
+    >
+      <span
+        aria-hidden="true"
+        class="solid-on-color grid h-10 w-10 shrink-0 place-items-center rounded-xl text-base font-semibold text-white shadow-lg shadow-black/25"
+        style="background-color: ${avatarColor}"
+      >
+        ${profileInitial}
+      </span>
+      <span class="min-w-0">
+        <span class="block truncate text-sm font-semibold text-white">${profileName}</span>
+        <span class="block truncate text-xs text-white/45">${username}</span>
+      </span>
+    </button>
   `;
 }
 
