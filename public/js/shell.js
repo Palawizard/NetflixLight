@@ -53,7 +53,7 @@ function renderShell({ appState, content, currentPath, currentSearchQuery }) {
   return `
     <div class="min-h-screen">
       <header data-app-header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
-        <div class="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[1fr_minmax(20rem,34rem)_1fr]">
+        <div class="mx-auto grid max-w-[88rem] grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[1fr_minmax(20rem,34rem)_1fr]">
           <div class="lg:col-start-1 lg:row-start-1">
             <button
               type="button"
@@ -77,7 +77,7 @@ function renderShell({ appState, content, currentPath, currentSearchQuery }) {
         </div>
       </header>
 
-      <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10">
+      <main class="mx-auto flex w-full max-w-[88rem] flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10">
         ${content}
       </main>
     </div>
