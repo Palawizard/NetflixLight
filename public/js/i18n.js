@@ -193,6 +193,7 @@ const EN_TRANSLATIONS = {
     "Discover this title in the current selection.",
   "Voir le détail": "View details",
   Changer: "Change",
+  "Changer de profil": "Change profile",
   "Retour aux films": "Back to movies",
   "Retour aux séries": "Back to series",
   "Retour à l'accueil": "Back home",

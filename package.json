@@ -1,7 +1,7 @@
 {
   "name": "netflixlight",
   "version": "1.0.0",
-  "description": "Base minimale Express avec Tailwind CSS et EJS",
+  "description": "Application NetflixLight en Express, SQLite et vanilla JavaScript",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -14,6 +14,7 @@
     "db:setup": "node ./scripts/db-setup.js",
     "db:inspect": "node ./scripts/db-inspect.js",
     "lint": "npm run lint:eslint && npm run format:check",
+    "test": "node --test tests/*.test.js",
     "test:watchlist": "node --test tests/watchlist.api.test.js",
     "lint:eslint": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -33,6 +33,7 @@ Scripts utiles :
 - `npm run db:inspect` : affiche la base SQLite configurée.
 - `npm run lint` : lance ESLint puis Prettier en vérification.
 - `npm run format` : reformate les fichiers avec Prettier.
+- `npm test` : lance tous les tests API Node.
 - `npm run test:watchlist` : lance le test API watchlist.
 
 Tests API complémentaires :
@@ -97,9 +98,9 @@ Structure principale :
 - `public/` : frontend servi directement par Express.
 - `public/index.html` : shell principal de l'application SPA.
 - `public/js/app.js` : orchestration frontend, état applicatif, appels API et handlers.
+- `public/js/app/` : contrôleurs frontend par domaine (catalogue, préférences, données utilisateur, événements DOM).
 - `public/js/views.js` : rendu HTML des vues.
 - `public/js/components/` : composants vanilla JS réutilisables.
-- `public/js/player-controls.js` : contrôles du lecteur vidéo.
 - `public/manifest.webmanifest` et `public/sw.js` : PWA basique.
 - `src/config/env.js` : parsing centralisé de la configuration.
 - `src/routes/` : routes API Express.
@@ -460,6 +461,7 @@ Commandes recommandées :
 ```bash
 npm run lint
 npm run build:css
+npm test
 npm run test:watchlist
 node --test tests/watch-progress.api.test.js
 node --test tests/viewing-history.api.test.js
