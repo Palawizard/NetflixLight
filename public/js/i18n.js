@@ -361,6 +361,10 @@ const EN_PATTERNS = [
     replace: "Open $1 details",
   },
   {
+    pattern: /^Rechercher (.+) sur Wikipédia$/,
+    replace: "Search $1 on Wikipedia",
+  },
+  {
     pattern: /^Supprimer (.+) des favoris$/,
     replace: "Remove $1 from favorites",
   },
