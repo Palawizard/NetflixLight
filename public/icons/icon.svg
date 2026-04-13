@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="NetflixLight">
-  <rect width="512" height="512" rx="112" fill="#09090b" />
-  <path
-    d="M128 384V128h74l108 160V128h74v256h-72L202 222v162z"
-    fill="#fb7185"
-  />
-  <path d="M128 384h74V222l110 162h72L202 128h-74z" fill="#f43f5e" opacity=".72" />
+  <rect width="512" height="512" rx="120" fill="#050505" />
+  <path d="M104 404V108h82l140 186V108h82v296h-80L186 214v190z" fill="#be123c" />
+  <path d="M104 108h82l222 296h-80L104 118z" fill="#f43f5e" />
+  <path d="M186 108h-82v296h82z" fill="#e11d48" />
+  <path d="M408 108h-82v296h82z" fill="#9f1239" />
 </svg>
