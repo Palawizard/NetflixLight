@@ -247,36 +247,32 @@ export function resolveView(pathname) {
 function renderHomeHero(heroState) {
   if (heroState.status === "loading" || heroState.status === "idle") {
     return `
-      <section class="-mx-4 -mt-8 flex min-h-[75vh] animate-pulse items-end bg-white/5 p-6 sm:-mx-6 sm:-mt-10 sm:p-14">
-        <div class="max-w-2xl space-y-4">
-          <div class="h-3 w-24 rounded-full bg-white/10"></div>
-          <div class="h-12 w-80 rounded-2xl bg-white/10 sm:h-16"></div>
-          <div class="h-4 w-full max-w-md rounded-full bg-white/10"></div>
-          <div class="h-4 w-64 rounded-full bg-white/10"></div>
-        </div>
+      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
+        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
+        <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
+          Chargement...
+        </h1>
       </section>
     `;
   }
 
   if (heroState.status === "error") {
     return `
-      <section class="-mx-4 -mt-8 flex min-h-[75vh] items-end bg-rose-500/10 p-6 sm:-mx-6 sm:-mt-10 sm:p-14">
-        <div class="max-w-2xl">
-          <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
-          <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-5xl">
-            Impossible de charger la sélection
-          </h1>
-          <p class="mt-6 max-w-xl text-base leading-8 text-rose-100/90">
-            ${heroState.error || "Une erreur est survenue."}
-          </p>
-          <button
-            type="button"
-            data-retry-hero
-            class="mt-8 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
-          >
-            Réessayer
-          </button>
-        </div>
+      <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
+        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
+        <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
+          Impossible de charger la sélection
+        </h1>
+        <p class="mt-6 max-w-2xl text-base leading-8 text-rose-100/90 sm:text-lg">
+          ${heroState.error || "Une erreur est survenue."}
+        </p>
+        <button
+          type="button"
+          data-retry-hero
+          class="mt-8 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+        >
+          Réessayer
+        </button>
       </section>
     `;
   }
@@ -296,7 +292,7 @@ function renderHomeHero(heroState) {
   const detailPath = `/${mediaType}/${item.id}`;
 
   return `
-    <section class="media-surface relative -mx-4 -mt-8 overflow-hidden sm:-mx-6 sm:-mt-10">
+    <section class="media-surface relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
       <div class="absolute inset-0">
         ${renderTmdbImage({
           path: backdropPath,
@@ -310,24 +306,22 @@ function renderHomeHero(heroState) {
           sizes: "100vw",
           loading: "eager",
           fetchPriority: "high",
-          className: "h-full w-full object-cover object-top",
+          className: "h-full w-full object-cover",
         })}
       </div>
 
-      <div class="absolute inset-0 bg-linear-to-r from-black via-black/65 to-transparent"></div>
-      <div class="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent"></div>
-
-      <div class="relative z-10 flex min-h-[75vh] items-end p-6 pb-14 sm:min-h-[82vh] sm:p-14 sm:pb-20">
+      <div class="absolute inset-0 bg-linear-to-r from-black via-black/75 to-black/20"></div>
+      <div class="relative z-10 flex min-h-96 items-end p-6 sm:min-h-112 sm:p-10">
         <div class="max-w-2xl">
-          <p class="text-sm font-medium uppercase tracking-[0.35em] text-rose-300">
-            ${mediaType === "movie" ? "Film" : "Série"}${year ? ` · ${year}` : ""}
+          <p class="text-sm uppercase tracking-[0.35em] text-rose-300">
+            ${mediaType === "movie" ? "Film" : "Série"}${year ? ` • ${year}` : ""}
           </p>
 
-          <h1 class="mt-4 text-4xl font-bold tracking-tight text-white sm:text-7xl">
+          <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
             ${title}
           </h1>
 
-          <p class="mt-5 max-w-xl text-base leading-7 text-white/75 line-clamp-3 sm:text-lg sm:leading-8">
+          <p class="mt-6 max-w-2xl text-base leading-8 text-white/80 sm:text-lg">
             ${overview}
           </p>
 
@@ -335,7 +329,7 @@ function renderHomeHero(heroState) {
             <button
               type="button"
               data-nav-path="${detailPath}"
-              class="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-white/90"
+              class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
             >
               Voir le détail
             </button>
@@ -343,7 +337,7 @@ function renderHomeHero(heroState) {
             <button
               type="button"
               data-retry-hero
-              class="rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20"
+              class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
             >
               Changer
             </button>
