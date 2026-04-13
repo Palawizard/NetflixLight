@@ -3,10 +3,14 @@ const apiCache = new Map();
 
 export async function apiRequest(
   pathname,
-  { method = "GET", body, signal, cache = method === "GET" } = {}
+  { method = "GET", body, signal, cache = method === "GET", headers = {} } = {}
 ) {
   const normalizedMethod = method.toUpperCase();
-  const cacheKey = `${normalizedMethod}:${pathname}`;
+  const requestHeaders = {
+    ...headers,
+    ...(body ? { "Content-Type": "application/json" } : {}),
+  };
+  const cacheKey = `${normalizedMethod}:${pathname}:${JSON.stringify(requestHeaders)}`;
   const shouldUseCache = cache && normalizedMethod === "GET" && !body;
   const cachedPayload = shouldUseCache ? getCachedPayload(cacheKey) : null;
 
@@ -17,11 +21,8 @@ export async function apiRequest(
   const response = await fetch(pathname, {
     method: normalizedMethod,
     cache: "no-store",
-    headers: body
-      ? {
-          "Content-Type": "application/json",
-        }
-      : undefined,
+    headers:
+      Object.keys(requestHeaders).length > 0 ? requestHeaders : undefined,
     body: body ? JSON.stringify(body) : undefined,
     credentials: "same-origin",
     signal,

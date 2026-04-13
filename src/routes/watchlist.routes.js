@@ -1,5 +1,8 @@
 const express = require("express");
 const { requireAuth } = require("../middlewares/require-auth.middleware");
+const {
+  requireActiveProfile,
+} = require("../middlewares/active-profile.middleware");
 const { createApiError } = require("../utils/api-error");
 const {
   addWatchlistItem,
@@ -89,9 +92,12 @@ function validateWatchlistRouteParams(params) {
   };
 }
 
-router.get("/", requireAuth, (req, res, next) => {
+router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
-    const items = listWatchlistItemsByUserId(req.authUser.id);
+    const items = listWatchlistItemsByUserId({
+      userId: req.authUser.id,
+      profileId: req.activeProfile.id,
+    });
 
     return res.status(200).json({
       items,
@@ -101,13 +107,15 @@ router.get("/", requireAuth, (req, res, next) => {
   }
 });
 
-router.post("/", requireAuth, (req, res, next) => {
+router.post("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     const payload = validateWatchlistPayload(req.body);
     const userId = req.authUser.id;
+    const profileId = req.activeProfile.id;
 
     const existingItem = findWatchlistItemByUserAndMedia({
       userId,
+      profileId,
       type: payload.type,
       tmdbId: payload.tmdbId,
     });
@@ -124,6 +132,7 @@ router.post("/", requireAuth, (req, res, next) => {
 
     const item = addWatchlistItem({
       userId,
+      profileId,
       type: payload.type,
       tmdbId: payload.tmdbId,
       title: payload.title,
@@ -158,29 +167,35 @@ router.post("/", requireAuth, (req, res, next) => {
   }
 });
 
-router.delete("/:type/:id", requireAuth, (req, res, next) => {
-  try {
-    const { type, tmdbId } = validateWatchlistRouteParams(req.params);
-    const { changes } = removeWatchlistItem({
-      userId: req.authUser.id,
-      type,
-      tmdbId,
-    });
+router.delete(
+  "/:type/:id",
+  requireAuth,
+  requireActiveProfile,
+  (req, res, next) => {
+    try {
+      const { type, tmdbId } = validateWatchlistRouteParams(req.params);
+      const { changes } = removeWatchlistItem({
+        userId: req.authUser.id,
+        profileId: req.activeProfile.id,
+        type,
+        tmdbId,
+      });
 
-    if (changes === 0) {
-      return next(
-        createApiError(
-          404,
-          "WATCHLIST_ITEM_NOT_FOUND",
-          "Ce titre est introuvable dans les favoris."
-        )
-      );
+      if (changes === 0) {
+        return next(
+          createApiError(
+            404,
+            "WATCHLIST_ITEM_NOT_FOUND",
+            "Ce titre est introuvable dans les favoris."
+          )
+        );
+      }
+
+      return res.status(204).send();
+    } catch (error) {
+      return next(error);
     }
-
-    return res.status(204).send();
-  } catch (error) {
-    return next(error);
   }
-});
+);
 
 module.exports = router;

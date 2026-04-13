@@ -1,5 +1,8 @@
 const express = require("express");
 const { requireAuth } = require("../middlewares/require-auth.middleware");
+const {
+  requireActiveProfile,
+} = require("../middlewares/active-profile.middleware");
 const { createApiError } = require("../utils/api-error");
 const {
   findUserRatingByUserAndMedia,
@@ -47,25 +50,12 @@ function validateRatingPayload(payload) {
   };
 }
 
-router.get("/", requireAuth, (req, res, next) => {
+router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     return res.status(200).json({
-      items: listUserRatingsByUserId(req.authUser.id),
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
-
-router.get("/:type/:id", requireAuth, (req, res, next) => {
-  try {
-    const { type, tmdbId } = validateRatingParams(req.params);
-
-    return res.status(200).json({
-      item: findUserRatingByUserAndMedia({
+      items: listUserRatingsByUserId({
         userId: req.authUser.id,
-        type,
-        tmdbId,
+        profileId: req.activeProfile.id,
       }),
     });
   } catch (error) {
@@ -73,37 +63,71 @@ router.get("/:type/:id", requireAuth, (req, res, next) => {
   }
 });
 
-router.put("/:type/:id", requireAuth, (req, res, next) => {
-  try {
-    const { type, tmdbId } = validateRatingParams(req.params);
-    const { rating } = validateRatingPayload(req.body);
+router.get(
+  "/:type/:id",
+  requireAuth,
+  requireActiveProfile,
+  (req, res, next) => {
+    try {
+      const { type, tmdbId } = validateRatingParams(req.params);
 
-    return res.status(200).json({
-      item: upsertUserRating({
+      return res.status(200).json({
+        item: findUserRatingByUserAndMedia({
+          userId: req.authUser.id,
+          profileId: req.activeProfile.id,
+          type,
+          tmdbId,
+        }),
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+router.put(
+  "/:type/:id",
+  requireAuth,
+  requireActiveProfile,
+  (req, res, next) => {
+    try {
+      const { type, tmdbId } = validateRatingParams(req.params);
+      const { rating } = validateRatingPayload(req.body);
+
+      return res.status(200).json({
+        item: upsertUserRating({
+          userId: req.authUser.id,
+          profileId: req.activeProfile.id,
+          type,
+          tmdbId,
+          rating,
+        }),
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+router.delete(
+  "/:type/:id",
+  requireAuth,
+  requireActiveProfile,
+  (req, res, next) => {
+    try {
+      const { type, tmdbId } = validateRatingParams(req.params);
+      removeUserRating({
         userId: req.authUser.id,
+        profileId: req.activeProfile.id,
         type,
         tmdbId,
-        rating,
-      }),
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
+      });
 
-router.delete("/:type/:id", requireAuth, (req, res, next) => {
-  try {
-    const { type, tmdbId } = validateRatingParams(req.params);
-    removeUserRating({
-      userId: req.authUser.id,
-      type,
-      tmdbId,
-    });
-
-    return res.status(204).send();
-  } catch (error) {
-    return next(error);
+      return res.status(204).send();
+    } catch (error) {
+      return next(error);
+    }
   }
-});
+);
 
 module.exports = router;

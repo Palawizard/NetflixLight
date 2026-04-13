@@ -42,6 +42,7 @@ node --test tests/watch-progress.api.test.js
 node --test tests/viewing-history.api.test.js
 node --test tests/user-ratings.api.test.js
 node --test tests/profiles.api.test.js
+node --test tests/profile-scoped-data.api.test.js
 ```
 
 ## Configuration
@@ -126,10 +127,10 @@ Tables principales :
 
 - `users` : comptes utilisateurs.
 - `sessions` : ancienne table de session token, conservée côté repository.
-- `watchlist_items` : favoris avec snapshot titre/poster.
-- `watch_progress` : progression vidéo par utilisateur et contenu.
-- `viewing_history` : derniers contenus consultés.
-- `user_ratings` : notes personnelles 1-5.
+- `watchlist_items` : favoris par profil avec snapshot titre/poster.
+- `watch_progress` : progression vidéo par profil et contenu.
+- `viewing_history` : derniers contenus consultés par profil.
+- `user_ratings` : notes personnelles 1-5 par profil.
 - `profiles` : profils d'un même compte.
 - `favorites` et `video_sources` : tables historiques/conservées.
 
@@ -146,7 +147,7 @@ Routes frontend gérées par le router vanilla :
 - `/profil` : compte, profils et historique, protégée par connexion.
 - `/login` et `/register` : authentification.
 
-Le choix du thème et le profil actif sont persistés dans `localStorage`. Les données compte comme favoris, progression, historique, notes et profils sont persistées côté SQLite.
+Le choix du thème et le profil actif sont persistés dans `localStorage`. Les données de visionnage comme favoris, progression, historique et notes sont isolées par profil puis persistées côté SQLite.
 
 ## API Backend
 
@@ -163,6 +164,8 @@ Toutes les réponses d'erreur API suivent le format :
 ```
 
 Les routes protégées nécessitent une session valide créée via `POST /api/auth/login`. La session est stockée dans le cookie HTTP-only `netflixlight.sid` par défaut.
+
+Les routes de données personnelles (`watchlist`, progression, historique, notes) utilisent le profil actif. Le frontend envoie `X-Profile-Id` avec l'identifiant du profil sélectionné ; si l'en-tête est absent, le serveur utilise le profil principal du compte.
 
 ### Auth
 
@@ -462,4 +465,5 @@ node --test tests/watch-progress.api.test.js
 node --test tests/viewing-history.api.test.js
 node --test tests/user-ratings.api.test.js
 node --test tests/profiles.api.test.js
+node --test tests/profile-scoped-data.api.test.js
 ```

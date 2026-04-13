@@ -1,5 +1,8 @@
 const express = require("express");
 const { requireAuth } = require("../middlewares/require-auth.middleware");
+const {
+  requireActiveProfile,
+} = require("../middlewares/active-profile.middleware");
 const { createApiError } = require("../utils/api-error");
 const {
   listViewingHistoryByUserId,
@@ -58,23 +61,27 @@ function validateViewingHistoryPayload(payload) {
   };
 }
 
-router.get("/", requireAuth, (req, res, next) => {
+router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     return res.status(200).json({
-      items: listViewingHistoryByUserId(req.authUser.id),
+      items: listViewingHistoryByUserId({
+        userId: req.authUser.id,
+        profileId: req.activeProfile.id,
+      }),
     });
   } catch (error) {
     return next(error);
   }
 });
 
-router.post("/", requireAuth, (req, res, next) => {
+router.post("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     const payload = validateViewingHistoryPayload(req.body);
 
     return res.status(201).json({
       item: upsertViewingHistoryItem({
         userId: req.authUser.id,
+        profileId: req.activeProfile.id,
         ...payload,
       }),
     });

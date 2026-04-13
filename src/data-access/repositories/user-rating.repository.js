@@ -1,5 +1,6 @@
 const db = require("../sqlite/client");
 const { toUserRating } = require("../../models/user-rating.model");
+const { ensureProfileScopedTables } = require("./profile-scoped-tables");
 
 function ensureUserRatingsTable() {
   db.prepare(
@@ -21,54 +22,56 @@ function ensureUserRatingsTable() {
 }
 
 ensureUserRatingsTable();
+ensureProfileScopedTables();
 
-function listUserRatingsByUserId(userId) {
+function listUserRatingsByUserId({ userId, profileId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, rating, updated_at
     FROM user_ratings
-    WHERE user_id = ?
+    WHERE user_id = ? AND profile_id = ?
     ORDER BY updated_at DESC;`
   );
 
-  return statement.all(userId).map(toUserRating);
+  return statement.all(userId, profileId).map(toUserRating);
 }
 
-function findUserRatingByUserAndMedia({ userId, type, tmdbId }) {
+function findUserRatingByUserAndMedia({ userId, profileId, type, tmdbId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, rating, updated_at
     FROM user_ratings
-    WHERE user_id = ? AND media_type = ? AND tmdb_id = ?;`
+    WHERE user_id = ? AND profile_id = ? AND media_type = ? AND tmdb_id = ?;`
   );
 
-  return toUserRating(statement.get(userId, type, tmdbId));
+  return toUserRating(statement.get(userId, profileId, type, tmdbId));
 }
 
-function upsertUserRating({ userId, type, tmdbId, rating }) {
+function upsertUserRating({ userId, profileId, type, tmdbId, rating }) {
   const statement = db.prepare(
-    `INSERT INTO user_ratings (user_id, media_type, tmdb_id, rating, updated_at)
-    VALUES (?, ?, ?, ?, datetime('now'))
-    ON CONFLICT(user_id, media_type, tmdb_id)
+    `INSERT INTO user_ratings (user_id, profile_id, media_type, tmdb_id, rating, updated_at)
+    VALUES (?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(user_id, profile_id, media_type, tmdb_id)
     DO UPDATE SET
       rating = excluded.rating,
       updated_at = datetime('now');`
   );
 
-  statement.run(userId, type, tmdbId, rating);
+  statement.run(userId, profileId, type, tmdbId, rating);
 
   return findUserRatingByUserAndMedia({
     userId,
+    profileId,
     type,
     tmdbId,
   });
 }
 
-function removeUserRating({ userId, type, tmdbId }) {
+function removeUserRating({ userId, profileId, type, tmdbId }) {
   const statement = db.prepare(
     `DELETE FROM user_ratings
-    WHERE user_id = ? AND media_type = ? AND tmdb_id = ?;`
+    WHERE user_id = ? AND profile_id = ? AND media_type = ? AND tmdb_id = ?;`
   );
 
-  return statement.run(userId, type, tmdbId);
+  return statement.run(userId, profileId, type, tmdbId);
 }
 
 module.exports = {
