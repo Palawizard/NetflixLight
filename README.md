@@ -107,13 +107,13 @@ Notes:
 Frontend navigation uses **hash routes** from the SPA:
 
 - `#/`: home page with hero, recommendations, and carousels.
-- `#/films`: movies page.
+- `#/movies`: movies page.
 - `#/series`: series page.
-- `#/recherche?q=...&page=...`: search page.
+- `#/search?q=...&page=...`: search page.
 - `#/movie/{id}`: movie detail page.
 - `#/tv/{id}`: TV show detail page.
-- `#/favoris`: favorites page (requires login).
-- `#/profil`: account and profiles page (requires login).
+- `#/favorites`: favorites page (requires login).
+- `#/profile`: account and profiles page (requires login).
 - `#/login`: login page.
 - `#/register`: register page.
 
