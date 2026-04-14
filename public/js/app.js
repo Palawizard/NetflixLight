@@ -381,7 +381,7 @@ async function loadGenreRecommendations({ force = false } = {}) {
   try {
     const response = await apiRequest(
       withTmdbLanguage(
-        `/api/tmdb/discover?type=${topPreference.type}&genre=${topPreference.id}&page=1`
+        `api/tmdb/discover?type=${topPreference.type}&genre=${topPreference.id}&page=1`
       )
     );
 
@@ -475,7 +475,7 @@ async function initializeSession() {
   });
 
   try {
-    const response = await apiRequest("/api/auth/me");
+    const response = await apiRequest("api/auth/me");
 
     setSessionState({
       status: "authenticated",
@@ -619,7 +619,7 @@ function registerServiceWorker() {
   }
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
+    navigator.serviceWorker.register("sw.js").catch((error) => {
       console.warn("Service worker registration failed", error);
     });
   });

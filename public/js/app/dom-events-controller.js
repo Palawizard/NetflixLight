@@ -355,7 +355,7 @@ function registerDomEventHandlers(dependencies) {
 
     try {
       if (mode === "login") {
-        const response = await apiRequest("/api/auth/login", {
+        const response = await apiRequest("api/auth/login", {
           method: "POST",
           body: {
             email: formData.get("email"),
@@ -383,7 +383,7 @@ function registerDomEventHandlers(dependencies) {
       }
 
       if (mode === "register") {
-        await apiRequest("/api/auth/register", {
+        await apiRequest("api/auth/register", {
           method: "POST",
           body: {
             username: formData.get("username"),

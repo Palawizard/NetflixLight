@@ -65,7 +65,7 @@ function createCatalogController(dependencies) {
 
     try {
       const response = await apiRequest(
-        withTmdbLanguage("/api/tmdb/movies/popular")
+        withTmdbLanguage("api/tmdb/movies/popular")
       );
 
       setMoviesCatalogState({
@@ -97,7 +97,7 @@ function createCatalogController(dependencies) {
 
     try {
       const response = await apiRequest(
-        withTmdbLanguage("/api/tmdb/tv/popular")
+        withTmdbLanguage("api/tmdb/tv/popular")
       );
 
       setSeriesCatalogState({
@@ -185,7 +185,7 @@ function createCatalogController(dependencies) {
     try {
       const response = await apiRequest(
         withTmdbLanguage(
-          `/api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&page=${normalizedPage}`
+          `api/tmdb/search?q=${encodeURIComponent(normalizedQuery)}&page=${normalizedPage}`
         ),
         {
           signal: currentSearchAbortController.signal,
@@ -331,7 +331,7 @@ function createCatalogController(dependencies) {
     try {
       const response = await apiRequest(
         withTmdbLanguage(
-          `/api/tmdb/discover?type=movie&genre=${sectionConfig.genreId}&page=1`
+          `api/tmdb/discover?type=movie&genre=${sectionConfig.genreId}&page=1`
         )
       );
 
@@ -359,7 +359,7 @@ function createCatalogController(dependencies) {
     try {
       const response = await apiRequest(
         withTmdbLanguage(
-          `/api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1`
+          `api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1`
         )
       );
 
@@ -409,7 +409,7 @@ function createCatalogController(dependencies) {
     try {
       const response = await apiRequest(
         withTmdbLanguage(
-          `/api/tmdb/discover?type=tv&genre=${sectionConfig.genreId}&page=1`
+          `api/tmdb/discover?type=tv&genre=${sectionConfig.genreId}&page=1`
         )
       );
 
@@ -437,7 +437,7 @@ function createCatalogController(dependencies) {
     try {
       const response = await apiRequest(
         withTmdbLanguage(
-          `/api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1`
+          `api/tmdb/discover?type=${sectionConfig.mediaType}&genre=${sectionConfig.genreId}&page=1`
         )
       );
 
@@ -676,7 +676,7 @@ function createCatalogController(dependencies) {
 
     try {
       const response = await apiRequest(
-        withTmdbLanguage("/api/tmdb/trending?media_type=all&time_window=week")
+        withTmdbLanguage("api/tmdb/trending?media_type=all&time_window=week")
       );
 
       /** @type {TmdbMediaItem[]} */
@@ -707,7 +707,7 @@ function createCatalogController(dependencies) {
       try {
         const detail = await apiRequest(
           withTmdbLanguage(
-            `/api/tmdb/${randomItem.media_type}/${randomItem.id}`
+            `api/tmdb/${randomItem.media_type}/${randomItem.id}`
           )
         );
         trailerKey = pickBestHeroTrailer(detail.videos?.results);
@@ -777,7 +777,7 @@ function createCatalogController(dependencies) {
 
     try {
       const response = await apiRequest(
-        withTmdbLanguage(`/api/tmdb/${type}/${id}`)
+        withTmdbLanguage(`api/tmdb/${type}/${id}`)
       );
 
       if (requestId !== currentDetailRequestId) {

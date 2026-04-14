@@ -148,7 +148,7 @@ function createUserDataController(dependencies) {
 
     try {
       const requestProfileId = appState.profiles.activeProfileId;
-      const response = await profileApiRequest("/api/watchlist");
+      const response = await profileApiRequest("api/watchlist");
       const items = sortWatchlistItemsByAddedAt(response.items);
 
       if (!isActiveProfileStill(requestProfileId)) {
@@ -207,7 +207,7 @@ function createUserDataController(dependencies) {
 
     try {
       const requestProfileId = appState.profiles.activeProfileId;
-      const response = await profileApiRequest("/api/watch-progress");
+      const response = await profileApiRequest("api/watch-progress");
       const items = Array.isArray(response.items) ? response.items : [];
 
       if (!isActiveProfileStill(requestProfileId)) {
@@ -261,7 +261,7 @@ function createUserDataController(dependencies) {
 
     try {
       const requestProfileId = appState.profiles.activeProfileId;
-      const response = await profileApiRequest("/api/viewing-history");
+      const response = await profileApiRequest("api/viewing-history");
       const items = Array.isArray(response.items) ? response.items : [];
 
       if (!isActiveProfileStill(requestProfileId)) {
@@ -314,7 +314,7 @@ function createUserDataController(dependencies) {
 
     try {
       const requestProfileId = appState.profiles.activeProfileId;
-      const response = await profileApiRequest("/api/user-ratings");
+      const response = await profileApiRequest("api/user-ratings");
       const items = Array.isArray(response.items) ? response.items : [];
 
       if (!isActiveProfileStill(requestProfileId)) {
@@ -444,7 +444,7 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      const response = await apiRequest("/api/profiles");
+      const response = await apiRequest("api/profiles");
       const profiles = Array.isArray(response.items) ? response.items : [];
       const storedProfileId = getStoredActiveProfileId(
         appState.session.user.id
@@ -498,7 +498,7 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      const response = await apiRequest("/api/profiles", {
+      const response = await apiRequest("api/profiles", {
         method: "POST",
         body: {
           name: formData.get("profileName"),
@@ -571,7 +571,7 @@ function createUserDataController(dependencies) {
     const snapshot = buildProgressSnapshotItem(item);
 
     try {
-      const response = await profileApiRequest("/api/viewing-history", {
+      const response = await profileApiRequest("api/viewing-history", {
         method: "POST",
         body: {
           type,
@@ -648,7 +648,7 @@ function createUserDataController(dependencies) {
 
     try {
       const response = await profileApiRequest(
-        `/api/user-ratings/${type}/${id}`,
+        `api/user-ratings/${type}/${id}`,
         {
           method: "PUT",
           body: {
@@ -703,7 +703,7 @@ function createUserDataController(dependencies) {
     });
 
     try {
-      await apiRequest("/api/auth/logout", {
+      await apiRequest("api/auth/logout", {
         method: "POST",
       });
 
