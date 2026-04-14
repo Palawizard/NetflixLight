@@ -15,72 +15,61 @@
 <p align="center">
   <a href="#project-goal">Goal</a> •
   <a href="#run-locally">Run Locally</a> •
-  <a href="#main-routes">Routes</a> •
+  <a href="#routes">Routes</a> •
   <a href="#features">Features</a> •
-  <a href="#architecture">Architecture</a>
+  <a href="#architecture">Architecture</a> •
+  <a href="#useful-commands">Commands</a>
 </p>
 
 ## Project Goal
 
-This repository is a small "NetflixLight" school project implemented as an Express app with a vanilla JavaScript frontend.
+School project - a Netflix-inspired app built with an Express backend and a vanilla JavaScript SPA frontend.
 
-It provides one UI to:
+It lets users:
 
-- browse popular movies and TV series
+- browse popular movies and TV series by genre and by category
 - search titles from TMDB
-- open detailed pages with trailers, cast, and similar content
-- create an account and manage multiple profiles
-- save favorites, watch progress, viewing history, and personal ratings
+- open detail pages with trailers, cast, similar content, and personal ratings
+- create an account and manage multiple profiles on the same account
+- save favorites, watch progress, viewing history, and personal ratings per profile
 
-The project uses:
+Stack:
 
-- **TMDB** as the media data source
-- **Express** for the backend API
-- **SQLite** for local persistence
-- **Tailwind CSS** for styling
-- **vanilla JavaScript** for the frontend SPA behavior
+- **TMDB** - media data source
+- **Express 5** - backend API
+- **SQLite** via `better-sqlite3` - local persistence
+- **Tailwind CSS 4** - styling
+- **Vanilla JavaScript** - frontend SPA (no framework)
 
 ## Run Locally
 
-Prerequisites: Node.js, npm, and TMDB credentials.
-
-1. Install dependencies:
+Prerequisites: Node.js, npm, a TMDB API key or read access token.
 
 ```bash
+# 1 - install dependencies
 npm install
-```
 
-2. Create your environment file:
-
-```bash
+# 2 - create your environment file and fill in your TMDB credentials
 cp .env.example .env
-```
 
-3. Initialize the SQLite database:
-
-```bash
+# 3 - initialize the SQLite database
 npm run db:setup
-```
 
-4. Start the app in development:
-
-```bash
+# 4 - start the dev server + Tailwind watcher
 npm run dev
 ```
 
-Open `http://localhost:3000` by default.
+Opens at `http://localhost:3000` by default.
 
 ### Configuration (.env)
 
-The server loads `.env`. Main variables:
-
 ```bash
 NODE_ENV=development
-PORT=
+PORT=                          # overrides DEV_PORT / PROD_PORT when set
 DEV_PORT=3000
 PROD_PORT=8080
 
-TMDB_API_BASE_URL=https://api.themoviedb.org/3
+TMDB_API_BASE_URL=https://api.themoviedb.org/3   # optional - has a default
 TMDB_API_KEY=your_tmdb_api_key
 TMDB_API_READ_ACCESS_TOKEN=your_tmdb_read_access_token
 TMDB_CACHE_TTL_MS=30000
@@ -95,81 +84,107 @@ SESSION_COOKIE_NAME=netflixlight.sid
 SESSION_MAX_AGE_MS=86400000
 ```
 
-Notes:
-
-- `PORT` overrides `DEV_PORT` and `PROD_PORT`.
-- TMDB credentials are required for catalog, search, discover, and detail endpoints.
-- SQLite is used for auth, sessions, profiles, favorites, history, progress, and ratings.
+- `TMDB_API_READ_ACCESS_TOKEN` is preferred (Bearer auth). `TMDB_API_KEY` is the fallback.
+- Both are optional at startup but the catalog, search, and detail pages will not work without one of them.
 - Sessions are persisted through a custom SQLite-backed `express-session` store.
 
-## Main Routes
+## Routes
 
-Frontend navigation uses **hash routes** from the SPA:
+### Frontend (SPA hash routes)
 
-- `#/`: home page with hero, recommendations, and carousels.
-- `#/movies`: movies page.
-- `#/series`: series page.
-- `#/search?q=...&page=...`: search page.
-- `#/movie/{id}`: movie detail page.
-- `#/tv/{id}`: TV show detail page.
-- `#/favorites`: favorites page (requires login).
-- `#/profile`: account and profiles page (requires login).
-- `#/login`: login page.
-- `#/register`: register page.
+| Path | Page | Auth required |
+|---|---|---|
+| `#/` | Home - hero, carousels, recommendations | no |
+| `#/movies` | Movies - popular + genre carousels | no |
+| `#/series` | Series - popular + genre carousels | no |
+| `#/search?q=...&page=...` | Search results | no |
+| `#/movie/:id` | Movie detail page | no |
+| `#/tv/:id` | TV show detail page | no |
+| `#/favorites` | Saved titles (watchlist) | yes |
+| `#/profile` | Account, profiles, history, ratings | yes |
+| `#/login` | Login | no |
+| `#/register` | Register | no |
 
-Backend API routes:
+Direct paths like `/movies`, `/series`, `/search`, `/favorites`, `/profile` are served by the Express server and redirect to their `/#/...` equivalents.
 
-- `POST /api/auth/register`: create account.
-- `POST /api/auth/login`: login.
-- `GET /api/auth/me`: get current authenticated user.
-- `POST /api/auth/logout`: logout.
-- `GET /api/profiles`: list user profiles.
-- `POST /api/profiles`: create profile.
-- `GET /api/watchlist`: list favorites.
-- `POST /api/watchlist`: add favorite.
-- `DELETE /api/watchlist/:type/:id`: remove favorite.
-- `GET /api/watch-progress`: list watch progress.
-- `GET /api/watch-progress/:type/:id`: get progress for one title.
-- `PUT /api/watch-progress/:type/:id`: save watch progress.
-- `GET /api/viewing-history`: list recently viewed titles.
-- `POST /api/viewing-history`: save viewed title.
-- `GET /api/user-ratings`: list personal ratings.
-- `GET /api/user-ratings/:type/:id`: get rating for one title.
-- `PUT /api/user-ratings/:type/:id`: save personal rating.
-- `DELETE /api/user-ratings/:type/:id`: remove rating.
-- `GET /api/tmdb/trending`: trending media.
-- `GET /api/tmdb/movies/popular`: popular movies.
-- `GET /api/tmdb/movies/top-rated`: top rated movies.
-- `GET /api/tmdb/tv/popular`: popular TV shows.
-- `GET /api/tmdb/tv/top-rated`: top rated TV shows.
-- `GET /api/tmdb/discover`: discover by genre.
-- `GET /api/tmdb/search`: multi-search filtered to movie/tv.
-- `GET /api/tmdb/:type/:id`: detailed TMDB payload with credits, videos, images, and similar titles.
+### Backend API
+
+**Auth** - `/api/auth`
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/register` | create account |
+| `POST` | `/login` | login |
+| `GET` | `/me` | get current user |
+| `POST` | `/logout` | logout |
+
+**Profiles** - `/api/profiles` - requires auth
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | list profiles |
+| `POST` | `/` | create profile |
+
+**Watchlist** - `/api/watchlist` - requires auth + active profile
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | list favorites |
+| `POST` | `/` | add favorite |
+| `DELETE` | `/:type/:id` | remove favorite |
+
+**Watch progress** - `/api/watch-progress` - requires auth + active profile
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | list all progress entries |
+| `GET` | `/:type/:id` | get progress for one title |
+| `PUT` | `/:type/:id` | save progress |
+
+**Viewing history** - `/api/viewing-history` - requires auth + active profile
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | list recently viewed titles |
+| `POST` | `/` | record a viewed title |
+
+**Personal ratings** - `/api/user-ratings` - requires auth + active profile
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | list all ratings |
+| `GET` | `/:type/:id` | get rating for one title |
+| `PUT` | `/:type/:id` | save rating (1–5) |
+| `DELETE` | `/:type/:id` | remove rating |
+
+**TMDB proxy** - `/api/tmdb` - public
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/trending` | trending media (weekly) |
+| `GET` | `/movies/popular` | popular movies |
+| `GET` | `/movies/top-rated` | top rated movies |
+| `GET` | `/tv/popular` | popular TV shows |
+| `GET` | `/tv/top-rated` | top rated TV shows |
+| `GET` | `/discover` | discover by type and genre |
+| `GET` | `/search` | multi-search filtered to movie/tv |
+| `GET` | `/:type/:id` | detail payload - credits, videos, images, similar |
 
 ## Features
 
-- TMDB-powered catalog for movies and series.
-- Search across movies and TV shows.
-- Detail pages with:
-  - synopsis
-  - genres
-  - release information
-  - cast
-  - similar titles
-  - YouTube trailer
-
-- Favorites/watchlist with persistent storage.
-- Watch progress tracking.
-- Viewing history.
-- Personal rating system.
-- Multi-profile support inside one account.
-- Profile-scoped user data isolation.
-- Language switcher (`fr` / `en`).
-- Light and dark theme support.
-- PWA basics:
-  - manifest
-  - service worker
-  - installable icon
+- TMDB-powered catalog for movies and series, browsable by genre
+- Global search with debounce, pagination, and focus preservation while typing
+- Detail pages with synopsis, genres, release info, runtime/seasons, cast (linked to Wikipedia), similar titles, YouTube trailer, and personal rating
+- Favorites/watchlist with optimistic UI
+- Watch progress tracking per profile
+- Viewing history per profile
+- Personal rating system (1–5 stars) per profile
+- Multi-profile support - each account can have several named profiles
+- Profile-scoped data isolation - watchlist, history, progress, and ratings are per profile
+- Genre-based recommendations on the home page based on viewing history
+- Language switcher (FR / EN)
+- Light and dark theme with system preference detection
+- PWA - manifest, service worker with shell caching, installable
 
 ## Architecture
 
@@ -177,107 +192,113 @@ Backend API routes:
 netflixlight/
 ├── public/
 │   ├── css/
-│   │   └── app.css                  # compiled frontend stylesheet served to the browser
+│   │   └── app.css                  # compiled Tailwind stylesheet
+│   ├── icons/
+│   │   └── icon.svg                 # PWA app icon
 │   ├── js/
 │   │   ├── app/
-│   │   │   ├── catalog-controller.js       # loads TMDB catalog, search, hero, detail, and genre sections
-│   │   │   ├── dom-events-controller.js    # centralizes click, input, submit, and keyboard event handlers
+│   │   │   ├── catalog-controller.js       # loads catalog, search, hero, detail, and genre sections
+│   │   │   ├── dom-events-controller.js    # centralizes click, input, submit, and keyboard handlers
 │   │   │   ├── preferences-controller.js   # manages theme, language, and stored genre preferences
-│   │   │   ├── user-data-controller.js     # manages profiles, watchlist, ratings, history, and session-linked data
-│   │   │   ├── user-data-keys.js           # shared key builders and helpers for user-data collections
-│   │   │   └── watchlist-actions.js        # handles optimistic add/remove watchlist actions
+│   │   │   ├── user-data-controller.js     # manages profiles, watchlist, ratings, history, and auth
+│   │   │   ├── user-data-keys.js           # shared key builders for user-data collections
+│   │   │   └── watchlist-actions.js        # handles optimistic watchlist add/remove
 │   │   ├── components/
-│   │   │   ├── carousel.js          # reusable carousel renderer and drag/scroll behavior
-│   │   │   ├── hero-player.js       # homepage hero trailer player behavior
-│   │   │   ├── poster-card.js       # reusable poster card HTML renderer
-│   │   │   └── youtube-player.js    # custom embedded YouTube player with controls
+│   │   │   ├── carousel.js          # carousel renderer and scroll behavior
+│   │   │   ├── hero-player.js       # home hero trailer autoplay behavior
+│   │   │   ├── poster-card.js       # poster card HTML renderer
+│   │   │   └── youtube-player.js    # embedded YouTube player with custom controls
 │   │   ├── config/
-│   │   │   └── app-config.js        # frontend constants, route guards, genres, and app settings
+│   │   │   └── app-config.js        # route guards, genre IDs, section config, and app constants
 │   │   ├── views/
-│   │   │   ├── account-view.js              # renders favorites, account page, profiles, and history sections
-│   │   │   ├── auth-view.js                 # renders login/register forms and auth feedback blocks
-│   │   │   ├── catalog-sections.js          # renders home/movie/series catalog section blocks
-│   │   │   ├── detail-related-sections.js   # renders cast and similar-content sections
-│   │   │   ├── detail-view.js               # renders the main movie/series detail page
-│   │   │   ├── search-view.js               # renders search results and pagination
-│   │   │   └── view-utils.js                # shared frontend formatting and escaping helpers
-│   │   ├── animations.js            # reveals sections with intersection-based animations
-│   │   ├── api.js                   # frontend fetch wrapper, cache, and API error formatter
-│   │   ├── app.js                   # frontend entrypoint, orchestration, routing, and rendering lifecycle
-│   │   ├── i18n.js                  # frontend translation dictionary and runtime text translation
-│   │   ├── router.js                # hash-based SPA router helpers
-│   │   ├── shell.js                 # shared app shell, header, menu, search bar, and overlays
-│   │   ├── state.js                 # global frontend state store and mutation helpers
-│   │   ├── tmdb-images.js           # TMDB image URL and responsive image helpers
-│   │   └── views.js                 # maps routes to page renderers and builds main pages
-│   ├── index.html                   # SPA HTML shell loaded by the browser
-│   └── sw.js                        # service worker for basic shell caching
+│   │   │   ├── account-view.js              # favorites, account, profiles, and history pages
+│   │   │   ├── auth-view.js                 # login and register forms
+│   │   │   ├── catalog-sections.js          # catalog section blocks and skeletons
+│   │   │   ├── detail-related-sections.js   # cast grid and similar titles carousel
+│   │   │   ├── detail-view.js               # movie/series detail page
+│   │   │   ├── search-view.js               # search results and pagination
+│   │   │   └── view-utils.js                # shared formatting and escaping helpers
+│   │   ├── animations.js            # intersection-based reveal animations
+│   │   ├── api.js                   # fetch wrapper with 60s cache and error formatter
+│   │   ├── app.js                   # entry point - orchestration, routing, and render lifecycle
+│   │   ├── i18n.js                  # FR/EN translation dictionary and runtime translator
+│   │   ├── router.js                # hash-based SPA router
+│   │   ├── shell.js                 # app shell, header, menu, search bar, and overlays
+│   │   ├── state.js                 # global state store and mutation helpers
+│   │   ├── tmdb-images.js           # TMDB image URL builder and responsive srcset helpers
+│   │   └── views.js                 # route-to-renderer map and page builders
+│   ├── index.html                   # SPA HTML shell
+│   ├── manifest.webmanifest         # PWA manifest
+│   └── sw.js                        # service worker - shell caching with cache-first strategy
 ├── scripts/
-│   ├── db-inspect.js                # small utility to inspect the configured SQLite database
-│   └── db-setup.js                  # initializes the SQLite database from the main migration
+│   ├── db-inspect.js                # prints the DB path and table list
+│   └── db-setup.js                  # runs the SQL migration to initialize the database
 ├── src/
 │   ├── clients/
-│   │   └── tmdb.client.js           # backend TMDB client with auth, timeout, error mapping, and cache
+│   │   └── tmdb.client.js           # TMDB HTTP client with auth, TTL cache, and error mapping
 │   ├── config/
-│   │   └── env.js                   # parses environment variables into one central config object
+│   │   └── env.js                   # parses all env variables into one central config object
 │   ├── data-access/
 │   │   ├── repositories/
-│   │   │   ├── profile.repository.js         # profile queries and default-profile creation
-│   │   │   ├── profile-scoped-tables.js      # runtime schema migration helpers for profile-scoped tables
-│   │   │   ├── session.repository.js         # token-based session lookup and deletion helpers
-│   │   │   ├── user.repository.js            # user lookup and user creation queries
-│   │   │   ├── user-rating.repository.js     # CRUD access for personal ratings
-│   │   │   ├── viewing-history.repository.js # CRUD access for viewing history
-│   │   │   ├── watchlist.repository.js       # CRUD access for watchlist items
-│   │   │   └── watch-progress.repository.js  # CRUD access for watch progress entries
+│   │   │   ├── profile.repository.js         # profile CRUD
+│   │   │   ├── profile-scoped-tables.js      # runtime schema helpers for profile-scoped tables
+│   │   │   ├── session.repository.js         # session lookup and deletion
+│   │   │   ├── user.repository.js            # user lookup and creation
+│   │   │   ├── user-rating.repository.js     # personal ratings CRUD
+│   │   │   ├── viewing-history.repository.js # viewing history CRUD
+│   │   │   ├── watchlist.repository.js       # watchlist CRUD
+│   │   │   └── watch-progress.repository.js  # watch progress CRUD
 │   │   └── sqlite/
 │   │       ├── migrations/
-│   │       │   └── 001_create_tables.sql     # main SQL schema migration
+│   │       │   └── 001_create_tables.sql     # full DB schema
 │   │       ├── client.js                     # shared better-sqlite3 connection
 │   │       └── session-store.js              # SQLite-backed express-session store
 │   ├── middlewares/
-│   │   ├── active-profile.middleware.js      # resolves and validates the active profile from requests
-│   │   ├── api-error.middleware.js           # API 404 handler and centralized error serializer
-│   │   ├── api-logger.middleware.js          # request logger for API calls
-│   │   └── require-auth.middleware.js        # blocks unauthenticated API access
+│   │   ├── active-profile.middleware.js      # resolves active profile from X-Profile-Id header
+│   │   ├── api-error.middleware.js           # 404 handler and centralized error serializer
+│   │   ├── api-logger.middleware.js          # logs incoming API requests
+│   │   └── require-auth.middleware.js        # rejects unauthenticated requests with 401
 │   ├── models/
-│   │   ├── profile.model.js          # maps DB rows to profile objects
-│   │   ├── user-rating.model.js      # maps DB rows to rating objects
-│   │   ├── viewing-history-item.model.js  # maps DB rows to viewing-history objects
-│   │   ├── watchlist-item.model.js   # maps DB rows to watchlist objects
-│   │   └── watch-progress.model.js   # maps DB rows to progress objects
+│   │   ├── profile.model.js                  # maps DB rows to profile objects
+│   │   ├── user-rating.model.js              # maps DB rows to rating objects
+│   │   ├── viewing-history-item.model.js     # maps DB rows to history objects
+│   │   ├── watchlist-item.model.js           # maps DB rows to watchlist objects
+│   │   └── watch-progress.model.js           # maps DB rows to progress objects
 │   ├── routes/
-│   │   ├── auth.routes.js            # register, login, me, and logout endpoints
-│   │   ├── profiles.routes.js        # profile listing and creation endpoints
-│   │   ├── tmdb.routes.js            # main TMDB proxy endpoints for trending, search, discover, and detail
-│   │   ├── tmdb-movies.routes.js     # movie-specific TMDB endpoints
-│   │   ├── tmdb-query.utils.js       # shared TMDB query validation helpers
-│   │   ├── tmdb-tv.routes.js         # TV-specific TMDB endpoints
-│   │   ├── user-ratings.routes.js    # personal rating API endpoints
-│   │   ├── viewing-history.routes.js # viewing history API endpoints
-│   │   ├── watchlist.routes.js       # watchlist API endpoints
-│   │   └── watch-progress.routes.js  # watch progress API endpoints
+│   │   ├── auth.routes.js            # register, login, me, logout
+│   │   ├── profiles.routes.js        # profile list and create
+│   │   ├── tmdb.routes.js            # trending, search, discover, detail
+│   │   ├── tmdb-movies.routes.js     # popular and top-rated movies
+│   │   ├── tmdb-query.utils.js       # shared query param validators
+│   │   ├── tmdb-tv.routes.js         # popular and top-rated TV
+│   │   ├── user-ratings.routes.js    # ratings CRUD
+│   │   ├── viewing-history.routes.js # history list and record
+│   │   ├── watchlist.routes.js       # watchlist CRUD
+│   │   └── watch-progress.routes.js  # progress get and save
 │   ├── styles/
-│   │   └── app.css                   # Tailwind source stylesheet and custom theme rules
+│   │   └── app.css                   # Tailwind source + custom theme variables
 │   └── utils/
-│       └── api-error.js              # structured API error class and helper factory
-├── code-tree.sh                      # utility script to print the project tree
-├── eslint.config.js                  # ESLint configuration
-├── jsconfig.json                     # JS tooling and editor configuration
-├── package.json                      # project metadata, scripts, dependencies, and dev dependencies
+│       └── api-error.js              # ApiError class and factory helper
+├── code-tree.sh                      # prints the project file tree
+├── eslint.config.js                  # ESLint config
+├── jsconfig.json                     # editor/tooling JS config
+├── package.json                      # scripts, dependencies, dev dependencies
 ├── package-lock.json                 # locked dependency versions
-├── prettier.config.mjs               # Prettier configuration
-└── server.js                         # Express server entrypoint and app wiring
+├── prettier.config.mjs               # Prettier config
+└── server.js                         # Express app wiring and server entry point
 ```
 
 ## Useful Commands
 
-- Development server + Tailwind watch: `npm run dev`
-- Development server only: `npm run dev:server`
-- Production server: `npm start`
-- Build CSS: `npm run build:css`
-- Initialize DB: `npm run db:setup`
-- Inspect DB: `npm run db:inspect`
-- Lint: `npm run lint`
-- Auto-fix lint issues: `npm run lint:fix`
-- Format files: `npm run format`
+| Command | Description |
+|---|---|
+| `npm run dev` | Dev server + Tailwind watcher |
+| `npm run dev:server` | Dev server only |
+| `npm start` | Production server |
+| `npm run build:css` | Compile Tailwind once |
+| `npm run watch:css` | Watch and recompile Tailwind |
+| `npm run db:setup` | Initialize the SQLite database |
+| `npm run db:inspect` | Print DB path and table list |
+| `npm run lint` | ESLint + Prettier check |
+| `npm run lint:fix` | Auto-fix ESLint issues |
+| `npm run format` | Prettier format all files |
