@@ -3,10 +3,12 @@ FROM node:22-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 COPY . .
 RUN npm run build:css
+
+RUN npm prune --omit=dev
 
 RUN mkdir -p /data
 
