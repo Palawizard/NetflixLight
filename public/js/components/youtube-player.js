@@ -26,7 +26,7 @@ function loadYoutubeApi() {
   document.head.appendChild(tag);
 }
 
-function whenApiReady(callback) {
+export function whenApiReady(callback) {
   if (ytApiReady) {
     callback();
     return;
@@ -358,7 +358,10 @@ function mountPlayer(container, videoKey) {
 
   function handleFullscreenChange() {
     const isFullscreen = Boolean(document.fullscreenElement);
-    fullscreenBtn?.setAttribute("aria-pressed", isFullscreen ? "true" : "false");
+    fullscreenBtn?.setAttribute(
+      "aria-pressed",
+      isFullscreen ? "true" : "false"
+    );
     fullscreenBtn?.setAttribute(
       "aria-label",
       isFullscreen ? "Quitter le plein écran" : "Plein écran"
@@ -375,7 +378,12 @@ function mountPlayer(container, videoKey) {
     document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }
 
-  currentPlayer = { videoKey, ytPlayer, stopUpdater: stopProgressUpdater, stopFullscreen };
+  currentPlayer = {
+    videoKey,
+    ytPlayer,
+    stopUpdater: stopProgressUpdater,
+    stopFullscreen,
+  };
 }
 
 function clearInactivityTimer() {

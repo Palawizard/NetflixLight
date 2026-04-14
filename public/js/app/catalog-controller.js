@@ -602,6 +602,29 @@ function createCatalogController(dependencies) {
     }
   }
 
+  function pickBestHeroTrailer(videos) {
+    if (!Array.isArray(videos)) return null;
+
+    const candidates = videos.filter(
+      (v) =>
+        v?.site === "YouTube" &&
+        typeof v.key === "string" &&
+        v.key.trim() &&
+        (v.type === "Trailer" || v.type === "Teaser")
+    );
+
+    if (candidates.length === 0) return null;
+
+    const best =
+      candidates.find((v) => v.official && v.iso_639_1 === "fr") ||
+      candidates.find((v) => v.iso_639_1 === "fr") ||
+      candidates.find((v) => v.official && v.type === "Trailer") ||
+      candidates.find((v) => v.type === "Trailer") ||
+      candidates[0];
+
+    return best.key.trim();
+  }
+
   async function loadHomeHero() {
     if (
       appState.hero.status === "loading" ||
@@ -645,9 +668,21 @@ function createCatalogController(dependencies) {
       const randomIndex = Math.floor(Math.random() * eligibleItems.length);
       const randomItem = eligibleItems[randomIndex];
 
+      let trailerKey = null;
+      try {
+        const detail = await apiRequest(
+          withTmdbLanguage(
+            `/api/tmdb/${randomItem.media_type}/${randomItem.id}`
+          )
+        );
+        trailerKey = pickBestHeroTrailer(detail.videos?.results);
+      } catch {
+        // trailer is optional — hero shows without it
+      }
+
       setHeroState({
         status: "success",
-        item: randomItem,
+        item: { ...randomItem, trailerKey },
         error: null,
       });
     } catch (error) {

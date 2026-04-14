@@ -298,3 +298,29 @@ html[data-theme="light"] .media-chip {
   background-color: rgb(0 0 0 / 0.58);
   color: #fde68a;
 }
+
+@keyframes hero-feedback-pulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  65% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+.hero-feedback-active {
+  animation: hero-feedback-pulse 0.65s ease-out forwards;
+}

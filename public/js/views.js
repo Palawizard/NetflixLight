@@ -16,7 +16,7 @@ import {
 } from "./views/catalog-sections.js";
 import { renderDetailView } from "./views/detail-view.js";
 import { renderSearchView } from "./views/search-view.js";
-import { getPersonalRatingLabel } from "./views/view-utils.js";
+import { escapeHtml, getPersonalRatingLabel } from "./views/view-utils.js";
 
 /**
  * @typedef {object} TmdbMediaItem
@@ -247,32 +247,46 @@ export function resolveView(pathname) {
 function renderHomeHero(heroState) {
   if (heroState.status === "loading" || heroState.status === "idle") {
     return `
-      <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
-        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
-        <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
-          Chargement...
-        </h1>
+      <section
+        class="relative -mt-8 min-h-[80vh] animate-pulse bg-white/5 sm:-mt-10"
+        style="width:100vw;margin-left:calc(50% - 50vw)"
+      >
+        <div class="flex min-h-[80vh] items-end p-6 pb-14 sm:p-14 sm:pb-20">
+          <div class="max-w-2xl space-y-4">
+            <div class="h-3 w-24 rounded-full bg-white/10"></div>
+            <div class="h-12 w-80 rounded-2xl bg-white/10 sm:h-16 sm:w-lg"></div>
+            <div class="h-4 w-full max-w-md rounded-full bg-white/10"></div>
+            <div class="h-4 w-64 rounded-full bg-white/10"></div>
+          </div>
+        </div>
       </section>
     `;
   }
 
   if (heroState.status === "error") {
     return `
-      <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 shadow-2xl shadow-black/30 backdrop-blur sm:p-10">
-        <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
-        <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
-          Impossible de charger la sélection
-        </h1>
-        <p class="mt-6 max-w-2xl text-base leading-8 text-rose-100/90 sm:text-lg">
-          ${heroState.error || "Une erreur est survenue."}
-        </p>
-        <button
-          type="button"
-          data-retry-hero
-          class="mt-8 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
-        >
-          Réessayer
-        </button>
+      <section
+        class="relative -mt-8 min-h-[80vh] bg-rose-500/10 sm:-mt-10"
+        style="width:100vw;margin-left:calc(50% - 50vw)"
+      >
+        <div class="flex min-h-[80vh] items-end p-6 pb-14 sm:p-14 sm:pb-20">
+          <div class="max-w-2xl">
+            <p class="text-sm uppercase tracking-[0.35em] text-rose-300">À la une</p>
+            <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-5xl">
+              Impossible de charger la sélection
+            </h1>
+            <p class="mt-6 max-w-xl text-base leading-8 text-rose-100/90">
+              ${heroState.error || "Une erreur est survenue."}
+            </p>
+            <button
+              type="button"
+              data-retry-hero
+              class="mt-8 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
       </section>
     `;
   }
@@ -290,10 +304,19 @@ function renderHomeHero(heroState) {
   const mediaType = item.media_type;
   const backdropPath = item.backdrop_path || item.poster_path;
   const detailPath = `/${mediaType}/${item.id}`;
+  const trailerKey =
+    typeof item.trailerKey === "string" && item.trailerKey
+      ? item.trailerKey
+      : null;
 
   return `
-    <section class="media-surface relative overflow-hidden rounded-4xl border border-white/10 shadow-2xl shadow-black/30">
-      <div class="absolute inset-0">
+    <section
+      data-hero
+      ${trailerKey ? `data-hero-trailer-key="${escapeHtml(trailerKey)}"` : ""}
+      class="media-surface group relative -mt-8 overflow-hidden sm:-mt-10"
+      style="width:100vw;margin-left:calc(50% - 50vw)"
+    >
+      <div data-hero-backdrop class="absolute inset-0 transition-opacity duration-1000">
         ${renderTmdbImage({
           path: backdropPath,
           alt: title,
@@ -308,36 +331,90 @@ function renderHomeHero(heroState) {
           fetchPriority: "high",
           className: "h-full w-full object-cover",
         })}
+        <div class="pointer-events-none absolute inset-0 bg-linear-to-r from-black/75 via-black/35 to-transparent"></div>
+        <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent"></div>
       </div>
 
-      <div class="absolute inset-0 bg-linear-to-r from-black via-black/75 to-black/20"></div>
-      <div class="relative z-10 flex min-h-96 items-end p-6 sm:min-h-112 sm:p-10">
+      ${
+        trailerKey
+          ? `
+      <div data-hero-video-layer class="absolute inset-0 opacity-0 transition-opacity duration-1000">
+        <div class="absolute inset-0 overflow-hidden">
+          <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 aspect-video"
+            style="width:max(100%, 177.78vh)"
+          >
+            <div data-hero-player-iframe class="h-full w-full"></div>
+          </div>
+        </div>
+        <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent"></div>
+        <div data-hero-click-area class="absolute inset-0 cursor-pointer"></div>
+      </div>
+
+      <div data-hero-feedback class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center" aria-hidden="true">
+        <div data-hero-feedback-inner class="flex h-20 w-20 items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm">
+          <svg data-feedback-icon="play" class="hidden h-10 w-10" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg data-feedback-icon="pause" class="hidden h-9 w-9" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          </svg>
+          <svg data-feedback-icon="muted" class="hidden h-9 w-9" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+          </svg>
+          <svg data-feedback-icon="unmuted" class="hidden h-9 w-9" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        data-hero-mute
+        aria-label="Activer le son"
+        aria-pressed="true"
+        class="absolute bottom-6 right-6 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-black/50 text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 hover:bg-black/70 group-hover:opacity-100"
+      >
+        <svg data-icon-muted class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+        </svg>
+        <svg data-icon-unmuted class="hidden h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+      </button>
+      `
+          : ""
+      }
+
+      <div
+        data-hero-content
+        class="pointer-events-none relative z-10 flex min-h-[80vh] items-end p-6 pb-14 sm:min-h-[82vh] sm:p-14 sm:pb-20"
+      >
         <div class="max-w-2xl">
-          <p class="text-sm uppercase tracking-[0.35em] text-rose-300">
-            ${mediaType === "movie" ? "Film" : "Série"}${year ? ` • ${year}` : ""}
+          <p class="text-sm font-medium uppercase tracking-[0.35em] text-rose-300">
+            ${mediaType === "movie" ? "Film" : "Série"}${year ? ` · ${year}` : ""}
           </p>
 
-          <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-6xl">
+          <h1 class="mt-4 text-4xl font-bold tracking-tight text-white sm:text-7xl">
             ${title}
           </h1>
 
-          <p class="mt-6 max-w-2xl text-base leading-8 text-white/80 sm:text-lg">
+          <p class="mt-5 max-w-xl text-base leading-7 text-white/80 line-clamp-3 sm:text-lg sm:leading-8">
             ${overview}
           </p>
 
-          <div class="mt-8 flex flex-wrap gap-3">
+          <div class="pointer-events-auto mt-8 flex flex-wrap gap-3">
             <button
               type="button"
               data-nav-path="${detailPath}"
-              class="rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+              class="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-white/90"
             >
               Voir le détail
             </button>
-
             <button
               type="button"
               data-retry-hero
-              class="rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+              class="rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20"
             >
               Changer
             </button>
