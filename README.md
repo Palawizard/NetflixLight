@@ -261,14 +261,6 @@ netflixlight/
 │   │   └── app.css                   # Tailwind source stylesheet and custom theme rules
 │   └── utils/
 │       └── api-error.js              # structured API error class and helper factory
-├── tests/
-│   ├── profiles.api.test.js          # tests profile creation/listing flow
-│   ├── profile-scoped-data.api.test.js # tests isolation of data between profiles
-│   ├── session-store.test.js         # tests custom SQLite session store behavior
-│   ├── user-ratings.api.test.js      # tests rating endpoints
-│   ├── viewing-history.api.test.js   # tests viewing history endpoints
-│   ├── watchlist.api.test.js         # tests watchlist endpoints
-│   └── watch-progress.api.test.js    # tests watch progress endpoints
 ├── code-tree.sh                      # utility script to print the project tree
 ├── eslint.config.js                  # ESLint configuration
 ├── jsconfig.json                     # JS tooling and editor configuration
@@ -289,8 +281,3 @@ netflixlight/
 - Lint: `npm run lint`
 - Auto-fix lint issues: `npm run lint:fix`
 - Format files: `npm run format`
-- Run tests: `npm test`
-
-```
-
-```
