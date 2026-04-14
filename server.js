@@ -68,9 +68,17 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
-// legacy redirect - kept for external links that might still use /movies
-app.get("/movies", (req, res) => {
-  res.redirect(301, "/#/films");
+// direct-path helpers for SPA hash routes
+[
+  ["/movies", "/#/movies"],
+  ["/series", "/#/series"],
+  ["/search", "/#/search"],
+  ["/favorites", "/#/favorites"],
+  ["/profile", "/#/profile"],
+].forEach(([from, to]) => {
+  app.get(from, (req, res) => {
+    res.redirect(301, to);
+  });
 });
 
 app.use(apiNotFoundHandler);
