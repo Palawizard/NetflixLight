@@ -52,7 +52,7 @@ function createWatchlistActions(dependencies) {
     });
 
     try {
-      await profileApiRequest(`/api/watchlist/${type}/${tmdbId}`, {
+      await profileApiRequest(`api/watchlist/${type}/${tmdbId}`, {
         method: "DELETE",
       });
 
@@ -170,7 +170,7 @@ function createWatchlistActions(dependencies) {
     });
 
     try {
-      await profileApiRequest(`/api/watchlist/${type}/${id}`, {
+      await profileApiRequest(`api/watchlist/${type}/${id}`, {
         method: "DELETE",
       });
 
@@ -235,7 +235,7 @@ function createWatchlistActions(dependencies) {
     });
 
     try {
-      const response = await profileApiRequest("/api/watchlist", {
+      const response = await profileApiRequest("api/watchlist", {
         method: "POST",
         body: {
           tmdbId: id,

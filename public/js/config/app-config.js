@@ -29,18 +29,18 @@ const SUPPORTED_LANGUAGES = new Set(["fr", "en"]);
 
 const HOME_SECTION_CONFIG = {
   trending: {
-    endpoint: "/api/tmdb/trending?media_type=all&time_window=week",
+    endpoint: "api/tmdb/trending?media_type=all&time_window=week",
   },
   moviesPopular: {
-    endpoint: "/api/tmdb/movies/popular",
+    endpoint: "api/tmdb/movies/popular",
     mediaType: "movie",
   },
   tvPopular: {
-    endpoint: "/api/tmdb/tv/popular",
+    endpoint: "api/tmdb/tv/popular",
     mediaType: "tv",
   },
   topRated: {
-    endpoint: "/api/tmdb/movies/top-rated",
+    endpoint: "api/tmdb/movies/top-rated",
     mediaType: "movie",
   },
 };

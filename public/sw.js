@@ -2,20 +2,24 @@ const CACHE_NAME = "netflixlight-shell-v3";
 const IS_LOCAL_HOST = ["localhost", "127.0.0.1"].includes(
   self.location.hostname
 );
+
+// base URL of the scope (e.g. "https://palawi.fr/netflix-light/" or "https://localhost:3000/")
+const BASE = self.registration.scope;
+
 const SHELL_ASSETS = [
-  "/",
-  "/css/app.css",
-  "/js/app.js",
-  "/js/api.js",
-  "/js/animations.js",
-  "/js/router.js",
-  "/js/state.js",
-  "/js/views.js",
-  "/js/tmdb-images.js",
-  "/js/components/carousel.js",
-  "/js/components/poster-card.js",
-  "/manifest.webmanifest",
-  "/icons/icon.svg",
+  BASE,
+  `${BASE}css/app.css`,
+  `${BASE}js/app.js`,
+  `${BASE}js/api.js`,
+  `${BASE}js/animations.js`,
+  `${BASE}js/router.js`,
+  `${BASE}js/state.js`,
+  `${BASE}js/views.js`,
+  `${BASE}js/tmdb-images.js`,
+  `${BASE}js/components/carousel.js`,
+  `${BASE}js/components/poster-card.js`,
+  `${BASE}manifest.webmanifest`,
+  `${BASE}icons/icon.svg`,
 ];
 
 // on install: unregister immediately on localhost, otherwise pre-cache shell assets
@@ -79,7 +83,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (requestUrl.pathname.startsWith("/api/")) {
+  const basePath = new URL(BASE).pathname;
+  if (requestUrl.pathname.startsWith(`${basePath}api/`)) {
     return;
   }
 
@@ -89,7 +94,7 @@ self.addEventListener("fetch", (event) => {
         return cachedResponse;
       }
 
-      return fetch(request).catch(() => caches.match("/"));
+      return fetch(request).catch(() => caches.match(BASE));
     })
   );
 });
