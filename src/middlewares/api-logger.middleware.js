@@ -1,4 +1,4 @@
-/** @type {import("express").RequestHandler} */
+// logs method, path, status code and duration for every /api request
 const apiRequestLogger = (req, res, next) => {
   if (!req.path.startsWith("/api")) {
     return next();
@@ -6,6 +6,7 @@ const apiRequestLogger = (req, res, next) => {
 
   const startTime = Date.now();
 
+  // uses the finish event so we can log the actual response status
   res.on("finish", () => {
     const durationMs = Date.now() - startTime;
     console.log(

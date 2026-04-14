@@ -17,6 +17,7 @@ import {
   getSortedWatchlistItems,
 } from "./view-utils.js";
 
+// renders the favorites page with a header and the full watchlist content
 function renderFavoritesView(state) {
   const username = state.session.user?.username || "utilisateur";
   const watchlistState = state.watchlist;
@@ -39,6 +40,7 @@ function renderFavoritesView(state) {
   `;
 }
 
+// renders watchlist content: skeleton during load, error block on failure, empty state, or the grid of cards
 function renderWatchlistContent(watchlistState, userRatingsState, items) {
   if (watchlistState.status === "idle" || watchlistState.status === "loading") {
     return renderWatchlistLoading();
@@ -63,6 +65,7 @@ function renderWatchlistContent(watchlistState, userRatingsState, items) {
   `;
 }
 
+// renders an animated pulse skeleton for the watchlist grid while items are loading
 function renderWatchlistLoading() {
   return `
     <section class="grid gap-5 md:grid-cols-2">
@@ -87,6 +90,7 @@ function renderWatchlistLoading() {
   `;
 }
 
+// renders a watchlist error block with a retry button
 function renderWatchlistError(errorMessage) {
   return `
     <section class="rounded-4xl border border-rose-400/20 bg-rose-500/10 p-8 text-rose-100 shadow-xl shadow-black/20">
@@ -105,6 +109,7 @@ function renderWatchlistError(errorMessage) {
   `;
 }
 
+// renders an empty state for the watchlist with a link to browse titles
 function renderWatchlistEmpty() {
   return `
     <section class="rounded-4xl border border-white/10 bg-white/5 p-8 text-white/75 shadow-xl shadow-black/20 backdrop-blur">
@@ -127,6 +132,7 @@ function renderWatchlistEmpty() {
   `;
 }
 
+// renders a single watchlist card with poster, title, added date, personal rating, and a remove button
 function renderWatchlistCard(item, watchlistState, userRatingsState) {
   const watchlistKey = createFavoriteKey(item.type, item.tmdbId);
   const isPending = Boolean(watchlistState.pendingKeys[watchlistKey]);
@@ -210,6 +216,7 @@ function renderWatchlistCard(item, watchlistState, userRatingsState) {
   `;
 }
 
+// renders the account/profile page with user info, profiles section, and viewing history
 function renderProfileView(state) {
   const user = state.session.user;
   const logoutState = state.ui.logout;
@@ -269,6 +276,7 @@ function renderProfileView(state) {
   `;
 }
 
+// renders the profiles management section with profile cards, a create form, and feedback
 function renderProfilesSection(profilesState) {
   const profiles = Array.isArray(profilesState.items)
     ? profilesState.items
@@ -334,6 +342,7 @@ function renderProfilesSection(profilesState) {
   `;
 }
 
+// renders a success or error feedback message from the last profile action
 function renderProfileFeedback(profilesState) {
   const message = profilesState.lastAction?.message || profilesState.error;
 
@@ -354,6 +363,7 @@ function renderProfileFeedback(profilesState) {
   `;
 }
 
+// renders a single profile card with avatar, name, status, and a select button - highlighted when active
 function renderAccountProfileCard(profile, profilesState) {
   const isActive = profile.id === profilesState.activeProfileId;
   const profileName = escapeHtml(profile.name);
@@ -395,6 +405,7 @@ function renderAccountProfileCard(profile, profilesState) {
   `;
 }
 
+// renders the viewing history carousel or an appropriate loading/error/empty state
 function renderViewingHistorySection(historyState, userRatingsState) {
   if (!historyState || historyState.status === "idle") {
     return renderViewingHistoryLoading();
@@ -455,6 +466,7 @@ function renderViewingHistorySection(historyState, userRatingsState) {
   `;
 }
 
+// renders a pulse skeleton for the viewing history section while data is loading
 function renderViewingHistoryLoading() {
   return `
     <section class="rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur">
@@ -474,6 +486,7 @@ function renderViewingHistoryLoading() {
   `;
 }
 
+// renders the color picker widget with preset swatches and a native color input fallback
 function renderProfileColorPicker(backgroundClass) {
   const presets = PROFILE_COLOR_PRESETS.map(
     (color) => `

@@ -10,6 +10,9 @@ const router = express.Router();
 const DEFAULT_PROFILE_COLOR = "#fb7185";
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
+/**
+ * validates and coerces the profile creation body - throws a 400 api error if name is out of range
+ */
 function validateProfilePayload(payload) {
   const safePayload =
     payload !== null && typeof payload === "object" ? payload : {};
@@ -36,6 +39,7 @@ function validateProfilePayload(payload) {
   };
 }
 
+// list profiles for the current user - creates the default one if none exist yet
 router.get("/", requireAuth, (req, res, next) => {
   try {
     return res.status(200).json({
@@ -46,6 +50,7 @@ router.get("/", requireAuth, (req, res, next) => {
   }
 });
 
+// create a new profile - 409 if name already taken
 router.post("/", requireAuth, (req, res, next) => {
   try {
     const payload = validateProfilePayload(req.body);

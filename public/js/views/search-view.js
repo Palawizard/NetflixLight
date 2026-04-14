@@ -1,6 +1,7 @@
 import { renderPosterCard } from "../components/poster-card.js";
 import { escapeHtml } from "./view-utils.js";
 
+// renders the search page with a header showing the current query/result count and the results section
 function renderSearchView(state) {
   const searchState = state.search;
   const hasQuery = Boolean(searchState.query);
@@ -54,6 +55,7 @@ function renderSearchView(state) {
   `;
 }
 
+// renders search results as a poster grid - shows a prompt, skeleton, error, empty state, or the grid depending on state
 function renderSearchResults(searchState) {
   if (!searchState.query) {
     return `
@@ -119,6 +121,7 @@ function renderSearchResults(searchState) {
   `;
 }
 
+// renders previous/next page buttons for search results - returns empty string when there is only one page
 function renderSearchPagination(searchState) {
   if (
     !Number.isInteger(searchState.totalPages) ||

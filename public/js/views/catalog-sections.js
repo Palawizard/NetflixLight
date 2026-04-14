@@ -1,5 +1,6 @@
 import { renderCarousel } from "../components/carousel.js";
 
+// renders the popular movies carousel section
 function renderMoviesCatalog(moviesState) {
   return renderCatalogCarouselSection(moviesState, {
     id: "movies-popular",
@@ -8,6 +9,7 @@ function renderMoviesCatalog(moviesState) {
   });
 }
 
+// renders the popular series carousel section
 function renderSeriesCatalog(seriesState) {
   return renderCatalogCarouselSection(seriesState, {
     id: "series-popular",
@@ -16,6 +18,7 @@ function renderSeriesCatalog(seriesState) {
   });
 }
 
+// renders the four home page carousels: trending, popular movies, popular series, top rated
 function renderHomeCarousels(homeCatalogState) {
   return `
     <div class="space-y-8">
@@ -43,6 +46,7 @@ function renderHomeCarousels(homeCatalogState) {
   `;
 }
 
+// renders all movie genre carousels - shows a skeleton while any section is still loading
 function renderGenreCarousels(genreState) {
   const genreSections = [
     { key: "action", id: "genre-action", title: "Action" },
@@ -86,6 +90,7 @@ function renderGenreCarousels(genreState) {
   `;
 }
 
+// renders all series genre carousels - shows a skeleton while any section is still loading
 function renderSeriesGenreCarousels(genreState) {
   const genreSections = [
     {
@@ -142,6 +147,7 @@ function renderSeriesGenreCarousels(genreState) {
   `;
 }
 
+// renders a genre carousel only when the section has loaded successfully with items - returns empty string otherwise
 function renderGenreCarouselSection(sectionState, { id, title }) {
   if (
     !sectionState ||
@@ -161,6 +167,7 @@ function renderGenreCarouselSection(sectionState, { id, title }) {
   });
 }
 
+// renders a catalog section as a carousel, skeleton, error block, or empty state depending on sectionState.status
 function renderCatalogCarouselSection(sectionState, { id, title, retryKey }) {
   if (!sectionState || sectionState.status === "idle") {
     return renderCarouselSkeleton(title);
@@ -185,6 +192,7 @@ function renderCatalogCarouselSection(sectionState, { id, title, retryKey }) {
   });
 }
 
+// renders an animated pulse skeleton for a named carousel while its data is loading
 function renderCarouselSkeleton(title) {
   return `
     <section class="space-y-4">
@@ -207,6 +215,7 @@ function renderCarouselSkeleton(title) {
   `;
 }
 
+// renders an error block for a named carousel with a retry button
 function renderCarouselError(title, retryKey, errorMessage) {
   return `
     <section class="space-y-4">
@@ -231,6 +240,7 @@ function renderCarouselError(title, retryKey, errorMessage) {
   `;
 }
 
+// renders an empty state block for a named carousel when no items are available
 function renderCarouselEmpty(title) {
   return `
     <section class="space-y-4">

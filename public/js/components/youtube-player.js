@@ -8,12 +8,16 @@ let inactivityTimerId = null;
 
 const INACTIVITY_TIMEOUT_MS = 5_000;
 
+// called by the YouTube iframe API script once it finishes loading
 window.onYouTubeIframeAPIReady = function () {
   ytApiReady = true;
   ytApiLoading = false;
   ytReadyQueue.splice(0).forEach((cb) => cb());
 };
 
+/**
+ * injects the YouTube iframe API script into the page - no-ops if already loading or loaded
+ */
 function loadYoutubeApi() {
   if (ytApiReady || ytApiLoading) {
     return;
@@ -26,6 +30,9 @@ function loadYoutubeApi() {
   document.head.appendChild(tag);
 }
 
+/**
+ * runs a callback once the YouTube iframe API is ready - queues it and loads the API if not yet available
+ */
 export function whenApiReady(callback) {
   if (ytApiReady) {
     callback();
@@ -36,6 +43,10 @@ export function whenApiReady(callback) {
   loadYoutubeApi();
 }
 
+/**
+ * mounts a YouTube player for the [data-youtube-player] element inside rootElement
+ * destroys any currently active player before creating a new one
+ */
 function initializeYoutubePlayer(rootElement) {
   const container = rootElement.querySelector("[data-youtube-player]");
 
@@ -46,6 +57,7 @@ function initializeYoutubePlayer(rootElement) {
 
   const videoKey = container.getAttribute("data-youtube-player");
 
+  // skip re-initialization if the same video is already playing
   if (currentPlayer && currentPlayer.videoKey === videoKey) {
     return;
   }
@@ -54,6 +66,9 @@ function initializeYoutubePlayer(rootElement) {
   whenApiReady(() => mountPlayer(container, videoKey));
 }
 
+/**
+ * destroys the currently active YouTube player and clears the inactivity timer
+ */
 function destroyCurrentPlayer() {
   clearInactivityTimer();
 
@@ -72,6 +87,9 @@ function destroyCurrentPlayer() {
   currentPlayer = null;
 }
 
+/**
+ * creates and wires up a full YouTube player inside a container element
+ */
 function mountPlayer(container, videoKey) {
   const iframeTarget = container.querySelector("[data-youtube-player-iframe]");
 
@@ -144,11 +162,13 @@ function mountPlayer(container, videoKey) {
     },
   });
 
+  // starts polling the player position every 500ms to update the progress bar
   function startProgressUpdater() {
     stopProgressUpdater();
     progressIntervalId = setInterval(refreshProgress, 500);
   }
 
+  // clears the progress polling interval
   function stopProgressUpdater() {
     if (progressIntervalId !== null) {
       clearInterval(progressIntervalId);
@@ -156,12 +176,14 @@ function mountPlayer(container, videoKey) {
     }
   }
 
+  // fetches current playback position and delegates to the UI updater
   function refreshProgress() {
     const duration = ytPlayer.getDuration?.() ?? 0;
     const current = ytPlayer.getCurrentTime?.() ?? 0;
     applyProgressUI(current, duration);
   }
 
+  // updates the progress fill width, time display, and aria attributes
   function applyProgressUI(current, duration) {
     if (duration > 0 && progressFill) {
       progressFill.style.width = `${((current / duration) * 100).toFixed(2)}%`;
@@ -181,6 +203,7 @@ function mountPlayer(container, videoKey) {
     }
   }
 
+  // syncs the play/pause button icon and aria state to the current player state
   function updatePlayPauseIcon(playerState) {
     if (!playPauseBtn) {
       return;
@@ -201,20 +224,24 @@ function mountPlayer(container, videoKey) {
       ?.classList.toggle("hidden", !isPlaying);
   }
 
+  // makes the controls bar visible
   function showControls() {
     controls?.classList.remove("opacity-0", "pointer-events-none");
   }
 
+  // hides the controls bar
   function hideControls() {
     controls?.classList.add("opacity-0", "pointer-events-none");
   }
 
+  // shows controls and restarts the inactivity hide timer
   function resetInactivity() {
     clearInactivityTimer();
     showControls();
     inactivityTimerId = window.setTimeout(hideControls, INACTIVITY_TIMEOUT_MS);
   }
 
+  // syncs the mute button icon and aria state
   function setMuteIcons(isMuted) {
     muteBtn?.setAttribute("aria-pressed", isMuted ? "true" : "false");
     muteBtn?.setAttribute(
@@ -229,6 +256,7 @@ function mountPlayer(container, videoKey) {
       ?.classList.toggle("hidden", !isMuted);
   }
 
+  // attaches all event listeners for playback, progress, mute, volume, and fullscreen controls
   function bindControls() {
     playPauseBtn?.addEventListener("click", () => {
       if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
@@ -250,8 +278,8 @@ function mountPlayer(container, videoKey) {
       if (duration > 0) {
         const newTime = ratio * duration;
         ytPlayer.seekTo(newTime, true);
-        // Update immediately — seekTo is async, getCurrentTime() would still
-        // return the old position for several frames.
+        // update immediately - seekTo is async, getCurrentTime() would still
+        // return the old position for several frames
         applyProgressUI(newTime, duration);
       }
 
@@ -356,6 +384,7 @@ function mountPlayer(container, videoKey) {
     document.addEventListener("fullscreenchange", handleFullscreenChange);
   }
 
+  // syncs the fullscreen button icon and aria state on fullscreen change events
   function handleFullscreenChange() {
     const isFullscreen = Boolean(document.fullscreenElement);
     fullscreenBtn?.setAttribute(
@@ -374,6 +403,7 @@ function mountPlayer(container, videoKey) {
       ?.classList.toggle("hidden", !isFullscreen);
   }
 
+  // removes the fullscreen change listener - called when the player is destroyed
   function stopFullscreen() {
     document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }
@@ -386,6 +416,9 @@ function mountPlayer(container, videoKey) {
   };
 }
 
+/**
+ * clears the global inactivity hide timer if one is pending
+ */
 function clearInactivityTimer() {
   if (inactivityTimerId !== null) {
     clearTimeout(inactivityTimerId);
@@ -393,6 +426,9 @@ function clearInactivityTimer() {
   }
 }
 
+/**
+ * formats a total seconds value as M:SS
+ */
 function formatTime(totalSeconds) {
   const s = Math.floor(totalSeconds);
   const minutes = Math.floor(s / 60);

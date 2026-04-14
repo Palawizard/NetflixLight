@@ -21,6 +21,7 @@ const {
 const app = express();
 const publicDir = path.join(__dirname, "public");
 
+// static files first so requests never hit the api stack unnecessarily
 app.use(express.static(publicDir));
 app.use(express.json());
 app.use(apiRequestLogger);
@@ -32,15 +33,16 @@ app.use(
       ttlMs: config.session.maxAgeMs,
     }),
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: false, // don't persist sessions for unauthenticated visitors
     cookie: {
       httpOnly: true,
       sameSite: "lax",
-      secure: config.isProduction,
+      secure: config.isProduction, // requires https in production
       maxAge: config.session.maxAgeMs,
     },
   })
 );
+
 app.use("/api/auth", authRoutes);
 app.use("/api/tmdb", tmdbRoutes);
 app.use("/api/watchlist", watchlistRoutes);
@@ -49,6 +51,7 @@ app.use("/api/viewing-history", viewingHistoryRoutes);
 app.use("/api/user-ratings", userRatingsRoutes);
 app.use("/api/profiles", profilesRoutes);
 
+// exposes non-sensitive config to templates/middleware via req.app.locals
 app.locals.appConfig = {
   environment: config.environment,
   tmdbApiBaseUrl: config.tmdb.apiBaseUrl,
@@ -60,10 +63,12 @@ if (missingTmdbVars.length > 0) {
   );
 }
 
+// serve the SPA shell for all non-api routes
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
+// legacy redirect - kept for external links that might still use /movies
 app.get("/movies", (req, res) => {
   res.redirect(301, "/#/films");
 });
@@ -71,6 +76,7 @@ app.get("/movies", (req, res) => {
 app.use(apiNotFoundHandler);
 app.use(apiErrorHandler);
 
+// guard so the server doesn't start when required by tests
 if (require.main === module) {
   app.listen(config.port, () => {
     console.log(

@@ -1,14 +1,6 @@
 /**
- * @typedef {object} WatchlistRow
- * @property {number} tmdb_id
- * @property {"movie" | "tv"} media_type
- * @property {string} added_at
- * @property {string} snapshot_title
- * @property {string | null} snapshot_poster
- */
-
-/**
- * @param {WatchlistRow | null | undefined} row
+ * maps a sqlite row to a camelCase watchlist item - returns null if row is missing
+ * snapshot fields are stored at insert time so the watchlist can render without hitting tmdb again
  */
 function toWatchlistItem(row) {
   if (!row) {

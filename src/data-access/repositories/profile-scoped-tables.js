@@ -1,7 +1,13 @@
 const db = require("../sqlite/client");
 
+// guards against running the migration logic more than once per process
 let didEnsureProfileScopedTables = false;
 
+/**
+ * entry point called by each profile-scoped repository at load time
+ * creates or migrates all tables that carry a profile_id column
+ * runs only once per process thanks to the module-level flag
+ */
 function ensureProfileScopedTables() {
   if (didEnsureProfileScopedTables) {
     return;
@@ -16,6 +22,9 @@ function ensureProfileScopedTables() {
   migrateUserRatingsTable();
 }
 
+/**
+ * creates the profiles table and its index if they don't exist yet
+ */
 function ensureProfilesTable() {
   db.prepare(
     `CREATE TABLE IF NOT EXISTS profiles (
@@ -34,6 +43,10 @@ function ensureProfilesTable() {
   ).run();
 }
 
+/**
+ * backfills a default profile for any existing user who doesn't have one yet
+ * safe to run multiple times - INSERT ignores users that already have a profile
+ */
 function ensureDefaultProfilesForExistingUsers() {
   db.prepare(
     `INSERT INTO profiles (user_id, name, avatar_color)
@@ -47,6 +60,9 @@ function ensureDefaultProfilesForExistingUsers() {
   ).run();
 }
 
+/**
+ * returns true if a table exists in the database
+ */
 function tableExists(tableName) {
   return Boolean(
     db
@@ -59,6 +75,9 @@ function tableExists(tableName) {
   );
 }
 
+/**
+ * returns true if a column exists in a given table - used to detect schema version
+ */
 function hasColumn(tableName, columnName) {
   return db
     .prepare(`PRAGMA table_info(${tableName});`)
@@ -66,6 +85,10 @@ function hasColumn(tableName, columnName) {
     .some((column) => column.name === columnName);
 }
 
+/**
+ * builds a subquery that resolves the oldest profile id for a given row's user_id
+ * used during migration to assign legacy rows to a profile
+ */
 function getDefaultProfileIdExpression(tableAlias) {
   return `(SELECT profiles.id
     FROM profiles
@@ -74,6 +97,9 @@ function getDefaultProfileIdExpression(tableAlias) {
     LIMIT 1)`;
 }
 
+/**
+ * creates the watchlist_items table if new, or migrates it to add profile_id if it's a legacy schema
+ */
 function migrateWatchlistItemsTable() {
   if (!tableExists("watchlist_items")) {
     createWatchlistItemsTable();
@@ -88,6 +114,7 @@ function migrateWatchlistItemsTable() {
     return;
   }
 
+  // rename, recreate, copy data, drop legacy table - wrapped in a transaction
   db.transaction(() => {
     db.prepare(
       `ALTER TABLE watchlist_items RENAME TO watchlist_items_legacy;`
@@ -121,6 +148,9 @@ function migrateWatchlistItemsTable() {
   })();
 }
 
+/**
+ * creates the watchlist_items table with the current profile-scoped schema
+ */
 function createWatchlistItemsTable() {
   db.prepare(
     `CREATE TABLE IF NOT EXISTS watchlist_items (
@@ -142,6 +172,9 @@ function createWatchlistItemsTable() {
   ).run();
 }
 
+/**
+ * creates the watch_progress table if new, or migrates it to add profile_id and snapshot columns
+ */
 function migrateWatchProgressTable() {
   if (!tableExists("watch_progress")) {
     createWatchProgressTable();
@@ -159,6 +192,7 @@ function migrateWatchProgressTable() {
     return;
   }
 
+  // snapshot columns may be missing even on the pre-profile schema - add them before copying
   ensureWatchProgressSnapshotColumns();
 
   db.transaction(() => {
@@ -198,6 +232,9 @@ function migrateWatchProgressTable() {
   })();
 }
 
+/**
+ * creates the watch_progress table with the current profile-scoped schema
+ */
 function createWatchProgressTable() {
   db.prepare(
     `CREATE TABLE IF NOT EXISTS watch_progress (
@@ -221,6 +258,10 @@ function createWatchProgressTable() {
   ).run();
 }
 
+/**
+ * adds snapshot_title and snapshot_poster columns to watch_progress if they're missing
+ * handles the case where the table existed before snapshots were introduced
+ */
 function ensureWatchProgressSnapshotColumns() {
   if (!hasColumn("watch_progress", "snapshot_title")) {
     db.prepare(
@@ -235,6 +276,9 @@ function ensureWatchProgressSnapshotColumns() {
   }
 }
 
+/**
+ * creates the viewing_history table if new, or migrates it to add profile_id
+ */
 function migrateViewingHistoryTable() {
   if (!tableExists("viewing_history")) {
     createViewingHistoryTable();
@@ -282,6 +326,9 @@ function migrateViewingHistoryTable() {
   })();
 }
 
+/**
+ * creates the viewing_history table with the current profile-scoped schema
+ */
 function createViewingHistoryTable() {
   db.prepare(
     `CREATE TABLE IF NOT EXISTS viewing_history (
@@ -303,6 +350,9 @@ function createViewingHistoryTable() {
   ).run();
 }
 
+/**
+ * creates the user_ratings table if new, or migrates it to add profile_id
+ */
 function migrateUserRatingsTable() {
   if (!tableExists("user_ratings")) {
     createUserRatingsTable();
@@ -346,6 +396,9 @@ function migrateUserRatingsTable() {
   })();
 }
 
+/**
+ * creates the user_ratings table with the current profile-scoped schema
+ */
 function createUserRatingsTable() {
   db.prepare(
     `CREATE TABLE IF NOT EXISTS user_ratings (

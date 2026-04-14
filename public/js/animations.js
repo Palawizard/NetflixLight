@@ -9,6 +9,10 @@ const prefersReducedMotion = window.matchMedia(
   "(prefers-reduced-motion: reduce)"
 );
 
+/**
+ * sets up intersection-observer-based entrance animations on matching elements
+ * skips animation entirely when the user prefers reduced motion or IntersectionObserver is unavailable
+ */
 export function initializeAnimations(container) {
   const elements = Array.from(
     container.querySelectorAll(ANIMATION_SELECTOR)
@@ -16,6 +20,7 @@ export function initializeAnimations(container) {
     const isSectionDiv =
       element.parentElement?.tagName === "SECTION" && element.tagName === "DIV";
 
+    // exclude wrapper divs that just contain a carousel - the carousel animates its own children
     return !isSectionDiv || !element.querySelector("[data-carousel-root]");
   });
 
@@ -57,11 +62,15 @@ export function initializeAnimations(container) {
       "opacity 420ms ease",
       "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)",
     ].join(", ");
+    // stagger each element up to a max of 180ms so they don't all animate at the same time
     element.style.transitionDelay = `${Math.min(index * 35, 180)}ms`;
     observer.observe(element);
   });
 }
 
+/**
+ * animates an element into view by resetting its opacity and transform
+ */
 function revealElement(element) {
   window.requestAnimationFrame(() => {
     element.style.opacity = "1";
@@ -69,6 +78,9 @@ function revealElement(element) {
   });
 }
 
+/**
+ * makes an element visible instantly without any transition
+ */
 function showElementImmediately(element) {
   element.style.opacity = "1";
   element.style.transform = "none";

@@ -1,3 +1,5 @@
+// structured error class for api responses
+// routes throw these and apiErrorHandler serializes them into { error: { code, message, details } }
 class ApiError extends Error {
   constructor({
     status = 500,
@@ -13,6 +15,9 @@ class ApiError extends Error {
   }
 }
 
+/**
+ * shorthand to create and return an ApiError without new
+ */
 function createApiError(status, code, message, details) {
   return new ApiError({
     status,

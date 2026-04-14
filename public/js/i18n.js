@@ -387,6 +387,9 @@ const FR_MONTHS = {
   décembre: "December",
 };
 
+/**
+ * translates a single French string to English - returns the original value unchanged for any other language
+ */
 export function translateText(value, language) {
   if (language !== "en" || typeof value !== "string") {
     return value;
@@ -413,6 +416,9 @@ export function translateText(value, language) {
   return value.replace(trimmedValue, translatedValue);
 }
 
+/**
+ * applies translations to the entire DOM tree under root - updates text nodes and translated attributes
+ */
 export function translateApp(root, language) {
   document.documentElement.lang = language;
   document.title = translateText(document.title, language);
@@ -452,6 +458,9 @@ export function translateApp(root, language) {
   });
 }
 
+/**
+ * tries to match a value against the dynamic EN_PATTERNS list and returns the translated string
+ */
 function translatePattern(value) {
   const match = EN_PATTERNS.find(({ pattern }) => pattern.test(value));
 
@@ -462,6 +471,9 @@ function translatePattern(value) {
   return value.replace(match.pattern, match.replace);
 }
 
+/**
+ * converts a French long date string (e.g. "12 mars 2024") to English format - returns null if no match
+ */
 function translateFrenchLongDate(value) {
   const dateMatch = value.match(
     /^([0-9]{1,2}) (janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre) ([0-9]{4})$/
@@ -476,6 +488,9 @@ function translateFrenchLongDate(value) {
   return `${FR_MONTHS[month]} ${day}, ${year}`;
 }
 
+/**
+ * converts a French runtime string (e.g. "1 h 30 min") to English format - returns null if no match
+ */
 function translateFrenchRuntime(value) {
   const hoursAndMinutesMatch = value.match(/^([0-9]+) h ([0-9]+) min$/);
 
@@ -496,6 +511,9 @@ function translateFrenchRuntime(value) {
   return null;
 }
 
+/**
+ * converts a French season count string (e.g. "3 saisons") to English - returns null if no match
+ */
 function translateFrenchSeasonCount(value) {
   const seasonMatch = value.match(/^([0-9]+) saison$/);
 

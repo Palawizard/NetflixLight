@@ -17,7 +17,7 @@
 import { renderTmdbImage } from "../tmdb-images.js";
 
 /**
- * @param {TmdbMediaItem} item
+ * renders a poster card for a tmdb item - renders a navigable button if a detail path exists, a static article otherwise
  */
 export function renderPosterCard(item) {
   const title = escapeHtml(item.title || item.name || "Titre inconnu");
@@ -96,6 +96,9 @@ export function renderPosterCard(item) {
   `;
 }
 
+/**
+ * renders TMDB and personal rating chips for a card - returns empty string when no ratings are available
+ */
 function renderRatingChips(item) {
   const chips = [];
   const tmdbRating = formatTmdbRating(item.vote_average);
@@ -123,6 +126,9 @@ function renderRatingChips(item) {
     .join("");
 }
 
+/**
+ * formats a TMDB vote average to one decimal place - returns null if the value is not a valid number
+ */
 function formatTmdbRating(voteAverage) {
   if (typeof voteAverage !== "number" || Number.isNaN(voteAverage)) {
     return null;
@@ -131,6 +137,9 @@ function formatTmdbRating(voteAverage) {
   return `${voteAverage.toFixed(1)}/10`;
 }
 
+/**
+ * returns the detail page path for an item - prefers navigation_path, then derives from media_type and id
+ */
 function getDetailPath(item) {
   if (typeof item?.navigation_path === "string" && item.navigation_path) {
     return item.navigation_path;
@@ -147,6 +156,9 @@ function getDetailPath(item) {
   return null;
 }
 
+/**
+ * extracts the 4-digit year from a date string - returns "Année inconnue" if the string is too short
+ */
 function getReleaseYear(dateString) {
   if (typeof dateString !== "string" || dateString.length < 4) {
     return "Année inconnue";
@@ -155,6 +167,9 @@ function getReleaseYear(dateString) {
   return dateString.slice(0, 4);
 }
 
+/**
+ * escapes a value for safe insertion into HTML attributes and text content
+ */
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")

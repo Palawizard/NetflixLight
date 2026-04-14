@@ -44,6 +44,7 @@ import { escapeHtml, getPersonalRatingLabel } from "./views/view-utils.js";
  * @property {number} [order]
  */
 
+// renders the home page with hero, continue watching, recommendations, and catalog carousels
 function renderHomeView(state) {
   return `
     <section class="space-y-8">
@@ -55,6 +56,7 @@ function renderHomeView(state) {
   `;
 }
 
+// renders the movies page with a header, popular movies, and genre carousels
 function renderMoviesView(state) {
   const moviesState = state.catalog.movies;
   const genreState = state.catalog.genres;
@@ -75,6 +77,7 @@ function renderMoviesView(state) {
   `;
 }
 
+// renders the series page with a header, popular series, and genre carousels
 function renderSeriesView(state) {
   const seriesState = state.catalog.series;
   const genreState = state.catalog.seriesGenres;
@@ -95,6 +98,7 @@ function renderSeriesView(state) {
   `;
 }
 
+// renders the "continue watching" carousel from watch progress items - returns empty string if no items
 function renderContinueWatchingSection(watchProgressState, userRatingsState) {
   if (
     watchProgressState.status !== "success" ||
@@ -128,6 +132,7 @@ function renderContinueWatchingSection(watchProgressState, userRatingsState) {
   });
 }
 
+// renders the genre recommendations carousel based on the user's top-rated genre - handles loading/error/empty states
 function renderGenreRecommendationsSection(recommendationsState) {
   if (!recommendationsState || recommendationsState.status === "idle") {
     return "";
@@ -171,6 +176,7 @@ function renderGenreRecommendationsSection(recommendationsState) {
   });
 }
 
+// renders a 404 error block for an unmatched pathname
 function renderNotFoundView(pathname) {
   return `
     <section class="grid min-h-[60vh] place-items-center">
@@ -190,11 +196,11 @@ export const routeViews = {
     title: "Accueil",
     render: renderHomeView,
   },
-  "/recherche": {
+  "/search": {
     title: "Recherche",
     render: renderSearchView,
   },
-  "/films": {
+  "/movies": {
     title: "Films",
     render: renderMoviesView,
   },
@@ -202,11 +208,11 @@ export const routeViews = {
     title: "Séries",
     render: renderSeriesView,
   },
-  "/favoris": {
+  "/favorites": {
     title: "Favoris",
     render: renderFavoritesView,
   },
-  "/profil": {
+  "/profile": {
     title: "Profil",
     render: renderProfileView,
   },
@@ -220,6 +226,9 @@ export const routeViews = {
   },
 };
 
+/**
+ * resolves a pathname to a view descriptor ({ title, render }) - handles detail routes and 404
+ */
 export function resolveView(pathname) {
   const route = routeViews[pathname];
 
@@ -244,6 +253,7 @@ export function resolveView(pathname) {
   };
 }
 
+// renders the full-bleed home hero with backdrop, trailer player, and content overlay - handles loading/error/success states
 function renderHomeHero(heroState) {
   if (heroState.status === "loading" || heroState.status === "idle") {
     return `

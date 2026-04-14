@@ -1,5 +1,8 @@
 import { renderPosterCard } from "./poster-card.js";
 
+/**
+ * renders a labeled carousel section with scroll buttons and a row of poster cards
+ */
 export function renderCarousel({ id, title, items }) {
   return `
     <section class="space-y-4">
@@ -49,6 +52,10 @@ export function renderCarousel({ id, title, items }) {
   `;
 }
 
+/**
+ * attaches pointer-based drag-to-scroll behavior to all carousel tracks inside a container
+ * skips tracks that have already been initialized
+ */
 export function initializeCarousels(container) {
   const tracks = container.querySelectorAll("[data-carousel-track]");
 
@@ -70,6 +77,7 @@ export function initializeCarousels(container) {
         return;
       }
 
+      // don't intercept clicks on interactive elements inside the track
       if (
         event.target.closest(
           "[data-nav-path], button, a, input, select, textarea"
@@ -93,12 +101,14 @@ export function initializeCarousels(container) {
       }
 
       const deltaX = event.clientX - startX;
+      // only count as a drag once the pointer moves more than 6px to avoid suppressing regular clicks
       if (Math.abs(deltaX) > 6) {
         didDrag = true;
       }
       track.scrollLeft = startScrollLeft - deltaX;
     });
 
+    // stops dragging and releases pointer capture
     const stopDragging = (event) => {
       if (!isDragging || event.pointerId !== activePointerId) {
         return;
@@ -122,6 +132,7 @@ export function initializeCarousels(container) {
     track.addEventListener(
       "click",
       (event) => {
+        // suppress the click event when the pointer was dragged so cards don't navigate on drag-release
         if (didDrag) {
           event.preventDefault();
           event.stopPropagation();
@@ -133,6 +144,9 @@ export function initializeCarousels(container) {
   });
 }
 
+/**
+ * scrolls a carousel track by ~85% of its visible width in the given direction
+ */
 export function scrollCarousel(container, id, direction) {
   const track = container.querySelector(`[data-carousel-track="${id}"]`);
 
