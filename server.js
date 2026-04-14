@@ -21,6 +21,9 @@ const {
 const app = express();
 const publicDir = path.join(__dirname, "public");
 
+// trust the first proxy so req.secure reflects X-Forwarded-Proto set by nginx/caddy
+app.set("trust proxy", 1);
+
 // static files first so requests never hit the api stack unnecessarily
 app.use(express.static(publicDir));
 app.use(express.json());
