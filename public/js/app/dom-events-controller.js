@@ -1,3 +1,7 @@
+/**
+ * wires all global DOM event listeners - click, keydown, input, and submit -
+ * delegating to the appropriate action based on data attributes
+ */
 function registerDomEventHandlers(dependencies) {
   const {
     apiRequest,
@@ -40,7 +44,9 @@ function registerDomEventHandlers(dependencies) {
     updateState,
   } = dependencies;
 
+  // handles all delegated click events using data attributes to identify the target action
   document.addEventListener("click", (event) => {
+    // close the header menu on any click outside it
     if (!event.target.closest("[data-header-menu]")) {
       closeHeaderMenu();
     }
@@ -214,7 +220,7 @@ function registerDomEventHandlers(dependencies) {
 
       if (currentQuery && Number.isInteger(nextPage) && nextPage > 0) {
         navigate(
-          `/recherche?q=${encodeURIComponent(currentQuery)}&page=${nextPage}`
+          `/search?q=${encodeURIComponent(currentQuery)}&page=${nextPage}`
         );
       }
       return;
@@ -258,12 +264,14 @@ function registerDomEventHandlers(dependencies) {
     navigate(targetPath);
   });
 
+  // closes the header menu on Escape
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeHeaderMenu();
     }
   });
 
+  // updates profile color pickers live and debounces search navigation on global search input
   document.addEventListener("input", (event) => {
     const colorInput = event.target.closest("[data-profile-color-input]");
 
@@ -283,16 +291,17 @@ function registerDomEventHandlers(dependencies) {
 
     scheduleSearchDebounce(() => {
       if (!searchQuery) {
-        if (currentPath === "/recherche") {
-          navigate("/recherche");
+        if (currentPath === "/search") {
+          navigate("/search");
         }
         return;
       }
 
-      navigate(`/recherche?q=${encodeURIComponent(searchQuery)}&page=1`);
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}&page=1`);
     });
   });
 
+  // handles search, profile creation, and auth form submissions
   document.addEventListener("submit", async (event) => {
     const searchForm = event.target.closest("[data-search-form]");
 
@@ -307,12 +316,12 @@ function registerDomEventHandlers(dependencies) {
           : "";
 
       if (!searchQuery) {
-        navigate("/recherche");
+        navigate("/search");
         closeHeaderMenu();
         return;
       }
 
-      navigate(`/recherche?q=${encodeURIComponent(searchQuery)}&page=1`);
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}&page=1`);
       closeHeaderMenu();
       return;
     }
@@ -354,7 +363,7 @@ function registerDomEventHandlers(dependencies) {
           },
         });
 
-        const nextPath = appState.session.redirectAfterLogin || "/profil";
+        const nextPath = appState.session.redirectAfterLogin || "/profile";
 
         updateState((state) => {
           state.session.status = "authenticated";

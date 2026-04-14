@@ -14,6 +14,9 @@ const {
 const router = express.Router();
 const ALLOWED_MEDIA_TYPES = new Set(["movie", "tv"]);
 
+/**
+ * validates and coerces :type and :id route params - throws a 400 api error on invalid input
+ */
 function validateMediaParams(params) {
   const type = typeof params.type === "string" ? params.type.trim() : "";
   const tmdbId = Number.parseInt(params.id, 10);
@@ -32,6 +35,9 @@ function validateMediaParams(params) {
   };
 }
 
+/**
+ * validates and coerces the PUT body - throws a 400 api error if positionSeconds or durationSeconds are invalid
+ */
 function validateProgressPayload(payload) {
   const safePayload =
     payload !== null && typeof payload === "object" ? payload : {};
@@ -73,6 +79,7 @@ function validateProgressPayload(payload) {
   };
 }
 
+// list all watch progress entries for the active profile
 router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     return res.status(200).json({
@@ -86,6 +93,7 @@ router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   }
 });
 
+// get the progress entry for a specific title - returns null if none saved
 router.get(
   "/:type/:id",
   requireAuth,
@@ -108,6 +116,7 @@ router.get(
   }
 );
 
+// upsert a progress entry - auto-deletes and returns 204 when position reaches the end
 router.put(
   "/:type/:id",
   requireAuth,

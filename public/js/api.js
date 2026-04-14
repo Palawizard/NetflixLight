@@ -1,6 +1,9 @@
 const API_CACHE_TTL_MS = 60000;
 const apiCache = new Map();
 
+/**
+ * sends a fetch request to the api - caches GET responses for 60s and clears the whole cache on mutations
+ */
 export async function apiRequest(
   pathname,
   { method = "GET", body, signal, cache = method === "GET", headers = {} } = {}
@@ -36,6 +39,7 @@ export async function apiRequest(
     if (shouldUseCache) {
       setCachedPayload(cacheKey, payload);
     } else if (normalizedMethod !== "GET") {
+      // bust the cache on any mutation so stale data doesn't linger
       clearApiCache();
     }
 
@@ -48,6 +52,9 @@ export async function apiRequest(
   throw error;
 }
 
+/**
+ * returns a cloned cached payload if it exists and hasn't expired
+ */
 function getCachedPayload(cacheKey) {
   const cachedEntry = apiCache.get(cacheKey);
 
@@ -63,6 +70,9 @@ function getCachedPayload(cacheKey) {
   return clonePayload(cachedEntry.payload);
 }
 
+/**
+ * stores a cloned payload in the cache with a ttl-based expiry
+ */
 function setCachedPayload(cacheKey, payload) {
   apiCache.set(cacheKey, {
     payload: clonePayload(payload),
@@ -70,10 +80,16 @@ function setCachedPayload(cacheKey, payload) {
   });
 }
 
+/**
+ * clears all cached api responses
+ */
 function clearApiCache() {
   apiCache.clear();
 }
 
+/**
+ * deep-clones a payload through JSON serialization
+ */
 function clonePayload(payload) {
   if (payload === undefined || payload === null) {
     return payload;
@@ -82,6 +98,9 @@ function clonePayload(payload) {
   return JSON.parse(JSON.stringify(payload));
 }
 
+/**
+ * extracts a user-facing error message from an api error - falls back to error.message
+ */
 export function formatApiError(error) {
   const details = error?.payload?.error?.details;
 

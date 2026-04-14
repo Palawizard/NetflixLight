@@ -1,3 +1,4 @@
+// renders an error message from the logout state - returns empty string if no error
 function renderLogoutFeedback(logoutState) {
   if (!logoutState.error) {
     return "";
@@ -10,6 +11,7 @@ function renderLogoutFeedback(logoutState) {
   `;
 }
 
+// renders the login form with email, password fields, and auth feedback
 function renderLoginView(state) {
   const authState = state.ui.authForm;
 
@@ -58,6 +60,7 @@ function renderLoginView(state) {
   `;
 }
 
+// renders the registration form with username, email, password fields, and auth feedback
 function renderRegisterView(state) {
   const authState = state.ui.authForm;
 
@@ -117,6 +120,7 @@ function renderRegisterView(state) {
   `;
 }
 
+// renders an error or success message from the auth form state - returns empty string when neither is set
 function renderAuthFeedback(authState) {
   if (authState.error) {
     return `

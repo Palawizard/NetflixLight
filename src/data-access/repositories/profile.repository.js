@@ -3,6 +3,9 @@ const { toProfile } = require("../../models/profile.model");
 
 const DEFAULT_PROFILE_COLOR = "#fb7185";
 
+/**
+ * creates the profiles table if it doesn't exist - runs once at module load
+ */
 function ensureProfilesTable() {
   db.prepare(
     `CREATE TABLE IF NOT EXISTS profiles (
@@ -23,6 +26,9 @@ function ensureProfilesTable() {
 
 ensureProfilesTable();
 
+/**
+ * returns all profiles for a user, ordered by creation date
+ */
 function listProfilesByUserId(userId) {
   const statement = db.prepare(
     `SELECT id, user_id, name, avatar_color, created_at
@@ -34,6 +40,9 @@ function listProfilesByUserId(userId) {
   return statement.all(userId).map(toProfile);
 }
 
+/**
+ * creates a profile and returns the newly inserted row
+ */
 function createProfile({ userId, name, avatarColor = DEFAULT_PROFILE_COLOR }) {
   const statement = db.prepare(
     `INSERT INTO profiles (user_id, name, avatar_color)
@@ -48,6 +57,10 @@ function createProfile({ userId, name, avatarColor = DEFAULT_PROFILE_COLOR }) {
   });
 }
 
+/**
+ * returns existing profiles or creates a default one named after the username
+ * guarantees the returned array is never empty
+ */
 function ensureDefaultProfile(user) {
   const profiles = listProfilesByUserId(user.id);
 
@@ -63,6 +76,9 @@ function ensureDefaultProfile(user) {
   return listProfilesByUserId(user.id);
 }
 
+/**
+ * fetches a single profile, returns null if not found or doesn't belong to the user
+ */
 function findProfileByIdAndUserId({ userId, profileId }) {
   const statement = db.prepare(
     `SELECT id, user_id, name, avatar_color, created_at

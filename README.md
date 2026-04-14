@@ -1,471 +1,296 @@
-# NetflixLight
+# Pala's NetflixLight
 
-NetflixLight est une application web vanilla JavaScript qui reproduit une partie de l'expérience Netflix pour un projet de cours : exploration TMDB, fiches détails, lecteur vidéo, favoris, progression de lecture, historique, notes personnelles, profils et PWA basique.
+<p align="center">
+  <strong>Express + vanilla JavaScript web app</strong> to browse movies and series, manage multiple profiles, and save personal watch data.
+</p>
 
-Le backend est une API Express en CommonJS avec une base SQLite locale. Le frontend reste volontairement sans framework : pages HTML statiques, modules JavaScript dans `public/js/`, et styles Tailwind compilés depuis `src/styles/app.css`.
+<p align="center">
+  <img alt="Node.js" src="https://img.shields.io/badge/Node.js-required-339933?logo=node.js&logoColor=white">
+  <img alt="Express" src="https://img.shields.io/badge/Express-5.2-000000?logo=express&logoColor=white">
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind_CSS-4.2-38B2AC?logo=tailwindcss&logoColor=white">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?logo=sqlite&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/License-ISC-111827">
+</p>
 
-## Installation
+<p align="center">
+  <a href="#project-goal">Goal</a> •
+  <a href="#run-locally">Run Locally</a> •
+  <a href="#main-routes">Routes</a> •
+  <a href="#features">Features</a> •
+  <a href="#architecture">Architecture</a>
+</p>
 
-Prérequis :
+## Project Goal
 
-- Node.js récent
-- npm
-- Un compte TMDB avec clé API et Read Access Token
+This repository is a small "NetflixLight" school project implemented as an Express app with a vanilla JavaScript frontend.
 
-Installation locale :
+It provides one UI to:
+
+- browse popular movies and TV series
+- search titles from TMDB
+- open detailed pages with trailers, cast, and similar content
+- create an account and manage multiple profiles
+- save favorites, watch progress, viewing history, and personal ratings
+
+The project uses:
+
+- **TMDB** as the media data source
+- **Express** for the backend API
+- **SQLite** for local persistence
+- **Tailwind CSS** for styling
+- **vanilla JavaScript** for the frontend SPA behavior
+
+## Run Locally
+
+Prerequisites: Node.js, npm, and TMDB credentials.
+
+1. Install dependencies:
 
 ```bash
 npm install
+```
+
+2. Create your environment file:
+
+```bash
 cp .env.example .env
+```
+
+3. Initialize the SQLite database:
+
+```bash
 npm run db:setup
+```
+
+4. Start the app in development:
+
+```bash
 npm run dev
 ```
 
-En développement, l'application démarre par défaut sur `http://localhost:3000` si `DEV_PORT=3000`.
+Open `http://localhost:3000` by default.
 
-Scripts utiles :
+### Configuration (.env)
 
-- `npm run dev` : lance Express avec `nodemon` et Tailwind en mode watch.
-- `npm run start:dev` : lance le serveur une seule fois en mode développement.
-- `npm run start` : lance le serveur en production.
-- `npm run build:css` : compile `src/styles/app.css` vers `public/css/app.css`.
-- `npm run db:setup` : crée la base SQLite et applique la migration principale.
-- `npm run db:inspect` : affiche la base SQLite configurée.
-- `npm run lint` : lance ESLint puis Prettier en vérification.
-- `npm run format` : reformate les fichiers avec Prettier.
-- `npm test` : lance tous les tests API Node.
-- `npm run test:watchlist` : lance le test API watchlist.
-
-Tests API complémentaires :
+The server loads `.env`. Main variables:
 
 ```bash
-node --test tests/watch-progress.api.test.js
-node --test tests/viewing-history.api.test.js
-node --test tests/user-ratings.api.test.js
-node --test tests/profiles.api.test.js
-node --test tests/profile-scoped-data.api.test.js
+NODE_ENV=development
+PORT=
+DEV_PORT=3000
+PROD_PORT=8080
+
+TMDB_API_BASE_URL=https://api.themoviedb.org/3
+TMDB_API_KEY=your_tmdb_api_key
+TMDB_API_READ_ACCESS_TOKEN=your_tmdb_read_access_token
+TMDB_CACHE_TTL_MS=30000
+TMDB_CACHE_MAX_ENTRIES=500
+
+SQLITE_DB_PATH=./data/netflixlight.sqlite
+
+BCRYPT_SALT_ROUNDS=12
+
+SESSION_SECRET=change_me_in_prod
+SESSION_COOKIE_NAME=netflixlight.sid
+SESSION_MAX_AGE_MS=86400000
 ```
 
-## Configuration
+Notes:
 
-Copier `.env.example` vers `.env`, puis renseigner les variables TMDB et session.
+- `PORT` overrides `DEV_PORT` and `PROD_PORT`.
+- TMDB credentials are required for catalog, search, discover, and detail endpoints.
+- SQLite is used for auth, sessions, profiles, favorites, history, progress, and ratings.
+- Sessions are persisted through a custom SQLite-backed `express-session` store.
 
-Variables principales :
+## Main Routes
 
-- `NODE_ENV` : `development` ou `production`.
-- `PORT` : port explicite, prioritaire sur `DEV_PORT` et `PROD_PORT`.
-- `DEV_PORT` : port par défaut en développement.
-- `PROD_PORT` : port par défaut en production.
-- `TMDB_API_BASE_URL` : URL de base TMDB, par défaut `https://api.themoviedb.org/3`.
-- `TMDB_API_KEY` : clé API TMDB.
-- `TMDB_API_READ_ACCESS_TOKEN` : token Bearer TMDB.
-- `TMDB_CACHE_TTL_MS` : durée de cache backend TMDB.
-- `TMDB_CACHE_MAX_ENTRIES` : nombre maximal d'entrées du cache TMDB.
-- `SQLITE_DB_PATH` : chemin du fichier SQLite, par défaut `./data/netflixlight.sqlite`.
-- `BCRYPT_SALT_ROUNDS` : coût bcrypt pour les mots de passe.
-- `SESSION_SECRET` : secret de session Express.
-- `SESSION_COOKIE_NAME` : nom du cookie de session.
-- `SESSION_MAX_AGE_MS` : durée de vie du cookie de session.
+Frontend navigation uses **hash routes** from the SPA:
 
-Ordre de résolution du port :
+- `#/`: home page with hero, recommendations, and carousels.
+- `#/films`: movies page.
+- `#/series`: series page.
+- `#/recherche?q=...&page=...`: search page.
+- `#/movie/{id}`: movie detail page.
+- `#/tv/{id}`: TV show detail page.
+- `#/favoris`: favorites page (requires login).
+- `#/profil`: account and profiles page (requires login).
+- `#/login`: login page.
+- `#/register`: register page.
 
-1. `PORT`
-2. `DEV_PORT` quand `NODE_ENV=development`
-3. `PROD_PORT` quand `NODE_ENV=production`
+Backend API routes:
 
-## Configuration TMDB
+- `POST /api/auth/register`: create account.
+- `POST /api/auth/login`: login.
+- `GET /api/auth/me`: get current authenticated user.
+- `POST /api/auth/logout`: logout.
+- `GET /api/profiles`: list user profiles.
+- `POST /api/profiles`: create profile.
+- `GET /api/watchlist`: list favorites.
+- `POST /api/watchlist`: add favorite.
+- `DELETE /api/watchlist/:type/:id`: remove favorite.
+- `GET /api/watch-progress`: list watch progress.
+- `GET /api/watch-progress/:type/:id`: get progress for one title.
+- `PUT /api/watch-progress/:type/:id`: save watch progress.
+- `GET /api/viewing-history`: list recently viewed titles.
+- `POST /api/viewing-history`: save viewed title.
+- `GET /api/user-ratings`: list personal ratings.
+- `GET /api/user-ratings/:type/:id`: get rating for one title.
+- `PUT /api/user-ratings/:type/:id`: save personal rating.
+- `DELETE /api/user-ratings/:type/:id`: remove rating.
+- `GET /api/tmdb/trending`: trending media.
+- `GET /api/tmdb/movies/popular`: popular movies.
+- `GET /api/tmdb/movies/top-rated`: top rated movies.
+- `GET /api/tmdb/tv/popular`: popular TV shows.
+- `GET /api/tmdb/tv/top-rated`: top rated TV shows.
+- `GET /api/tmdb/discover`: discover by genre.
+- `GET /api/tmdb/search`: multi-search filtered to movie/tv.
+- `GET /api/tmdb/:type/:id`: detailed TMDB payload with credits, videos, images, and similar titles.
 
-Le serveur appelle TMDB via `src/clients/tmdb.client.js`. Il utilise prioritairement `TMDB_API_READ_ACCESS_TOKEN` en Bearer token, avec les paramètres et le cache configurés dans `src/config/env.js`.
+## Features
 
-Endpoints TMDB utilisés côté backend :
+- TMDB-powered catalog for movies and series.
+- Search across movies and TV shows.
+- Detail pages with:
+  - synopsis
+  - genres
+  - release information
+  - cast
+  - similar titles
+  - YouTube trailer
 
-- Tendances : `/trending/{media_type}/{time_window}`
-- Films populaires : `/movie/popular`
-- Films mieux notés : `/movie/top_rated`
-- Séries populaires : `/tv/popular`
-- Séries mieux notées : `/tv/top_rated`
-- Découverte par genre : `/discover/{movie|tv}`
-- Recherche multi : `/search/multi`
-- Détail film/série : `/{movie|tv}/{id}` avec `credits,similar,images,videos`
-
-Si `TMDB_API_KEY` ou `TMDB_API_READ_ACCESS_TOKEN` est manquant, le serveur affiche un warning au démarrage.
+- Favorites/watchlist with persistent storage.
+- Watch progress tracking.
+- Viewing history.
+- Personal rating system.
+- Multi-profile support inside one account.
+- Profile-scoped user data isolation.
+- Language switcher (`fr` / `en`).
+- Light and dark theme support.
+- PWA basics:
+  - manifest
+  - service worker
+  - installable icon
 
 ## Architecture
 
-Structure principale :
-
-- `server.js` : point d'entrée Express, middleware session, routes API et fichiers statiques.
-- `public/` : frontend servi directement par Express.
-- `public/index.html` : shell principal de l'application SPA.
-- `public/js/app.js` : orchestration frontend, état applicatif, appels API et handlers.
-- `public/js/app/` : contrôleurs frontend par domaine (catalogue, préférences, données utilisateur, événements DOM).
-- `public/js/views.js` : rendu HTML des vues.
-- `public/js/components/` : composants vanilla JS réutilisables.
-- `public/manifest.webmanifest` et `public/sw.js` : PWA basique.
-- `src/config/env.js` : parsing centralisé de la configuration.
-- `src/routes/` : routes API Express.
-- `src/clients/tmdb.client.js` : client HTTP TMDB avec cache.
-- `src/data-access/sqlite/` : client SQLite et migration.
-- `src/data-access/repositories/` : accès aux données par domaine.
-- `src/models/` : mapping des lignes SQL vers objets API.
-- `tests/` : tests API Node `node:test` + `supertest`.
-
-Choix techniques :
-
-- Frontend 100% vanilla JS, sans framework ni moteur de template serveur.
-- Express + sessions cookie HTTP-only pour l'authentification web.
-- SQLite avec `better-sqlite3` pour une base locale simple à versionner par migration.
-- Repository pattern pour isoler SQL et logique route.
-- TMDB proxyfié par le backend pour centraliser les clés, la validation et le cache.
-- Tailwind CSS v4 compilé depuis `src/styles/app.css`.
-- PWA minimaliste : manifest, icône SVG, service worker avec cache du shell statique.
-
-## Base De Données
-
-La migration principale se trouve dans `src/data-access/sqlite/migrations/001_create_tables.sql`.
-
-Tables principales :
-
-- `users` : comptes utilisateurs.
-- `sessions` : ancienne table de session token, conservée côté repository.
-- `watchlist_items` : favoris par profil avec snapshot titre/poster.
-- `watch_progress` : progression vidéo par profil et contenu.
-- `viewing_history` : derniers contenus consultés par profil.
-- `user_ratings` : notes personnelles 1-5 par profil.
-- `profiles` : profils d'un même compte.
-- `favorites` et `video_sources` : tables historiques/conservées.
-
-## Frontend
-
-Routes frontend gérées par le router vanilla :
-
-- `/` : accueil, hero, carrousels, recommandations et “Continuer à regarder”.
-- `/films` : page films.
-- `/recherche?q=...&page=...` : résultats mixtes films/séries.
-- `/movie/:id` et `/tv/:id` : pages détail.
-- `/lecture/:type/:id` : lecteur vidéo.
-- `/favoris` : watchlist, protégée par connexion.
-- `/profil` : compte, profils et historique, protégée par connexion.
-- `/login` et `/register` : authentification.
-
-Le choix du thème et le profil actif sont persistés dans `localStorage`. Les données de visionnage comme favoris, progression, historique et notes sont isolées par profil puis persistées côté SQLite.
-
-## API Backend
-
-Toutes les réponses d'erreur API suivent le format :
-
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Message lisible",
-    "details": ["Détail optionnel"]
-  }
-}
+```text
+netflixlight/
+├── public/
+│   ├── css/
+│   │   └── app.css                  # compiled frontend stylesheet served to the browser
+│   ├── js/
+│   │   ├── app/
+│   │   │   ├── catalog-controller.js       # loads TMDB catalog, search, hero, detail, and genre sections
+│   │   │   ├── dom-events-controller.js    # centralizes click, input, submit, and keyboard event handlers
+│   │   │   ├── preferences-controller.js   # manages theme, language, and stored genre preferences
+│   │   │   ├── user-data-controller.js     # manages profiles, watchlist, ratings, history, and session-linked data
+│   │   │   ├── user-data-keys.js           # shared key builders and helpers for user-data collections
+│   │   │   └── watchlist-actions.js        # handles optimistic add/remove watchlist actions
+│   │   ├── components/
+│   │   │   ├── carousel.js          # reusable carousel renderer and drag/scroll behavior
+│   │   │   ├── hero-player.js       # homepage hero trailer player behavior
+│   │   │   ├── poster-card.js       # reusable poster card HTML renderer
+│   │   │   └── youtube-player.js    # custom embedded YouTube player with controls
+│   │   ├── config/
+│   │   │   └── app-config.js        # frontend constants, route guards, genres, and app settings
+│   │   ├── views/
+│   │   │   ├── account-view.js              # renders favorites, account page, profiles, and history sections
+│   │   │   ├── auth-view.js                 # renders login/register forms and auth feedback blocks
+│   │   │   ├── catalog-sections.js          # renders home/movie/series catalog section blocks
+│   │   │   ├── detail-related-sections.js   # renders cast and similar-content sections
+│   │   │   ├── detail-view.js               # renders the main movie/series detail page
+│   │   │   ├── search-view.js               # renders search results and pagination
+│   │   │   └── view-utils.js                # shared frontend formatting and escaping helpers
+│   │   ├── animations.js            # reveals sections with intersection-based animations
+│   │   ├── api.js                   # frontend fetch wrapper, cache, and API error formatter
+│   │   ├── app.js                   # frontend entrypoint, orchestration, routing, and rendering lifecycle
+│   │   ├── i18n.js                  # frontend translation dictionary and runtime text translation
+│   │   ├── router.js                # hash-based SPA router helpers
+│   │   ├── shell.js                 # shared app shell, header, menu, search bar, and overlays
+│   │   ├── state.js                 # global frontend state store and mutation helpers
+│   │   ├── tmdb-images.js           # TMDB image URL and responsive image helpers
+│   │   └── views.js                 # maps routes to page renderers and builds main pages
+│   ├── index.html                   # SPA HTML shell loaded by the browser
+│   └── sw.js                        # service worker for basic shell caching
+├── scripts/
+│   ├── db-inspect.js                # small utility to inspect the configured SQLite database
+│   └── db-setup.js                  # initializes the SQLite database from the main migration
+├── src/
+│   ├── clients/
+│   │   └── tmdb.client.js           # backend TMDB client with auth, timeout, error mapping, and cache
+│   ├── config/
+│   │   └── env.js                   # parses environment variables into one central config object
+│   ├── data-access/
+│   │   ├── repositories/
+│   │   │   ├── profile.repository.js         # profile queries and default-profile creation
+│   │   │   ├── profile-scoped-tables.js      # runtime schema migration helpers for profile-scoped tables
+│   │   │   ├── session.repository.js         # token-based session lookup and deletion helpers
+│   │   │   ├── user.repository.js            # user lookup and user creation queries
+│   │   │   ├── user-rating.repository.js     # CRUD access for personal ratings
+│   │   │   ├── viewing-history.repository.js # CRUD access for viewing history
+│   │   │   ├── watchlist.repository.js       # CRUD access for watchlist items
+│   │   │   └── watch-progress.repository.js  # CRUD access for watch progress entries
+│   │   └── sqlite/
+│   │       ├── migrations/
+│   │       │   └── 001_create_tables.sql     # main SQL schema migration
+│   │       ├── client.js                     # shared better-sqlite3 connection
+│   │       └── session-store.js              # SQLite-backed express-session store
+│   ├── middlewares/
+│   │   ├── active-profile.middleware.js      # resolves and validates the active profile from requests
+│   │   ├── api-error.middleware.js           # API 404 handler and centralized error serializer
+│   │   ├── api-logger.middleware.js          # request logger for API calls
+│   │   └── require-auth.middleware.js        # blocks unauthenticated API access
+│   ├── models/
+│   │   ├── profile.model.js          # maps DB rows to profile objects
+│   │   ├── user-rating.model.js      # maps DB rows to rating objects
+│   │   ├── viewing-history-item.model.js  # maps DB rows to viewing-history objects
+│   │   ├── watchlist-item.model.js   # maps DB rows to watchlist objects
+│   │   └── watch-progress.model.js   # maps DB rows to progress objects
+│   ├── routes/
+│   │   ├── auth.routes.js            # register, login, me, and logout endpoints
+│   │   ├── profiles.routes.js        # profile listing and creation endpoints
+│   │   ├── tmdb.routes.js            # main TMDB proxy endpoints for trending, search, discover, and detail
+│   │   ├── tmdb-movies.routes.js     # movie-specific TMDB endpoints
+│   │   ├── tmdb-query.utils.js       # shared TMDB query validation helpers
+│   │   ├── tmdb-tv.routes.js         # TV-specific TMDB endpoints
+│   │   ├── user-ratings.routes.js    # personal rating API endpoints
+│   │   ├── viewing-history.routes.js # viewing history API endpoints
+│   │   ├── watchlist.routes.js       # watchlist API endpoints
+│   │   └── watch-progress.routes.js  # watch progress API endpoints
+│   ├── styles/
+│   │   └── app.css                   # Tailwind source stylesheet and custom theme rules
+│   └── utils/
+│       └── api-error.js              # structured API error class and helper factory
+├── tests/
+│   ├── profiles.api.test.js          # tests profile creation/listing flow
+│   ├── profile-scoped-data.api.test.js # tests isolation of data between profiles
+│   ├── session-store.test.js         # tests custom SQLite session store behavior
+│   ├── user-ratings.api.test.js      # tests rating endpoints
+│   ├── viewing-history.api.test.js   # tests viewing history endpoints
+│   ├── watchlist.api.test.js         # tests watchlist endpoints
+│   └── watch-progress.api.test.js    # tests watch progress endpoints
+├── code-tree.sh                      # utility script to print the project tree
+├── eslint.config.js                  # ESLint configuration
+├── jsconfig.json                     # JS tooling and editor configuration
+├── package.json                      # project metadata, scripts, dependencies, and dev dependencies
+├── package-lock.json                 # locked dependency versions
+├── prettier.config.mjs               # Prettier configuration
+└── server.js                         # Express server entrypoint and app wiring
 ```
 
-Les routes protégées nécessitent une session valide créée via `POST /api/auth/login`. La session est stockée dans le cookie HTTP-only `netflixlight.sid` par défaut.
+## Useful Commands
 
-Les routes de données personnelles (`watchlist`, progression, historique, notes) utilisent le profil actif. Le frontend envoie `X-Profile-Id` avec l'identifiant du profil sélectionné ; si l'en-tête est absent, le serveur utilise le profil principal du compte.
+- Development server + Tailwind watch: `npm run dev`
+- Development server only: `npm run dev:server`
+- Production server: `npm start`
+- Build CSS: `npm run build:css`
+- Initialize DB: `npm run db:setup`
+- Inspect DB: `npm run db:inspect`
+- Lint: `npm run lint`
+- Auto-fix lint issues: `npm run lint:fix`
+- Format files: `npm run format`
+- Run tests: `npm test`
 
-### Auth
-
-`POST /api/auth/register`
-
-- Body : `email`, `username`, `password`
-- Succès : `201`
-
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"demo@example.com","username":"demo","password":"password123"}'
 ```
 
-Réponse :
-
-```json
-{
-  "user": {
-    "id": 1,
-    "email": "demo@example.com",
-    "username": "demo",
-    "created_at": "2026-04-12 10:00:00"
-  }
-}
-```
-
-`POST /api/auth/login`
-
-- Body : `email`, `password`
-- Succès : `200`, crée la session cookie
-
-```bash
-curl -i -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"demo@example.com","password":"password123"}'
-```
-
-`GET /api/auth/me`
-
-- Auth requise
-- Succès : `200`
-
-```bash
-curl http://localhost:3000/api/auth/me -b "netflixlight.sid=<cookie>"
-```
-
-`POST /api/auth/logout`
-
-- Auth requise via session cookie ou Bearer token historique
-- Succès : `204`
-
-### TMDB
-
-`GET /api/tmdb/trending`
-
-- Query : `media_type=all|movie|tv|person`, `time_window=day|week`, `page`, `language`
-
-```bash
-curl "http://localhost:3000/api/tmdb/trending?media_type=all&time_window=week&page=1&language=fr-FR"
-```
-
-`GET /api/tmdb/movies/popular`
-
-- Query : `page`, `language`
-
-```bash
-curl "http://localhost:3000/api/tmdb/movies/popular?page=1&language=fr-FR"
-```
-
-`GET /api/tmdb/movies/top-rated`
-
-- Query : `page`, `language`
-
-```bash
-curl "http://localhost:3000/api/tmdb/movies/top-rated?page=1&language=fr-FR"
-```
-
-`GET /api/tmdb/tv/popular`
-
-- Query : `page`, `language`
-
-```bash
-curl "http://localhost:3000/api/tmdb/tv/popular?page=1&language=fr-FR"
-```
-
-`GET /api/tmdb/tv/top-rated`
-
-- Query : `page`, `language`
-
-```bash
-curl "http://localhost:3000/api/tmdb/tv/top-rated?page=1&language=fr-FR"
-```
-
-`GET /api/tmdb/discover`
-
-- Query obligatoire : `type=movie|tv`, `genre=<id>`
-- Query optionnelle : `page`, `language`
-
-```bash
-curl "http://localhost:3000/api/tmdb/discover?type=movie&genre=28&page=1&language=fr-FR"
-```
-
-`GET /api/tmdb/search`
-
-- Query obligatoire : `q`
-- Query optionnelle : `page`, `language`
-- Retourne uniquement les résultats `movie` et `tv`
-
-```bash
-curl "http://localhost:3000/api/tmdb/search?q=matrix&page=1&language=fr-FR"
-```
-
-`GET /api/tmdb/:type/:id`
-
-- Params : `type=movie|tv`, `id=<tmdb id>`
-- Query : `language`
-- Inclut `credits`, `similar`, `images`, `videos`
-
-```bash
-curl "http://localhost:3000/api/tmdb/movie/550?language=fr-FR"
-```
-
-### Watchlist
-
-`GET /api/watchlist`
-
-- Auth requise
-- Succès : `200`
-
-```bash
-curl http://localhost:3000/api/watchlist -b "netflixlight.sid=<cookie>"
-```
-
-`POST /api/watchlist`
-
-- Auth requise
-- Body : `type=movie|tv`, `tmdbId`, `title`, `poster`
-- Succès : `201`
-
-```bash
-curl -X POST http://localhost:3000/api/watchlist \
-  -H "Content-Type: application/json" \
-  -b "netflixlight.sid=<cookie>" \
-  -d '{"type":"movie","tmdbId":550,"title":"Fight Club","poster":"/poster.jpg"}'
-```
-
-`DELETE /api/watchlist/:type/:id`
-
-- Auth requise
-- Params : `type=movie|tv`, `id=<tmdb id>`
-- Succès : `204`
-
-```bash
-curl -X DELETE http://localhost:3000/api/watchlist/movie/550 -b "netflixlight.sid=<cookie>"
-```
-
-### Watch Progress
-
-`GET /api/watch-progress`
-
-- Auth requise
-- Retourne les 12 progressions les plus récentes
-
-```bash
-curl http://localhost:3000/api/watch-progress -b "netflixlight.sid=<cookie>"
-```
-
-`GET /api/watch-progress/:type/:id`
-
-- Auth requise
-- Params : `type=movie|tv`, `id=<tmdb id>`
-
-```bash
-curl http://localhost:3000/api/watch-progress/movie/550 -b "netflixlight.sid=<cookie>"
-```
-
-`PUT /api/watch-progress/:type/:id`
-
-- Auth requise
-- Body : `positionSeconds`, `durationSeconds`, `title`, `poster`
-- Succès : `200`
-- Si la position est proche de la fin (`durationSeconds - 3`), la progression est supprimée et la réponse est `204`
-
-```bash
-curl -X PUT http://localhost:3000/api/watch-progress/movie/550 \
-  -H "Content-Type: application/json" \
-  -b "netflixlight.sid=<cookie>" \
-  -d '{"positionSeconds":42,"durationSeconds":120,"title":"Fight Club","poster":"/poster.jpg"}'
-```
-
-### Viewing History
-
-`GET /api/viewing-history`
-
-- Auth requise
-- Retourne les 12 derniers contenus consultés
-
-```bash
-curl http://localhost:3000/api/viewing-history -b "netflixlight.sid=<cookie>"
-```
-
-`POST /api/viewing-history`
-
-- Auth requise
-- Body : `type=movie|tv`, `tmdbId`, `title`, `poster`
-- Succès : `201`
-
-```bash
-curl -X POST http://localhost:3000/api/viewing-history \
-  -H "Content-Type: application/json" \
-  -b "netflixlight.sid=<cookie>" \
-  -d '{"type":"movie","tmdbId":550,"title":"Fight Club","poster":"/poster.jpg"}'
-```
-
-### User Ratings
-
-`GET /api/user-ratings`
-
-- Auth requise
-
-```bash
-curl http://localhost:3000/api/user-ratings -b "netflixlight.sid=<cookie>"
-```
-
-`GET /api/user-ratings/:type/:id`
-
-- Auth requise
-- Params : `type=movie|tv`, `id=<tmdb id>`
-
-```bash
-curl http://localhost:3000/api/user-ratings/movie/550 -b "netflixlight.sid=<cookie>"
-```
-
-`PUT /api/user-ratings/:type/:id`
-
-- Auth requise
-- Body : `rating` entier entre `1` et `5`
-
-```bash
-curl -X PUT http://localhost:3000/api/user-ratings/movie/550 \
-  -H "Content-Type: application/json" \
-  -b "netflixlight.sid=<cookie>" \
-  -d '{"rating":5}'
-```
-
-`DELETE /api/user-ratings/:type/:id`
-
-- Auth requise
-- Succès : `204`
-
-```bash
-curl -X DELETE http://localhost:3000/api/user-ratings/movie/550 -b "netflixlight.sid=<cookie>"
-```
-
-### Profiles
-
-`GET /api/profiles`
-
-- Auth requise
-- Crée automatiquement un profil principal si le compte n'en a aucun
-
-```bash
-curl http://localhost:3000/api/profiles -b "netflixlight.sid=<cookie>"
-```
-
-`POST /api/profiles`
-
-- Auth requise
-- Body : `name` entre 2 et 30 caractères, `avatarColor` optionnel
-- Couleurs acceptées : `#fb7185`, `#38bdf8`, `#34d399`, `#f59e0b`, `#a78bfa`
-
-```bash
-curl -X POST http://localhost:3000/api/profiles \
-  -H "Content-Type: application/json" \
-  -b "netflixlight.sid=<cookie>" \
-  -d '{"name":"Salon","avatarColor":"#38bdf8"}'
-```
-
-## PWA
-
-La PWA est volontairement simple :
-
-- `public/manifest.webmanifest` décrit le nom, l'icône, le mode standalone et les couleurs.
-- `public/icons/icon.svg` sert d'icône installable.
-- `public/sw.js` met en cache le shell statique et ignore les routes `/api/` pour éviter de servir des données compte périmées.
-
-## Vérification Avant Rendu
-
-Commandes recommandées :
-
-```bash
-npm run lint
-npm run build:css
-npm test
-npm run test:watchlist
-node --test tests/watch-progress.api.test.js
-node --test tests/viewing-history.api.test.js
-node --test tests/user-ratings.api.test.js
-node --test tests/profiles.api.test.js
-node --test tests/profile-scoped-data.api.test.js
 ```

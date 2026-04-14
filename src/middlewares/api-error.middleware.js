@@ -1,6 +1,6 @@
 const { ApiError, createApiError } = require("../utils/api-error");
 
-/** @type {import("express").RequestHandler} */
+// only fires for /api routes - non-api 404s fall through to the SPA
 const apiNotFoundHandler = (req, res, next) => {
   if (!req.path.startsWith("/api")) {
     return next();
@@ -15,14 +15,14 @@ const apiNotFoundHandler = (req, res, next) => {
   );
 };
 
-/** @type {import("express").ErrorRequestHandler} */
+// catches both ApiErrors thrown by routes and unexpected runtime errors
 const apiErrorHandler = (err, req, res, next) => {
   if (!req.path.startsWith("/api")) {
     return next(err);
   }
 
   const isApiError = err instanceof ApiError;
-  const isInvalidJson = err && err.type === "entity.parse.failed";
+  const isInvalidJson = err && err.type === "entity.parse.failed"; // express body-parser flag
 
   const status = isApiError ? err.status : isInvalidJson ? 400 : 500;
   const code = isApiError
@@ -37,6 +37,7 @@ const apiErrorHandler = (err, req, res, next) => {
       : "Internal server error";
   const details = isApiError ? err.details : undefined;
 
+  // log 5xx as errors, 4xx as warnings to keep noise down
   if (status >= 500) {
     console.error(`[API_ERROR] ${req.method} ${req.originalUrl}`, err);
   } else {

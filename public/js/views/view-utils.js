@@ -1,7 +1,13 @@
+/**
+ * returns a "type:tmdbId" lookup key used for watchlist/rating membership checks
+ */
 function createFavoriteKey(type, tmdbId) {
   return `${type}:${tmdbId}`;
 }
 
+/**
+ * formats a YYYY-MM-DD date string as a French long-form date - returns "Date inconnue" on invalid input
+ */
 function formatLongDate(dateString) {
   if (typeof dateString !== "string" || !dateString.trim()) {
     return "Date inconnue";
@@ -32,6 +38,9 @@ function formatLongDate(dateString) {
   }).format(date);
 }
 
+/**
+ * escapes a value for safe insertion into HTML attributes and text content
+ */
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -41,6 +50,9 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+/**
+ * returns a "X/5" rating label for an item from the user ratings state - empty string while loading or unrated
+ */
 function getPersonalRatingLabel(userRatingsState, historyItem) {
   const isLoading =
     userRatingsState?.status === "idle" ||
@@ -60,6 +72,9 @@ function getPersonalRatingLabel(userRatingsState, historyItem) {
   return `${ratingItem.rating}/5`;
 }
 
+/**
+ * returns a copy of the watchlist items array sorted newest-first by addedAt
+ */
 function getSortedWatchlistItems(items) {
   if (!Array.isArray(items)) {
     return [];

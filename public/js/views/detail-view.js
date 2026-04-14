@@ -10,6 +10,7 @@ import { createFavoriteKey, escapeHtml, formatLongDate } from "./view-utils.js";
 const YOUTUBE_TRAILER_TYPES = new Set(["Trailer", "Teaser"]);
 const YOUTUBE_TRAILER_LANGUAGES = ["fr", "en"];
 
+// renders the detail view for a movie or tv show - delegates to loading/error/content based on state
 function renderDetailView(state, type, id) {
   const detailState = state.detail;
   const isMatchingDetail = detailState.type === type && detailState.id === id;
@@ -33,6 +34,7 @@ function renderDetailView(state, type, id) {
   return renderDetailContent(state, detailState.item, type);
 }
 
+// renders an animated pulse skeleton for the detail page while data is loading
 function renderDetailLoading() {
   return `
     <section class="space-y-6">
@@ -50,9 +52,10 @@ function renderDetailLoading() {
   `;
 }
 
+// renders an error block for the detail page with a retry button and a back link
 function renderDetailError(type, id, errorMessage) {
   const detailPath = `/${type}/${id}`;
-  const returnPath = type === "movie" ? "/films" : "/series";
+  const returnPath = type === "movie" ? "/movies" : "/series";
   const returnLabel =
     type === "movie" ? "Retour aux films" : "Retour aux séries";
 
@@ -85,6 +88,7 @@ function renderDetailError(type, id, errorMessage) {
   `;
 }
 
+// renders the full detail page content: backdrop, metadata, favorite toggle, rating, trailer, cast, and similar items
 function renderDetailContent(state, item, type) {
   const title = escapeHtml(item.title || item.name || "Titre inconnu");
   const overview = escapeHtml(
@@ -93,7 +97,7 @@ function renderDetailContent(state, item, type) {
   const backdropPath = item.backdrop_path || item.poster_path;
   const dateLabel = type === "movie" ? "Date de sortie" : "Première diffusion";
   const durationLabel = type === "movie" ? "Durée" : "Saisons";
-  const returnPath = type === "movie" ? "/films" : "/series";
+  const returnPath = type === "movie" ? "/movies" : "/series";
   const returnLabel =
     type === "movie" ? "Retour aux films" : "Retour aux séries";
   const genres = getGenreNames(item.genres);
@@ -172,6 +176,7 @@ function renderDetailContent(state, item, type) {
   `;
 }
 
+// renders the embedded YouTube trailer player section - returns empty string if no trailer was found
 function renderYoutubeTrailerOption(trailer) {
   if (!trailer) {
     return "";
@@ -290,6 +295,10 @@ function renderYoutubeTrailerOption(trailer) {
   `;
 }
 
+/**
+ * picks the best available YouTube trailer from a videos array
+ * preference order: official french, any french, official trailer, any trailer, supported language, first result
+ */
 function findBestYoutubeTrailer(videos) {
   if (!Array.isArray(videos)) {
     return null;
@@ -324,6 +333,7 @@ function findBestYoutubeTrailer(videos) {
   };
 }
 
+// renders the add/remove favorite button with a contextual helper message below it
 function renderFavoriteToggle(state, item, type) {
   const isAuthenticated =
     state.session.status === "authenticated" && Boolean(state.session.user);
@@ -387,6 +397,7 @@ function renderFavoriteToggle(state, item, type) {
   `;
 }
 
+// renders the 1-5 star rating widget with a contextual helper message
 function renderPersonalRating(state, item, type) {
   const isAuthenticated =
     state.session.status === "authenticated" && Boolean(state.session.user);
@@ -445,6 +456,7 @@ function renderPersonalRating(state, item, type) {
   `;
 }
 
+// renders a single star button - highlighted when the rating is <= the selected value
 function renderRatingStarButton({ rating, selectedRating, disabled }) {
   const isSelected = rating <= selectedRating;
 
@@ -466,6 +478,7 @@ function renderRatingStarButton({ rating, selectedRating, disabled }) {
   `;
 }
 
+// renders a labeled metadata badge pill
 function renderDetailBadge(label, value) {
   return `
     <span class="rounded-full bg-white/10 px-4 py-2 text-sm text-white/80">
@@ -474,6 +487,9 @@ function renderDetailBadge(label, value) {
   `;
 }
 
+/**
+ * extracts genre name strings from the genres array - filters out entries without a valid name
+ */
 function getGenreNames(genres) {
   if (!Array.isArray(genres)) {
     return [];
@@ -484,6 +500,9 @@ function getGenreNames(genres) {
     .filter(Boolean);
 }
 
+/**
+ * joins an array of genre names into a comma-separated string - returns "Genres indisponibles" when empty
+ */
 function formatGenreSummary(genres) {
   if (!Array.isArray(genres) || genres.length === 0) {
     return "Genres indisponibles";
@@ -492,6 +511,9 @@ function formatGenreSummary(genres) {
   return genres.join(", ");
 }
 
+/**
+ * formats a runtime in minutes as "Xh Ymin" - returns "Durée inconnue" for invalid values
+ */
 function formatRuntime(runtime) {
   if (!Number.isInteger(runtime) || runtime <= 0) {
     return "Durée inconnue";
@@ -511,6 +533,9 @@ function formatRuntime(runtime) {
   return `${hours} h ${minutes} min`;
 }
 
+/**
+ * formats a season count as "N saison(s)" - returns "Nombre de saisons inconnu" for invalid values
+ */
 function formatSeasonCount(numberOfSeasons) {
   if (!Number.isInteger(numberOfSeasons) || numberOfSeasons <= 0) {
     return "Nombre de saisons inconnu";
@@ -519,6 +544,9 @@ function formatSeasonCount(numberOfSeasons) {
   return `${numberOfSeasons} ${numberOfSeasons === 1 ? "saison" : "saisons"}`;
 }
 
+/**
+ * formats a TMDB vote average to one decimal place - returns "indisponible" for invalid values
+ */
 function formatVoteAverage(voteAverage) {
   if (typeof voteAverage !== "number" || Number.isNaN(voteAverage)) {
     return "indisponible";

@@ -1,3 +1,4 @@
+// opens the database in read-only mode and prints the path and the list of tables
 const Database = require("better-sqlite3");
 const { config } = require("../src/config/env");
 

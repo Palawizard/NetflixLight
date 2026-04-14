@@ -1,6 +1,8 @@
 const session = require("express-session");
 const db = require("./client");
 
+// express-session store backed by sqlite
+// implements the required get/set/destroy interface plus touch for sliding expiry
 class SqliteSessionStore extends session.Store {
   constructor({ ttlMs } = {}) {
     super();
@@ -9,6 +11,7 @@ class SqliteSessionStore extends session.Store {
     this.ensureTable();
   }
 
+  // creates the sessions table if it doesn't exist yet - called once at startup
   ensureTable() {
     db.exec(`
       CREATE TABLE IF NOT EXISTS express_sessions (
@@ -22,6 +25,7 @@ class SqliteSessionStore extends session.Store {
     `);
   }
 
+  // reads a session by id - returns null if expired or missing, destroys it lazily on expiry
   get(sid, callback) {
     try {
       const row = db
@@ -37,6 +41,7 @@ class SqliteSessionStore extends session.Store {
         return;
       }
 
+      // lazily expire - destroy on read instead of running a scheduled cleanup job
       if (row.expires_at <= Date.now()) {
         this.destroy(sid, (error) => {
           callback(error, null);
@@ -50,6 +55,7 @@ class SqliteSessionStore extends session.Store {
     }
   }
 
+  // upserts a session row with the latest data and expiry
   set(sid, sessionValue, callback = () => {}) {
     try {
       db.prepare(
@@ -70,6 +76,7 @@ class SqliteSessionStore extends session.Store {
     }
   }
 
+  // deletes a session row - used on logout and lazy expiry cleanup
   destroy(sid, callback = () => {}) {
     try {
       db.prepare(`DELETE FROM express_sessions WHERE sid = ?;`).run(sid);
@@ -79,6 +86,7 @@ class SqliteSessionStore extends session.Store {
     }
   }
 
+  // refreshes the expiry without changing the session data
   touch(sid, sessionValue, callback = () => {}) {
     try {
       db.prepare(
@@ -93,6 +101,9 @@ class SqliteSessionStore extends session.Store {
     }
   }
 
+  /**
+   * resolves expiry from the session cookie if set, otherwise falls back to ttlMs from now
+   */
   getSessionExpiration(sessionValue) {
     const cookieExpiresAt = sessionValue?.cookie?.expires;
 
