@@ -1,15 +1,4 @@
-/**
- * @typedef {object} ProfileRow
- * @property {number} id
- * @property {number} user_id
- * @property {string} name
- * @property {string} avatar_color
- * @property {string} created_at
- */
-
-/**
- * @param {ProfileRow | null | undefined} row
- */
+// maps a sqlite row to a camelCase profile object - returns null if row is missing
 function toProfile(row) {
   if (!row) {
     return null;

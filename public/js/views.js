@@ -44,10 +44,12 @@ import { escapeHtml, getPersonalRatingLabel } from "./views/view-utils.js";
  * @property {number} [order]
  */
 
+// renders the home page with hero, quick nav, continue watching, recommendations, and catalog carousels
 function renderHomeView(state) {
   return `
     <section class="space-y-8">
       ${renderHomeHero(state.hero)}
+      ${renderHomeQuickNav()}
       ${renderContinueWatchingSection(state.watchProgress, state.userRatings)}
       ${renderGenreRecommendationsSection(state.genreRecommendations)}
       ${renderHomeCarousels(state.catalog.home)}
@@ -55,6 +57,71 @@ function renderHomeView(state) {
   `;
 }
 
+// renders a quick navigation grid linking to the main sections of the app
+function renderHomeQuickNav() {
+  const links = [
+    {
+      path: "/movies",
+      label: "Films",
+      accent: "text-amber-300",
+      glow: "group-hover:shadow-amber-500/10",
+      border: "group-hover:border-amber-400/20",
+      description: "Populaires, tendances et par genre",
+    },
+    {
+      path: "/series",
+      label: "Séries",
+      accent: "text-sky-300",
+      glow: "group-hover:shadow-sky-500/10",
+      border: "group-hover:border-sky-400/20",
+      description: "Populaires, tendances et par genre",
+    },
+    {
+      path: "/favorites",
+      label: "Ma liste",
+      accent: "text-emerald-300",
+      glow: "group-hover:shadow-emerald-500/10",
+      border: "group-hover:border-emerald-400/20",
+      description: "Les titres que tu as mis de côté",
+    },
+    {
+      path: "/search",
+      label: "Recherche",
+      accent: "text-cyan-300",
+      glow: "group-hover:shadow-cyan-500/10",
+      border: "group-hover:border-cyan-400/20",
+      description: "Trouve un film ou une série précis",
+    },
+  ];
+
+  return `
+    <nav aria-label="Navigation rapide">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        ${links
+          .map(
+            ({ path, label, accent, glow, border, description }) => `
+          <button
+            type="button"
+            data-nav-path="${path}"
+            class="group relative flex flex-col justify-between gap-8 overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 text-left shadow-xl shadow-black/20 backdrop-blur transition duration-300 hover:bg-white/8 ${border} hover:shadow-2xl ${glow}"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium uppercase tracking-[0.25em] ${accent}">${label}</span>
+              <svg class="size-4 opacity-30 transition group-hover:opacity-70 group-hover:translate-x-0.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              </svg>
+            </div>
+            <span class="text-sm leading-6 text-white/50 transition group-hover:text-white/70">${description}</span>
+          </button>
+        `
+          )
+          .join("")}
+      </div>
+    </nav>
+  `;
+}
+
+// renders the movies page with a header, popular movies, and genre carousels
 function renderMoviesView(state) {
   const moviesState = state.catalog.movies;
   const genreState = state.catalog.genres;
@@ -65,7 +132,7 @@ function renderMoviesView(state) {
         <p class="text-sm uppercase tracking-[0.3em] text-amber-300">Films</p>
         <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">À l'affiche</h1>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Retrouve les films populaires du moment et garde de côté ceux qui te tentent.
+          Retrouve les films populaires du moment.
         </p>
       </header>
 
@@ -75,6 +142,7 @@ function renderMoviesView(state) {
   `;
 }
 
+// renders the series page with a header, popular series, and genre carousels
 function renderSeriesView(state) {
   const seriesState = state.catalog.series;
   const genreState = state.catalog.seriesGenres;
@@ -85,7 +153,7 @@ function renderSeriesView(state) {
         <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Séries</p>
         <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">À suivre</h1>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Retrouve les séries populaires du moment et garde de côté celles qui te tentent.
+          Retrouve les séries populaires du moment.
         </p>
       </header>
 
@@ -95,6 +163,7 @@ function renderSeriesView(state) {
   `;
 }
 
+// renders the "continue watching" carousel from watch progress items - returns empty string if no items
 function renderContinueWatchingSection(watchProgressState, userRatingsState) {
   if (
     watchProgressState.status !== "success" ||
@@ -128,6 +197,7 @@ function renderContinueWatchingSection(watchProgressState, userRatingsState) {
   });
 }
 
+// renders the genre recommendations carousel based on the user's top-rated genre - handles loading/error/empty states
 function renderGenreRecommendationsSection(recommendationsState) {
   if (!recommendationsState || recommendationsState.status === "idle") {
     return "";
@@ -171,6 +241,7 @@ function renderGenreRecommendationsSection(recommendationsState) {
   });
 }
 
+// renders a 404 error block for an unmatched pathname
 function renderNotFoundView(pathname) {
   return `
     <section class="grid min-h-[60vh] place-items-center">
@@ -190,11 +261,11 @@ export const routeViews = {
     title: "Accueil",
     render: renderHomeView,
   },
-  "/recherche": {
+  "/search": {
     title: "Recherche",
     render: renderSearchView,
   },
-  "/films": {
+  "/movies": {
     title: "Films",
     render: renderMoviesView,
   },
@@ -202,11 +273,11 @@ export const routeViews = {
     title: "Séries",
     render: renderSeriesView,
   },
-  "/favoris": {
+  "/favorites": {
     title: "Favoris",
     render: renderFavoritesView,
   },
-  "/profil": {
+  "/profile": {
     title: "Profil",
     render: renderProfileView,
   },
@@ -220,6 +291,9 @@ export const routeViews = {
   },
 };
 
+/**
+ * resolves a pathname to a view descriptor ({ title, render }) - handles detail routes and 404
+ */
 export function resolveView(pathname) {
   const route = routeViews[pathname];
 
@@ -244,6 +318,7 @@ export function resolveView(pathname) {
   };
 }
 
+// renders the full-bleed home hero with backdrop, trailer player, and content overlay - handles loading/error/success states
 function renderHomeHero(heroState) {
   if (heroState.status === "loading" || heroState.status === "idle") {
     return `

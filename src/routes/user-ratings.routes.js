@@ -14,6 +14,10 @@ const {
 const router = express.Router();
 const ALLOWED_MEDIA_TYPES = new Set(["movie", "tv"]);
 
+/**
+ * validates and coerces :type and :id route params
+ * throws a 400 api error if either value is invalid
+ */
 function validateRatingParams(params) {
   const type = typeof params.type === "string" ? params.type.trim() : "";
   const tmdbId = Number.parseInt(params.id, 10);
@@ -32,7 +36,12 @@ function validateRatingParams(params) {
   };
 }
 
+/**
+ * validates the request body for PUT /user-ratings/:type/:id
+ * throws a 400 api error if rating is missing or out of range
+ */
 function validateRatingPayload(payload) {
+  // guard against non-object bodies (null, string, etc.)
   const safePayload =
     payload !== null && typeof payload === "object" ? payload : {};
   const rating = Number.parseInt(safePayload.rating, 10);
@@ -50,6 +59,7 @@ function validateRatingPayload(payload) {
   };
 }
 
+// list all ratings for the active profile
 router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     return res.status(200).json({
@@ -63,6 +73,7 @@ router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   }
 });
 
+// get the rating for a specific movie or tv show - returns null if not rated
 router.get(
   "/:type/:id",
   requireAuth,
@@ -85,6 +96,7 @@ router.get(
   }
 );
 
+// create or update a rating (upsert, so safe to call multiple times)
 router.put(
   "/:type/:id",
   requireAuth,
@@ -109,6 +121,7 @@ router.put(
   }
 );
 
+// remove a rating — 204 whether it existed or not
 router.delete(
   "/:type/:id",
   requireAuth,

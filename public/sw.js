@@ -18,6 +18,7 @@ const SHELL_ASSETS = [
   "/icons/icon.svg",
 ];
 
+// on install: unregister immediately on localhost, otherwise pre-cache shell assets
 self.addEventListener("install", (event) => {
   if (IS_LOCAL_HOST) {
     event.waitUntil(
@@ -42,6 +43,7 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
+// on activate: delete stale caches from previous versions
 self.addEventListener("activate", (event) => {
   if (IS_LOCAL_HOST) {
     event.waitUntil(self.registration.unregister());
@@ -63,6 +65,8 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// on fetch: serve same-origin GET requests from cache first, falling back to the shell root on network failure
+// API requests and non-GET methods bypass the cache entirely
 self.addEventListener("fetch", (event) => {
   if (IS_LOCAL_HOST) {
     return;

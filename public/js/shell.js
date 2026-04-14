@@ -6,12 +6,18 @@ import {
   navItems,
 } from "./config/app-config.js";
 
+/**
+ * normalizes a hex color string - returns the default profile color if the value is not a valid hex
+ */
 function normalizeProfileColor(value) {
   return HEX_COLOR_PATTERN.test(value)
     ? value.toLowerCase()
     : DEFAULT_PROFILE_COLOR;
 }
 
+/**
+ * syncs the color picker UI to reflect a new color value - updates the input, preview, label, and preset buttons
+ */
 function updateProfileColorPicker(input, nextColor = input.value) {
   const color = normalizeProfileColor(nextColor);
 
@@ -43,12 +49,18 @@ function updateProfileColorPicker(input, nextColor = input.value) {
   });
 }
 
+/**
+ * resets all color picker inputs inside a container to their current values
+ */
 function resetProfileColorPickers(container) {
   container
     .querySelectorAll("[data-profile-color-input]")
     .forEach(updateProfileColorPicker);
 }
 
+/**
+ * renders the full page shell - header, nav, search, and main content area
+ */
 function renderShell({ appState, content, currentPath, currentSearchQuery }) {
   return `
     <div class="min-h-screen">
@@ -84,6 +96,9 @@ function renderShell({ appState, content, currentPath, currentSearchQuery }) {
   `;
 }
 
+/**
+ * renders the hamburger menu with nav links, session badge, and auth actions
+ */
 function renderHeaderMenu(appState, currentPath) {
   const isAuthenticated =
     appState.session.status === "authenticated" &&
@@ -124,6 +139,9 @@ function renderHeaderMenu(appState, currentPath) {
   `;
 }
 
+/**
+ * renders the fr/en language switcher buttons
+ */
 function renderLanguageChooser(appState) {
   const currentLanguage = appState.ui.language;
 
@@ -154,6 +172,9 @@ function renderLanguageChooser(appState) {
   `;
 }
 
+/**
+ * renders the logout button - shown as disabled while a logout is in progress
+ */
 function renderLogoutMenuButton(appState) {
   const logoutState = appState.ui.logout;
 
@@ -170,12 +191,18 @@ function renderLogoutMenuButton(appState) {
   `;
 }
 
+/**
+ * closes any open header menu <details> elements inside a container
+ */
 function closeHeaderMenu(container) {
   container.querySelectorAll("[data-header-menu][open]").forEach((menu) => {
     menu.open = false;
   });
 }
 
+/**
+ * renders the global search form pre-filled with the current query string
+ */
 function renderSearchForm(currentQuery) {
   return `
     <form data-search-form class="w-full lg:max-w-lg">
@@ -200,6 +227,9 @@ function renderSearchForm(currentQuery) {
   `;
 }
 
+/**
+ * renders the dark/light theme toggle button with the appropriate icon and aria state
+ */
 function renderThemeToggle(appState) {
   const isLightTheme = appState.ui.theme === "light";
   const label = isLightTheme
@@ -233,6 +263,9 @@ function renderThemeToggle(appState) {
   `;
 }
 
+/**
+ * renders a session badge - shows active profile info when authenticated, "Visiteur" otherwise
+ */
 function renderSessionBadge(appState) {
   if (appState.session.status !== "authenticated" || !appState.session.user) {
     return `
@@ -276,6 +309,9 @@ function renderSessionBadge(appState) {
   `;
 }
 
+/**
+ * renders a nav link button - highlighted when it matches currentPath
+ */
 function renderNavLink(item, currentPath) {
   const isActive = item.path === currentPath;
 
@@ -296,6 +332,9 @@ function renderNavLink(item, currentPath) {
   `;
 }
 
+/**
+ * renders a dismissible flash message banner - returns empty string if no message
+ */
 function renderFlash(flashMessage) {
   if (!flashMessage) {
     return "";
@@ -308,6 +347,9 @@ function renderFlash(flashMessage) {
   `;
 }
 
+/**
+ * renders a full-screen loading placeholder shown while the session is being resolved
+ */
 function renderSessionLoading() {
   return `
     <section class="grid min-h-[60vh] place-items-center">
@@ -322,6 +364,9 @@ function renderSessionLoading() {
   `;
 }
 
+/**
+ * renders the full-screen profile selection overlay - returns empty string when not open or unauthenticated
+ */
 function renderProfileSelectionOverlay(state) {
   const isAuthenticated =
     state.session.status === "authenticated" && Boolean(state.session.user);
@@ -379,6 +424,9 @@ function renderProfileSelectionOverlay(state) {
   `;
 }
 
+/**
+ * renders a single profile card button in the selection overlay
+ */
 function renderProfileOverlayCard(profile) {
   const profileName = escapeHtml(profile.name || "Profil");
   const avatarColor = escapeHtml(profile.avatarColor || DEFAULT_PROFILE_COLOR);
@@ -403,6 +451,9 @@ function renderProfileOverlayCard(profile) {
   `;
 }
 
+/**
+ * renders the "+" tile that opens the create profile form
+ */
 function renderCreateProfileOverlayTile() {
   return `
     <button
@@ -423,6 +474,9 @@ function renderCreateProfileOverlayTile() {
   `;
 }
 
+/**
+ * renders the inline form for creating a new profile inside the overlay
+ */
 function renderProfileOverlayCreateForm(profilesState) {
   return `
     <form data-profile-form class="grid w-full max-w-3xl gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 sm:grid-cols-[1fr_auto_auto] sm:items-end">
@@ -453,6 +507,9 @@ function renderProfileOverlayCreateForm(profilesState) {
   `;
 }
 
+/**
+ * renders a color picker with preset swatches and a native color input fallback
+ */
 function renderProfileColorPicker(backgroundClass) {
   const presets = PROFILE_COLOR_PRESETS.map(
     (color) => `
@@ -515,6 +572,9 @@ export {
   updateProfileColorPicker,
 };
 
+/**
+ * escapes a value for safe insertion into HTML attributes and text content
+ */
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")

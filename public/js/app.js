@@ -189,6 +189,7 @@ const {
   withTmdbLanguage,
 });
 
+// renders the full shell + current view into the app element, handling session loading and route access
 function renderApp() {
   const currentPath = getCurrentPath();
 
@@ -229,10 +230,19 @@ function renderApp() {
   commitAppMarkup(nextMarkup);
 }
 
+// writes markup to the DOM only when it changed, then runs translations, animations, and component init
 function commitAppMarkup(nextMarkup) {
   if (nextMarkup === lastRenderedMarkup) {
     return;
   }
+
+  // snapshot the live input value and cursor before the DOM is replaced -
+  // the rendered HTML uses the URL query which lags behind what the user typed during debounce
+  const searchInput = appElement.querySelector("#global-search");
+  const hadSearchFocus = searchInput !== null && searchInput === document.activeElement;
+  const liveSearchValue = hadSearchFocus ? searchInput.value : null;
+  const searchSelectionStart = hadSearchFocus ? searchInput.selectionStart : null;
+  const searchSelectionEnd = hadSearchFocus ? searchInput.selectionEnd : null;
 
   appElement.innerHTML = nextMarkup;
   lastRenderedMarkup = nextMarkup;
@@ -243,8 +253,19 @@ function commitAppMarkup(nextMarkup) {
   initializeCarousels(appElement);
   initializeYoutubePlayer(appElement);
   initializeHeroPlayer(appElement);
+
+  // restore the live value (not the URL-derived one), then focus and cursor position
+  if (hadSearchFocus) {
+    const newSearchInput = appElement.querySelector("#global-search");
+    if (newSearchInput) {
+      newSearchInput.value = liveSearchValue;
+      newSearchInput.focus();
+      newSearchInput.setSelectionRange(searchSelectionStart, searchSelectionEnd);
+    }
+  }
 }
 
+// batches render calls into a single requestAnimationFrame so multiple state updates only render once
 function scheduleRenderApp() {
   if (scheduledRenderId !== null) {
     return;
@@ -256,6 +277,10 @@ function scheduleRenderApp() {
   });
 }
 
+/**
+ * runs an action with entry animations disabled, then re-enables them after the next frame -
+ * used for in-place state updates like toggling a favorite that should not animate the whole page
+ */
 function runWithoutPageAnimations(action) {
   pageAnimationSuppressionCount += 1;
 
@@ -281,8 +306,12 @@ function runWithoutPageAnimations(action) {
   });
 }
 
+/**
+ * resolves the browser tab title for the given path - uses search query, detail item title,
+ * or the current route title as fallback
+ */
 function getDocumentTitle(currentPath, currentRoute) {
-  if (currentPath === "/recherche" && appState.search.query) {
+  if (currentPath === "/search" && appState.search.query) {
     return `Recherche: ${appState.search.query} | NetflixLight`;
   }
 
@@ -305,6 +334,7 @@ function getDocumentTitle(currentPath, currentRoute) {
   return `${currentRoute.title} | NetflixLight`;
 }
 
+// cancels any pending search debounce timeout
 function clearSearchDebounce() {
   if (currentSearchDebounceId !== null) {
     window.clearTimeout(currentSearchDebounceId);
@@ -312,11 +342,13 @@ function clearSearchDebounce() {
   }
 }
 
+// resets the debounce timer and runs callback after the configured delay
 function scheduleSearchDebounce(callback) {
   clearSearchDebounce();
   currentSearchDebounceId = window.setTimeout(callback, SEARCH_DEBOUNCE_MS);
 }
 
+// fetches recommendations for the user's top genre preference and updates the home section state
 async function loadGenreRecommendations({ force = false } = {}) {
   const topPreference = getTopGenrePreference();
 
@@ -369,10 +401,16 @@ async function loadGenreRecommendations({ force = false } = {}) {
   }
 }
 
+/**
+ * reads the current q param from the hash search string and returns it trimmed, or an empty string
+ */
 function getCurrentSearchQuery() {
   return getCurrentSearchParams().get("q")?.trim() || "";
 }
 
+/**
+ * reads the page param from the hash search string and returns a valid positive integer, defaulting to 1
+ */
 function getCurrentSearchPage() {
   const rawPage = getCurrentSearchParams().get("page");
   const parsedPage = Number.parseInt(rawPage || "1", 10);
@@ -384,6 +422,7 @@ function getCurrentSearchPage() {
   return parsedPage;
 }
 
+// shows a flash message and auto-clears it after the timeout, cancelling any previously scheduled clear
 function setFlashMessage(message) {
   flashMessageToken += 1;
   const currentToken = flashMessageToken;
@@ -407,6 +446,7 @@ function setFlashMessage(message) {
   }, FLASH_MESSAGE_TIMEOUT_MS);
 }
 
+// redirects unauthenticated users away from protected paths and authenticated users away from guest-only paths
 function ensureRouteAccess(currentPath) {
   const isAuthenticated =
     appState.session.status === "authenticated" &&
@@ -420,13 +460,14 @@ function ensureRouteAccess(currentPath) {
   }
 
   if (isAuthenticated && guestOnlyPaths.has(currentPath)) {
-    navigate("/profil");
+    navigate("/profile");
     return false;
   }
 
   return true;
 }
 
+// checks the server session and sets the auth state to authenticated or guest on startup
 async function initializeSession() {
   setSessionState({
     status: "loading",
@@ -458,6 +499,7 @@ async function initializeSession() {
   }
 }
 
+// triggers all data loads needed for the new route whenever navigation occurs
 function handleRouteEffects(currentPath) {
   const canLoadProfileScopedData =
     appState.session.status === "authenticated" &&
@@ -509,7 +551,7 @@ function handleRouteEffects(currentPath) {
     void loadGenreRecommendations();
   }
 
-  if (currentPath === "/films") {
+  if (currentPath === "/movies") {
     void loadMoviesCatalog();
     void loadGenreCarousels();
   }
@@ -519,7 +561,7 @@ function handleRouteEffects(currentPath) {
     void loadSeriesGenreCarousels();
   }
 
-  if (currentPath === "/favoris" && canLoadProfileScopedData) {
+  if (currentPath === "/favorites" && canLoadProfileScopedData) {
     void loadWatchlist();
   }
 
@@ -527,7 +569,7 @@ function handleRouteEffects(currentPath) {
     void loadDetailPage(currentPath);
   }
 
-  if (currentPath === "/recherche") {
+  if (currentPath === "/search") {
     void loadSearchResults(getCurrentSearchQuery(), getCurrentSearchPage());
     return;
   }
@@ -539,6 +581,7 @@ function handleRouteEffects(currentPath) {
   }
 }
 
+// registers the service worker in production and cleans up any existing registrations on localhost
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
     return;
@@ -636,6 +679,7 @@ void initializeSession();
 registerServiceWorker();
 startRouter();
 
+// closes the shell header menu by passing the app element
 function closeHeaderMenu() {
   closeShellHeaderMenu(appElement);
 }

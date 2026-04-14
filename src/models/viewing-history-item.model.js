@@ -1,14 +1,5 @@
 /**
- * @typedef {object} ViewingHistoryRow
- * @property {number} tmdb_id
- * @property {"movie" | "tv"} media_type
- * @property {string} viewed_at
- * @property {string} snapshot_title
- * @property {string | null} snapshot_poster
- */
-
-/**
- * @param {ViewingHistoryRow | null | undefined} row
+ * maps a sqlite row to a camelCase viewing history item - returns null if row is missing
  */
 function toViewingHistoryItem(row) {
   if (!row) {

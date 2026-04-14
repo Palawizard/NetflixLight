@@ -8,11 +8,15 @@ let instanceId = 0;
 let currentHeroPlayer = null;
 let heroDelayTimerId = null;
 
+/**
+ * initializes the hero trailer player for the [data-hero] section inside rootElement
+ * tears down any previous player and waits for the YouTube API before mounting
+ */
 export function initializeHeroPlayer(rootElement) {
-  // Invalidate any in-flight API callback from a previous call
+  // invalidate any in-flight API callback from a previous call
   const myId = ++instanceId;
 
-  // Tear down previous player and timer
+  // tear down previous player and timer
   if (heroDelayTimerId !== null) {
     clearTimeout(heroDelayTimerId);
     heroDelayTimerId = null;
@@ -47,6 +51,7 @@ export function initializeHeroPlayer(rootElement) {
 
   let isMuted = true;
 
+  // briefly shows a play/pause/mute icon overlay to give visual feedback on interactions
   function showFeedback(type) {
     if (!feedbackInner) return;
     feedbackInner
@@ -55,12 +60,14 @@ export function initializeHeroPlayer(rootElement) {
     feedbackInner
       .querySelector(`[data-feedback-icon="${type}"]`)
       ?.classList.remove("hidden");
+    // force a reflow to restart the CSS animation
     feedbackInner.classList.remove("hero-feedback-active");
     void feedbackInner.offsetWidth;
     feedbackInner.classList.add("hero-feedback-active");
   }
 
   whenApiReady(() => {
+    // guard against stale callbacks if initializeHeroPlayer was called again before this ran
     if (instanceId !== myId) return;
 
     const ytPlayer = new YT.Player(iframeTarget, {
@@ -80,6 +87,7 @@ export function initializeHeroPlayer(rootElement) {
       events: {
         onReady() {
           ytPlayer.mute();
+          // delay autoplay slightly so the page has time to settle after render
           heroDelayTimerId = window.setTimeout(() => {
             heroDelayTimerId = null;
             startVideo();
@@ -95,18 +103,21 @@ export function initializeHeroPlayer(rootElement) {
 
     currentHeroPlayer = { ytPlayer };
 
+    // fades out the backdrop and fades in the video layer, then plays
     function startVideo() {
       backdrop?.classList.add("opacity-0");
       videoLayer?.classList.remove("opacity-0");
       ytPlayer.playVideo();
     }
 
+    // restores the static backdrop and stops playback when the video ends
     function showBackdrop() {
       backdrop?.classList.remove("opacity-0");
       videoLayer?.classList.add("opacity-0");
       ytPlayer.stopVideo();
     }
 
+    // syncs the mute button aria state and icon visibility to the current isMuted flag
     function syncMuteIcons() {
       muteBtn?.setAttribute("aria-pressed", isMuted ? "true" : "false");
       muteBtn?.setAttribute(
@@ -135,6 +146,7 @@ export function initializeHeroPlayer(rootElement) {
       showFeedback(isMuted ? "muted" : "unmuted");
     });
 
+    // clicking the video area toggles play/pause and shows the appropriate feedback icon
     clickArea?.addEventListener("click", () => {
       const state = ytPlayer.getPlayerState?.();
 

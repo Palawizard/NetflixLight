@@ -10,16 +10,11 @@
     "dev:server": "cross-env NODE_ENV=development nodemon server.js",
     "dev": "concurrently -n server,css -c green,cyan \"npm:dev:server\" \"npm:watch:css\"",
     "start": "cross-env NODE_ENV=production node server.js",
-    "start:dev": "cross-env NODE_ENV=development node server.js",
     "db:setup": "node ./scripts/db-setup.js",
     "db:inspect": "node ./scripts/db-inspect.js",
-    "lint": "npm run lint:eslint && npm run format:check",
-    "test": "node --test tests/*.test.js",
-    "test:watchlist": "node --test tests/watchlist.api.test.js",
-    "lint:eslint": "eslint .",
+    "lint": "eslint . && prettier . --check",
     "lint:fix": "eslint . --fix",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format": "prettier . --write"
   },
   "repository": {
     "type": "git",
@@ -42,7 +37,6 @@
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.5.2",
-    "@types/supertest": "^6.0.3",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/cli": "^4.2.1",
     "concurrently": "^9.2.1",
@@ -53,7 +47,6 @@
     "nodemon": "^3.1.14",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "supertest": "^7.2.2",
     "tailwindcss": "^4.2.1"
   }
 }

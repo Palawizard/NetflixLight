@@ -1,3 +1,6 @@
+/**
+ * creates and returns watchlist action handlers - encapsulates add/remove logic with optimistic updates
+ */
 function createWatchlistActions(dependencies) {
   const {
     appState,
@@ -11,6 +14,7 @@ function createWatchlistActions(dependencies) {
     updateState,
   } = dependencies;
 
+  // removes a watchlist item directly from the favorites list view - redirects to login if unauthenticated
   async function removeWatchlistItemFromList(type, tmdbId) {
     if (appState.session.status !== "authenticated" || !appState.session.user) {
       setFlashMessage("Connecte-toi pour gérer tes favoris.");
@@ -30,6 +34,7 @@ function createWatchlistActions(dependencies) {
       return;
     }
 
+    // optimistically remove the item before the API call
     updateState((state) => {
       state.watchlist.items = state.watchlist.items.filter(
         (watchlistItem) =>
@@ -61,6 +66,7 @@ function createWatchlistActions(dependencies) {
       });
     } catch (error) {
       if (error.status === 404) {
+        // item was already gone - treat as success
         updateState((state) => {
           delete state.watchlist.pendingKeys[watchlistKey];
           state.watchlist.lastAction = {
@@ -72,6 +78,7 @@ function createWatchlistActions(dependencies) {
         return;
       }
 
+      // roll back the optimistic removal on unexpected errors
       updateState((state) => {
         state.watchlist.items = sortWatchlistItemsByAddedAt([
           existingItem,
@@ -92,6 +99,7 @@ function createWatchlistActions(dependencies) {
     }
   }
 
+  // toggles the favorite status for the current detail page item - add or remove depending on current state
   async function toggleFavoriteFromDetail() {
     if (
       appState.session.status !== "authenticated" ||
@@ -138,6 +146,7 @@ function createWatchlistActions(dependencies) {
     await addFavoriteFromDetail({ optimisticItem, type, id, watchlistKey });
   }
 
+  // optimistically removes a favorite from the detail page and rolls back on API error
   async function removeFavoriteFromDetail({
     optimisticItem,
     type,
@@ -206,6 +215,7 @@ function createWatchlistActions(dependencies) {
     }
   }
 
+  // optimistically adds a favorite from the detail page and rolls back on API error
   async function addFavoriteFromDetail({
     optimisticItem,
     type,
@@ -255,6 +265,7 @@ function createWatchlistActions(dependencies) {
       });
     } catch (error) {
       if (error.status === 409) {
+        // already in watchlist - treat as success
         updateState((state) => {
           state.watchlist.itemKeys[watchlistKey] = true;
           delete state.watchlist.pendingKeys[watchlistKey];
@@ -284,6 +295,7 @@ function createWatchlistActions(dependencies) {
     }
   }
 
+  // builds a minimal watchlist item object from a tmdb detail item for optimistic UI updates
   function buildWatchlistSnapshotItem(item, type) {
     return {
       tmdbId: item.id,

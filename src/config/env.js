@@ -3,6 +3,11 @@ const dotenv = require("dotenv");
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
+// parse helpers - all fall back to a default instead of crashing on bad input
+
+/**
+ * parses a port number from a string env value, returns fallbackPort if invalid
+ */
 function parsePort(value, fallbackPort) {
   const parsedPort = Number.parseInt(value, 10);
 
@@ -13,6 +18,9 @@ function parsePort(value, fallbackPort) {
   return fallbackPort;
 }
 
+/**
+ * parses bcrypt salt rounds from a string env value, returns fallbackValue if invalid
+ */
 function parseSaltRounds(value, fallbackValue) {
   const parsedSaltRounds = Number.parseInt(value, 10);
 
@@ -22,6 +30,9 @@ function parseSaltRounds(value, fallbackValue) {
   return fallbackValue;
 }
 
+/**
+ * parses any positive integer from a string env value, returns fallbackValue if invalid or zero
+ */
 function parsePositiveInt(value, fallbackValue) {
   const parsed = Number.parseInt(value, 10);
 
@@ -37,6 +48,8 @@ const environment =
 const devPort = parsePort(process.env.DEV_PORT, 3000);
 const prodPort = parsePort(process.env.PROD_PORT, 8080);
 const sqliteDbPath = process.env.SQLITE_DB_PATH || "./data/netflixlight.sqlite";
+
+// PORT takes priority over DEV_PORT/PROD_PORT if explicitly set
 const port = parsePort(
   process.env.PORT,
   environment === "production" ? prodPort : devPort
@@ -46,7 +59,7 @@ const sessionSecret = process.env.SESSION_SECRET || "dev_session_secret";
 const sessionCookieName = process.env.SESSION_COOKIE_NAME || "netflixlight.sid";
 const sessionMaxAgeMs = parsePositiveInt(
   process.env.SESSION_MAX_AGE_MS,
-  86400000
+  86400000 // 24h default
 );
 const tmdbCacheTtlMs = parsePositiveInt(process.env.TMDB_CACHE_TTL_MS, 30000);
 const tmdbCacheMaxEntries = parsePositiveInt(
@@ -54,6 +67,7 @@ const tmdbCacheMaxEntries = parsePositiveInt(
   500
 );
 
+// single source of truth for all environment config - never read process.env outside this file
 const config = {
   environment,
   isDevelopment: environment === "development",
@@ -85,6 +99,7 @@ const config = {
   },
 };
 
+// exported separately so server.js can warn without importing the whole config
 const missingTmdbVars = ["TMDB_API_KEY", "TMDB_API_READ_ACCESS_TOKEN"].filter(
   (variableName) => !process.env[variableName]
 );

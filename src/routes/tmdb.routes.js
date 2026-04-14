@@ -20,6 +20,7 @@ const ALLOWED_DETAIL_TYPES = new Set(["movie", "tv"]);
 router.use("/movies", tmdbMoviesRoutes);
 router.use("/tv", tmdbTvRoutes);
 
+// proxy trending titles from tmdb - supports filtering by media type and time window
 router.get("/trending", async (req, res, next) => {
   const mediaType = req.query.media_type || "all";
   const timeWindow = req.query["time_window"] || "day";
@@ -61,6 +62,7 @@ router.get("/trending", async (req, res, next) => {
   }
 });
 
+// proxy the tmdb discover endpoint - requires a type and genre id
 router.get("/discover", async (req, res, next) => {
   try {
     const type = parseRequiredTmdbString(req.query.type, "type");
@@ -88,6 +90,7 @@ router.get("/discover", async (req, res, next) => {
   }
 });
 
+// proxy tmdb multi-search - strips non-movie/tv results from the response
 router.get("/search", async (req, res, next) => {
   try {
     const searchQuery = parseRequiredTmdbString(req.query.q, "q");
@@ -121,6 +124,7 @@ router.get("/search", async (req, res, next) => {
   }
 });
 
+// fetch full details for a movie or tv show - appends credits, similar, images, and videos
 router.get("/:type/:id", async (req, res, next) => {
   try {
     const type = parseRequiredTmdbString(req.params.type, "type");

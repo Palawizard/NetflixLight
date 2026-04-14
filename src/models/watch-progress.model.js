@@ -1,16 +1,5 @@
 /**
- * @typedef {object} WatchProgressRow
- * @property {"movie" | "tv"} media_type
- * @property {number} tmdb_id
- * @property {number} position_seconds
- * @property {number | null} duration_seconds
- * @property {string} updated_at
- * @property {string | null} snapshot_title
- * @property {string | null} snapshot_poster
- */
-
-/**
- * @param {WatchProgressRow | null | undefined} row
+ * maps a sqlite row to a camelCase watch progress object - returns null if row is missing
  */
 function toWatchProgress(row) {
   if (!row) {

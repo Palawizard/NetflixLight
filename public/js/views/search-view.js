@@ -1,6 +1,7 @@
 import { renderPosterCard } from "../components/poster-card.js";
 import { escapeHtml } from "./view-utils.js";
 
+// renders the search page with a header showing the current query/result count and the results section
 function renderSearchView(state) {
   const searchState = state.search;
   const hasQuery = Boolean(searchState.query);
@@ -23,7 +24,7 @@ function renderSearchView(state) {
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
           ${
             hasQuery
-              ? "Parcours les films et séries correspondants puis ouvre leur fiche détail."
+              ? "Parcours les films et séries correspondants."
               : "Utilise la barre de recherche du header pour chercher un film ou une série depuis n'importe quelle page."
           }
         </p>
@@ -54,6 +55,7 @@ function renderSearchView(state) {
   `;
 }
 
+// renders search results as a poster grid - shows a prompt, skeleton, error, empty state, or the grid depending on state
 function renderSearchResults(searchState) {
   if (!searchState.query) {
     return `
@@ -119,6 +121,7 @@ function renderSearchResults(searchState) {
   `;
 }
 
+// renders previous/next page buttons for search results - returns empty string when there is only one page
 function renderSearchPagination(searchState) {
   if (
     !Number.isInteger(searchState.totalPages) ||
@@ -133,39 +136,34 @@ function renderSearchPagination(searchState) {
   const canGoNext = searchState.page < searchState.totalPages;
 
   return `
-    <div class="flex flex-col gap-3 rounded-4xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-      <p class="text-sm text-white/65">
-        Navigation entre les pages de résultats.
-      </p>
-      <div class="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          data-search-page="${searchState.page - 1}"
-          class="rounded-full border border-white/10 px-4 py-2 text-sm font-medium transition ${
-            canGoPrevious
-              ? "bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
-              : "bg-white/5 text-white/35"
-          }"
-          ${canGoPrevious ? "" : "disabled"}
-        >
-          Page précédente
-        </button>
-        <span class="rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm text-white/70">
-          ${searchState.page} / ${searchState.totalPages}
-        </span>
-        <button
-          type="button"
-          data-search-page="${searchState.page + 1}"
-          class="rounded-full border border-white/10 px-4 py-2 text-sm font-medium transition ${
-            canGoNext
-              ? "bg-white text-neutral-950 hover:bg-white/90"
-              : "bg-white/5 text-white/35"
-          }"
-          ${canGoNext ? "" : "disabled"}
-        >
-          Page suivante
-        </button>
-      </div>
+    <div class="flex flex-wrap items-center justify-center gap-3 py-2">
+      <button
+        type="button"
+        data-search-page="${searchState.page - 1}"
+        class="rounded-full border border-white/10 px-4 py-2 text-sm font-medium transition ${
+          canGoPrevious
+            ? "bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
+            : "bg-white/5 text-white/35"
+        }"
+        ${canGoPrevious ? "" : "disabled"}
+      >
+        Page précédente
+      </button>
+      <span class="rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm text-white/70">
+        ${searchState.page} / ${searchState.totalPages}
+      </span>
+      <button
+        type="button"
+        data-search-page="${searchState.page + 1}"
+        class="rounded-full border border-white/10 px-4 py-2 text-sm font-medium transition ${
+          canGoNext
+            ? "bg-white text-neutral-950 hover:bg-white/90"
+            : "bg-white/5 text-white/35"
+        }"
+        ${canGoNext ? "" : "disabled"}
+      >
+        Page suivante
+      </button>
     </div>
   `;
 }

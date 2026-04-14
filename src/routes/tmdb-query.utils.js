@@ -1,5 +1,8 @@
 const { createApiError } = require("../utils/api-error");
 
+/**
+ * parses an optional page query param - throws 400 if present but out of the 1-500 range
+ */
 function parseTmdbPage(pageValue) {
   if (pageValue === undefined) {
     return undefined;
@@ -18,6 +21,9 @@ function parseTmdbPage(pageValue) {
   return parsedPage;
 }
 
+/**
+ * parses an optional string query param - returns undefined if absent, throws 400 if present but empty
+ */
 function parseOptionalTmdbString(queryValue, fieldName) {
   if (queryValue === undefined) {
     return undefined;
@@ -44,6 +50,9 @@ function parseOptionalTmdbString(queryValue, fieldName) {
   return trimmedValue;
 }
 
+/**
+ * parses a required string query param - throws 400 if absent or empty
+ */
 function parseRequiredTmdbString(queryValue, fieldName) {
   if (typeof queryValue !== "string") {
     throw createApiError(
@@ -66,6 +75,9 @@ function parseRequiredTmdbString(queryValue, fieldName) {
   return trimmedValue;
 }
 
+/**
+ * parses a required positive integer query param - throws 400 if absent, non-numeric, or <= 0
+ */
 function parseRequiredPositiveInt(queryValue, fieldName) {
   const asString = parseRequiredTmdbString(queryValue, fieldName);
   const parsedValue = Number.parseInt(asString, 10);

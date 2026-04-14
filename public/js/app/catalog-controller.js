@@ -1,3 +1,6 @@
+/**
+ * creates all catalog data-loading functions - movies, series, search, genres, hero, and detail pages
+ */
 function createCatalogController(dependencies) {
   const {
     GENRE_CATALOG_BATCH_SIZE,
@@ -31,6 +34,7 @@ function createCatalogController(dependencies) {
   let currentGenreCatalogRequestId = 0;
   let currentSeriesGenreCatalogRequestId = 0;
 
+  // aborts any in-flight search request and clears the controller
   function cancelActiveSearchRequest() {
     if (currentSearchAbortController) {
       currentSearchAbortController.abort();
@@ -38,10 +42,14 @@ function createCatalogController(dependencies) {
     }
   }
 
+  /**
+   * returns true when an error was caused by an aborted fetch request
+   */
   function isAbortError(error) {
     return error?.name === "AbortError";
   }
 
+  // fetches popular movies and updates the catalog state - skips if already loading or loaded
   async function loadMoviesCatalog() {
     if (
       appState.catalog.movies.status === "loading" ||
@@ -73,6 +81,7 @@ function createCatalogController(dependencies) {
     }
   }
 
+  // fetches popular series and updates the catalog state - skips if already loading or loaded
   async function loadSeriesCatalog() {
     if (
       appState.catalog.series.status === "loading" ||
@@ -104,6 +113,9 @@ function createCatalogController(dependencies) {
     }
   }
 
+  /**
+   * filters a raw search result array to only movie and tv items, preserving their media_type
+   */
   function normalizeSearchResults(results) {
     if (!Array.isArray(results)) {
       return [];
@@ -122,6 +134,7 @@ function createCatalogController(dependencies) {
       }));
   }
 
+  // runs a debounced TMDB search with abort-on-overlap - resets state when query is empty
   async function loadSearchResults(searchQuery, page = 1) {
     const normalizedQuery =
       typeof searchQuery === "string" ? searchQuery.trim() : "";
@@ -225,6 +238,10 @@ function createCatalogController(dependencies) {
     }
   }
 
+  /**
+   * filters catalog results to items with a valid id and fills in media_type from fallbackMediaType
+   * when the item does not already have a known movie or tv type
+   */
   function normalizeCatalogResults(results, fallbackMediaType = null) {
     if (!Array.isArray(results)) {
       return [];
@@ -241,6 +258,7 @@ function createCatalogController(dependencies) {
       }));
   }
 
+  // fetches a single home carousel section by key - skips if already loading or loaded
   async function loadHomeCatalogSection(sectionKey) {
     const sectionState = appState.catalog.home[sectionKey];
     const sectionConfig = HOME_SECTION_CONFIG[sectionKey];
@@ -282,6 +300,7 @@ function createCatalogController(dependencies) {
     }
   }
 
+  // kicks off all four home carousel sections in parallel
   function loadHomeCarousels() {
     void loadHomeCatalogSection("trending");
     void loadHomeCatalogSection("moviesPopular");
@@ -289,6 +308,7 @@ function createCatalogController(dependencies) {
     void loadHomeCatalogSection("topRated");
   }
 
+  // fetches movies for a single genre section - skips if already loading or loaded
   async function loadGenreCatalogSection(sectionKey) {
     const sectionState = appState.catalog.genres[sectionKey];
     const sectionConfig = GENRE_SECTION_CONFIG[sectionKey];
@@ -332,6 +352,7 @@ function createCatalogController(dependencies) {
     }
   }
 
+  // fetches movies for one genre section and returns a { key, nextState } batch result
   async function loadGenreCatalogBatchItem(sectionKey) {
     const sectionConfig = GENRE_SECTION_CONFIG[sectionKey];
 
@@ -365,6 +386,7 @@ function createCatalogController(dependencies) {
     }
   }
 
+  // fetches series for a single genre section - skips if already loading or loaded
   async function loadSeriesGenreCatalogSection(sectionKey) {
     const sectionState = appState.catalog.seriesGenres[sectionKey];
     const sectionConfig = SERIES_GENRE_SECTION_CONFIG[sectionKey];
@@ -408,6 +430,7 @@ function createCatalogController(dependencies) {
     }
   }
 
+  // fetches series for one genre section and returns a { key, nextState } batch result
   async function loadSeriesGenreCatalogBatchItem(sectionKey) {
     const sectionConfig = SERIES_GENRE_SECTION_CONFIG[sectionKey];
 
@@ -441,6 +464,10 @@ function createCatalogController(dependencies) {
     }
   }
 
+  /**
+   * runs task on each item in parallel with at most limit concurrent workers,
+   * collecting all results in order - useful for throttled batch API calls
+   */
   async function runLimitedBatch(items, limit, task) {
     const results = [];
     let nextIndex = 0;
@@ -459,6 +486,7 @@ function createCatalogController(dependencies) {
     return results;
   }
 
+  // loads all movie genre carousels in a throttled batch, skipping sections already loaded
   async function loadGenreCarousels() {
     const genreKeysToLoad = GENRE_SECTION_KEYS.filter((sectionKey) => {
       const sectionState = appState.catalog.genres[sectionKey];
@@ -507,6 +535,7 @@ function createCatalogController(dependencies) {
     });
   }
 
+  // loads all series genre carousels in a throttled batch, skipping sections already loaded
   async function loadSeriesGenreCarousels() {
     const genreKeysToLoad = SERIES_GENRE_SECTION_KEYS.filter((sectionKey) => {
       const sectionState = appState.catalog.seriesGenres[sectionKey];
@@ -555,6 +584,7 @@ function createCatalogController(dependencies) {
     });
   }
 
+  // re-triggers the fetch for a single catalog section identified by its retry key
   function retryCatalogSection(retryKey) {
     const genreRetryPrefix = "genre-";
     const seriesGenreRetryPrefix = "series-genre-";
@@ -602,6 +632,10 @@ function createCatalogController(dependencies) {
     }
   }
 
+  /**
+   * picks the best youtube trailer key from a video list - prefers official french trailers,
+   * falls back to any trailer, then teasers
+   */
   function pickBestHeroTrailer(videos) {
     if (!Array.isArray(videos)) return null;
 
@@ -625,6 +659,7 @@ function createCatalogController(dependencies) {
     return best.key.trim();
   }
 
+  // picks a random trending item for the hero and tries to attach a trailer key - skips if already loading or loaded
   async function loadHomeHero() {
     if (
       appState.hero.status === "loading" ||
@@ -694,6 +729,9 @@ function createCatalogController(dependencies) {
     }
   }
 
+  /**
+   * parses a pathname like /movie/123 or /tv/456 into { type, id } - returns null for non-detail paths
+   */
   function parseDetailPath(pathname) {
     const detailMatch = pathname.match(/^\/(movie|tv)\/(\d+)$/);
 
@@ -707,6 +745,7 @@ function createCatalogController(dependencies) {
     };
   }
 
+  // fetches full detail data for a movie or tv page, saves to history, and remembers genre preferences
   async function loadDetailPage(pathname) {
     const detailRoute = parseDetailPath(pathname);
 

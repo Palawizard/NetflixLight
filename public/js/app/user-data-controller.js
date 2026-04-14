@@ -11,6 +11,9 @@ import {
 } from "./user-data-keys.js";
 import { createWatchlistActions } from "./watchlist-actions.js";
 
+/**
+ * creates all user-data functions - watchlist, progress, history, ratings, profiles, auth, and logout
+ */
 function createUserDataController(dependencies) {
   const {
     ACTIVE_PROFILE_STORAGE_PREFIX,
@@ -38,6 +41,9 @@ function createUserDataController(dependencies) {
     updateState,
   } = dependencies;
 
+  /**
+   * returns an X-Profile-Id header object when an active profile is set, or an empty object
+   */
   function buildActiveProfileHeaders() {
     if (!Number.isInteger(appState.profiles.activeProfileId)) {
       return {};
@@ -48,10 +54,17 @@ function createUserDataController(dependencies) {
     };
   }
 
+  /**
+   * returns true when the given profileId still matches the current active profile in state -
+   * used to discard stale responses after a profile switch
+   */
   function isActiveProfileStill(profileId) {
     return appState.profiles.activeProfileId === profileId;
   }
 
+  /**
+   * wraps apiRequest with the active profile header automatically merged in
+   */
   function profileApiRequest(pathname, options = {}) {
     return apiRequest(pathname, {
       ...options,
@@ -62,6 +75,7 @@ function createUserDataController(dependencies) {
     });
   }
 
+  // resets watchlist, progress, history, and ratings states back to idle
   function resetProfileScopedDataStates() {
     resetWatchlistState();
     resetWatchProgressState();
@@ -69,6 +83,7 @@ function createUserDataController(dependencies) {
     resetUserRatingsState();
   }
 
+  // triggers all four profile-scoped data fetches in parallel
   function loadProfileScopedData({ force = true } = {}) {
     void loadWatchlist({ force });
     void loadWatchProgress({ force });
@@ -76,6 +91,7 @@ function createUserDataController(dependencies) {
     void loadUserRatings({ force });
   }
 
+  // returns true when no active profile is set yet, and kicks off loadProfiles if needed
   function shouldWaitForActiveProfile() {
     if (Number.isInteger(appState.profiles.activeProfileId)) {
       return false;
@@ -104,6 +120,7 @@ function createUserDataController(dependencies) {
       updateState,
     });
 
+  // fetches the watchlist for the active profile and builds the item key map
   async function loadWatchlist({ force = false } = {}) {
     if (appState.session.status !== "authenticated" || !appState.session.user) {
       resetWatchlistState();
@@ -163,6 +180,7 @@ function createUserDataController(dependencies) {
     }
   }
 
+  // fetches watch progress entries for the active profile and builds the item key map
   async function loadWatchProgress({ force = false } = {}) {
     if (appState.session.status !== "authenticated" || !appState.session.user) {
       resetWatchProgressState();
@@ -216,6 +234,7 @@ function createUserDataController(dependencies) {
     }
   }
 
+  // fetches viewing history for the active profile and builds the item key map
   async function loadViewingHistory({ force = false } = {}) {
     if (appState.session.status !== "authenticated" || !appState.session.user) {
       resetViewingHistoryState();
@@ -268,6 +287,7 @@ function createUserDataController(dependencies) {
     }
   }
 
+  // fetches personal ratings for the active profile and builds the item key map
   async function loadUserRatings({ force = false } = {}) {
     if (appState.session.status !== "authenticated" || !appState.session.user) {
       resetUserRatingsState();
@@ -321,10 +341,16 @@ function createUserDataController(dependencies) {
     }
   }
 
+  /**
+   * returns the localStorage key used to persist the active profile id for the given user
+   */
   function getActiveProfileStorageKey(userId) {
     return `${ACTIVE_PROFILE_STORAGE_PREFIX}.${userId}`;
   }
 
+  /**
+   * reads the stored active profile id from localStorage for the given user - returns null when absent or invalid
+   */
   function getStoredActiveProfileId(userId) {
     const storedProfileId = Number.parseInt(
       window.localStorage.getItem(getActiveProfileStorageKey(userId)) || "",
@@ -336,6 +362,7 @@ function createUserDataController(dependencies) {
       : null;
   }
 
+  // writes the active profile id to localStorage so it survives page reloads
   function persistActiveProfileId(userId, profileId) {
     window.localStorage.setItem(
       getActiveProfileStorageKey(userId),
@@ -343,12 +370,14 @@ function createUserDataController(dependencies) {
     );
   }
 
+  // opens the profile selection overlay
   function openProfileOverlay() {
     updateState((state) => {
       state.ui.profileOverlay.isOpen = true;
     });
   }
 
+  // closes the profile overlay and the create-profile panel inside it
   function closeProfileOverlay() {
     updateState((state) => {
       state.ui.profileOverlay.isOpen = false;
@@ -356,12 +385,14 @@ function createUserDataController(dependencies) {
     });
   }
 
+  // expands the create-profile form inside the overlay
   function openProfileCreation() {
     updateState((state) => {
       state.ui.profileOverlay.isCreateOpen = true;
     });
   }
 
+  // sets the active profile, persists the choice, reloads profile-scoped data, and closes the overlay
   function selectActiveProfile(profileId) {
     if (
       appState.session.status !== "authenticated" ||
@@ -392,6 +423,7 @@ function createUserDataController(dependencies) {
     loadProfileScopedData();
   }
 
+  // fetches the user's profiles, resolves the active one from storage or first profile, and reloads scoped data on switch
   async function loadProfiles({ force = false } = {}) {
     if (appState.session.status !== "authenticated" || !appState.session.user) {
       resetProfilesState();
@@ -447,6 +479,7 @@ function createUserDataController(dependencies) {
     }
   }
 
+  // creates a new profile from form data, activates it, reloads scoped data, and closes the overlay
   async function createProfileFromForm(formData) {
     if (appState.session.status !== "authenticated" || !appState.session.user) {
       setFlashMessage("Connecte-toi pour gérer les profils.");
@@ -513,6 +546,9 @@ function createUserDataController(dependencies) {
     }
   }
 
+  /**
+   * extracts title and poster from a TMDB detail item for use as a viewing history snapshot
+   */
   function buildProgressSnapshotItem(item) {
     return {
       title: item.title || item.name || "Titre inconnu",
@@ -520,6 +556,7 @@ function createUserDataController(dependencies) {
     };
   }
 
+  // records a viewing history entry when the user opens a detail page, and prepends it to local state
   async function saveViewingHistoryFromDetail(item, type) {
     if (
       appState.session.status !== "authenticated" ||
@@ -568,6 +605,7 @@ function createUserDataController(dependencies) {
     }
   }
 
+  // saves or updates the rating for the currently open detail item and updates genre preferences
   async function setPersonalRatingFromDetail(rating) {
     if (
       appState.session.status !== "authenticated" ||
@@ -653,6 +691,7 @@ function createUserDataController(dependencies) {
     }
   }
 
+  // calls the logout endpoint and resets all user state, then redirects to home
   async function logoutUser() {
     if (appState.ui.logout.pending) {
       return;

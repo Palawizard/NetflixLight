@@ -2,9 +2,13 @@ const THEME_STORAGE_KEY = "netflixlight.theme";
 const LANGUAGE_STORAGE_KEY = "netflixlight.language";
 const GENRE_PREFERENCES_STORAGE_KEY = "netflixlight.genrePreferences";
 
+/**
+ * creates and returns the preferences controller - manages theme, language, and genre preference persistence
+ */
 function createPreferencesController(dependencies) {
   const { SUPPORTED_LANGUAGES, appState, updateState } = dependencies;
 
+  // reads the stored language code from localStorage, falls back to "fr" if missing or unsupported
   function getStoredLanguagePreference() {
     try {
       const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -15,6 +19,7 @@ function createPreferencesController(dependencies) {
     }
   }
 
+  // persists the language code to localStorage - silently ignores storage errors
   function setStoredLanguagePreference(language) {
     try {
       window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
@@ -23,6 +28,7 @@ function createPreferencesController(dependencies) {
     }
   }
 
+  // applies a language preference to state and storage - reloads the page if reload is true and the language changed
   function applyLanguagePreference(language, { reload = false } = {}) {
     const nextLanguage = SUPPORTED_LANGUAGES.has(language) ? language : "fr";
     const shouldReload = reload && nextLanguage !== appState.ui.language;
@@ -37,10 +43,12 @@ function createPreferencesController(dependencies) {
     }
   }
 
+  // returns the TMDB language query param value matching the current UI language
   function getTmdbLanguageCode() {
     return appState.ui.language === "en" ? "en-US" : "fr-FR";
   }
 
+  // injects or replaces the language query param on a tmdb API URL
   function withTmdbLanguage(url) {
     const urlWithoutLanguage = url
       .replace(/([?&])language=[^&]+&?/, "$1")
@@ -50,6 +58,7 @@ function createPreferencesController(dependencies) {
     return `${urlWithoutLanguage}${separator}language=${getTmdbLanguageCode()}`;
   }
 
+  // reads the stored theme from localStorage - falls back to the OS preference if not set
   function getStoredThemePreference() {
     const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
 
@@ -62,6 +71,7 @@ function createPreferencesController(dependencies) {
       : "dark";
   }
 
+  // applies a theme by setting the data-theme attribute, persisting to localStorage, and updating state
   function applyThemePreference(theme) {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
@@ -70,12 +80,14 @@ function createPreferencesController(dependencies) {
     });
   }
 
+  // flips the current theme between light and dark
   function toggleThemePreference() {
     const nextTheme = appState.ui.theme === "light" ? "dark" : "light";
 
     applyThemePreference(nextTheme);
   }
 
+  // reads, validates, and sorts genre preferences from localStorage - returns top 12 by score
   function readStoredGenrePreferences() {
     try {
       const storedPreferences = JSON.parse(
@@ -108,6 +120,7 @@ function createPreferencesController(dependencies) {
     }
   }
 
+  // persists genre preferences to localStorage, capped at 12 entries
   function writeStoredGenrePreferences(preferences) {
     window.localStorage.setItem(
       GENRE_PREFERENCES_STORAGE_KEY,
@@ -115,6 +128,7 @@ function createPreferencesController(dependencies) {
     );
   }
 
+  // increments genre scores from a detail item's genres array and saves the updated preferences
   function rememberGenrePreferencesFromDetail(item, type, scoreIncrement = 1) {
     if (
       !(type === "movie" || type === "tv") ||
@@ -160,6 +174,7 @@ function createPreferencesController(dependencies) {
     writeStoredGenrePreferences(nextPreferences);
   }
 
+  // returns the highest-scored stored genre preference, or null if none exist
   function getTopGenrePreference() {
     return readStoredGenrePreferences()[0] || null;
   }

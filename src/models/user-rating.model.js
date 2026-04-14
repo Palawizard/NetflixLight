@@ -1,13 +1,5 @@
 /**
- * @typedef {object} UserRatingRow
- * @property {"movie" | "tv"} media_type
- * @property {number} tmdb_id
- * @property {number} rating
- * @property {string} updated_at
- */
-
-/**
- * @param {UserRatingRow | null | undefined} row
+ * maps a sqlite row to a camelCase user rating object - returns null if row is missing
  */
 function toUserRating(row) {
   if (!row) {

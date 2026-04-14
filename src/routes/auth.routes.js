@@ -26,6 +26,9 @@ const router = express.Router();
  * @property {string} created_at
  */
 
+/**
+ * validates and normalizes the registration body - returns { success, data } or { success: false, errors }
+ */
 function validateRegisterPayload(payload) {
   const errors = [];
   const safePayload =
@@ -98,6 +101,9 @@ function validateRegisterPayload(payload) {
   };
 }
 
+/**
+ * validates and normalizes the login body - returns { success, data } or { success: false, errors }
+ */
 function validateLoginPayload(payload) {
   const errors = [];
   const safePayload =
@@ -145,6 +151,9 @@ function validateLoginPayload(payload) {
   };
 }
 
+/**
+ * parses a Bearer token from an Authorization header - returns null if missing or malformed
+ */
 function extractBearerToken(authorizationHeader) {
   if (typeof authorizationHeader !== "string") {
     return null;
@@ -159,6 +168,7 @@ function extractBearerToken(authorizationHeader) {
   return token;
 }
 
+// register a new user - hashes the password before storing
 router.post("/register", async (req, res, next) => {
   const validationResult = validateRegisterPayload(req.body);
 
@@ -222,6 +232,7 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
+// log in with email + password - compares bcrypt hash and stores user in session
 router.post("/login", async (req, res, next) => {
   const validationResult = validateLoginPayload(req.body);
 
@@ -273,12 +284,14 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
+// returns the current session user - requires auth
 router.get("/me", requireAuth, (req, res) => {
   return res.status(200).json({
     user: req.authUser,
   });
 });
 
+// log out - destroys the session or invalidates a bearer token depending on what's present
 router.post("/logout", (req, res, next) => {
   if (req.session && req.session.user) {
     return req.session.destroy((error) => {
