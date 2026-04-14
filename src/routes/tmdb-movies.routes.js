@@ -7,6 +7,7 @@ const {
 
 const router = express.Router();
 
+// proxy popular movies from tmdb
 router.get("/popular", async (req, res, next) => {
   try {
     const page = parseTmdbPage(req.query.page);
@@ -25,6 +26,7 @@ router.get("/popular", async (req, res, next) => {
   }
 });
 
+// proxy top-rated movies from tmdb
 router.get("/top-rated", async (req, res, next) => {
   try {
     const page = parseTmdbPage(req.query.page);

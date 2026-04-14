@@ -2,6 +2,9 @@ const db = require("../sqlite/client");
 const { toUserRating } = require("../../models/user-rating.model");
 const { ensureProfileScopedTables } = require("./profile-scoped-tables");
 
+/**
+ * creates the user_ratings table if it doesn't exist - runs once at module load
+ */
 function ensureUserRatingsTable() {
   db.prepare(
     `CREATE TABLE IF NOT EXISTS user_ratings (
@@ -24,6 +27,9 @@ function ensureUserRatingsTable() {
 ensureUserRatingsTable();
 ensureProfileScopedTables();
 
+/**
+ * returns all ratings for a profile, newest first
+ */
 function listUserRatingsByUserId({ userId, profileId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, rating, updated_at
@@ -35,6 +41,9 @@ function listUserRatingsByUserId({ userId, profileId }) {
   return statement.all(userId, profileId).map(toUserRating);
 }
 
+/**
+ * fetches the rating for a specific title, returns null if not rated
+ */
 function findUserRatingByUserAndMedia({ userId, profileId, type, tmdbId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, rating, updated_at
@@ -45,6 +54,9 @@ function findUserRatingByUserAndMedia({ userId, profileId, type, tmdbId }) {
   return toUserRating(statement.get(userId, profileId, type, tmdbId));
 }
 
+/**
+ * creates or updates a rating and returns the saved row
+ */
 function upsertUserRating({ userId, profileId, type, tmdbId, rating }) {
   const statement = db.prepare(
     `INSERT INTO user_ratings (user_id, profile_id, media_type, tmdb_id, rating, updated_at)
@@ -65,6 +77,9 @@ function upsertUserRating({ userId, profileId, type, tmdbId, rating }) {
   });
 }
 
+/**
+ * deletes a rating - no-op if it doesn't exist
+ */
 function removeUserRating({ userId, profileId, type, tmdbId }) {
   const statement = db.prepare(
     `DELETE FROM user_ratings

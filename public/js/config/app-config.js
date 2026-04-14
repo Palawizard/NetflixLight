@@ -1,4 +1,4 @@
-const protectedPaths = new Set(["/favoris", "/profil"]);
+const protectedPaths = new Set(["/favorites", "/profile"]);
 
 const guestOnlyPaths = new Set(["/login", "/register"]);
 
@@ -164,10 +164,10 @@ const EMPTY_GENRE_RECOMMENDATION = {
 
 const navItems = [
   { path: "/", label: "Accueil" },
-  { path: "/films", label: "Films" },
+  { path: "/movies", label: "Films" },
   { path: "/series", label: "Séries" },
-  { path: "/favoris", label: "Favoris" },
-  { path: "/profil", label: "Profil" },
+  { path: "/favorites", label: "Favoris" },
+  { path: "/profile", label: "Profil" },
   { path: "/login", label: "Connexion" },
   { path: "/register", label: "Inscription" },
 ];

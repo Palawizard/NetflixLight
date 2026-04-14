@@ -7,6 +7,7 @@
     <title>NetflixLight</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <!-- applies the stored theme before the page renders to avoid a flash of unstyled content -->
     <script>
       (() => {
         const storageKey = "netflixlight.theme";

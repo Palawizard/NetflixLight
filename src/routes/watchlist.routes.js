@@ -14,6 +14,9 @@ const {
 const router = express.Router();
 const ALLOWED_WATCHLIST_TYPES = new Set(["movie", "tv"]);
 
+/**
+ * validates and coerces the POST /watchlist body - throws a 400 api error on invalid input
+ */
 function validateWatchlistPayload(payload) {
   const safePayload =
     payload !== null && typeof payload === "object" ? payload : {};
@@ -66,6 +69,9 @@ function validateWatchlistPayload(payload) {
   };
 }
 
+/**
+ * validates and coerces :type and :id route params - throws a 400 api error on invalid input
+ */
 function validateWatchlistRouteParams(params) {
   const type = typeof params.type === "string" ? params.type.trim() : "";
   const tmdbId = Number.parseInt(params.id, 10);
@@ -92,6 +98,7 @@ function validateWatchlistRouteParams(params) {
   };
 }
 
+// list all watchlist items for the active profile
 router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     const items = listWatchlistItemsByUserId({
@@ -107,6 +114,7 @@ router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   }
 });
 
+// add a title to the watchlist - 409 if already present
 router.post("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     const payload = validateWatchlistPayload(req.body);
@@ -167,6 +175,7 @@ router.post("/", requireAuth, requireActiveProfile, (req, res, next) => {
   }
 });
 
+// remove a title from the watchlist - 404 if not found
 router.delete(
   "/:type/:id",
   requireAuth,

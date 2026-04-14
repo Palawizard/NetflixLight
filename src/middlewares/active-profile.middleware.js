@@ -4,6 +4,9 @@ const {
 } = require("../data-access/repositories/profile.repository");
 const { createApiError } = require("../utils/api-error");
 
+// resolves the active profile from X-Profile-Id header and attaches it to req.activeProfile
+// falls back to the first profile if no header is sent
+// must run after requireAuth since it reads req.authUser
 function requireActiveProfile(req, res, next) {
   try {
     const userId = req.authUser.id;
@@ -13,6 +16,8 @@ function requireActiveProfile(req, res, next) {
     );
     const hasRequestedProfile =
       Number.isInteger(requestedProfileId) && requestedProfileId > 0;
+
+    // auto-creates a default profile if the user has none yet
     const profiles = ensureDefaultProfile(req.authUser);
     const activeProfile = hasRequestedProfile
       ? findProfileByIdAndUserId({ userId, profileId: requestedProfileId })

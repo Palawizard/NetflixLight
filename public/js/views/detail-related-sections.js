@@ -2,6 +2,7 @@ import { renderCarousel } from "../components/carousel.js";
 import { renderTmdbImage } from "../tmdb-images.js";
 import { escapeHtml } from "./view-utils.js";
 
+// renders a carousel of similar movies or series - returns empty string when the list is empty
 function renderSimilarContentSection(similarItems, type, itemId) {
   const sectionTitle =
     type === "movie" ? "Films similaires" : "Séries similaires";
@@ -21,6 +22,7 @@ function renderSimilarContentSection(similarItems, type, itemId) {
   `;
 }
 
+// renders the main cast grid with actor cards - shows an empty state message when cast is unavailable
 function renderMainCastSection(cast) {
   if (!Array.isArray(cast) || cast.length === 0) {
     return `
@@ -55,6 +57,7 @@ function renderMainCastSection(cast) {
   `;
 }
 
+// renders a single actor card with photo (linked to wikipedia) or a placeholder, plus name and character name
 function renderCastCard(member) {
   const actorNameText =
     typeof member.name === "string" && member.name.trim()
@@ -109,10 +112,16 @@ function renderCastCard(member) {
   `;
 }
 
+/**
+ * builds a french wikipedia special search URL for the given actor name
+ */
 function buildWikipediaPersonSearchUrl(actorName) {
   return `https://fr.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(actorName)}`;
 }
 
+/**
+ * returns up to 8 unique cast members sorted by billing order, deduped by id or name
+ */
 function getMainCast(cast) {
   if (!Array.isArray(cast)) {
     return [];
@@ -148,6 +157,10 @@ function getMainCast(cast) {
     .slice(0, 8);
 }
 
+/**
+ * returns up to 12 unique similar items with the given media_type, excluding the current item,
+ * sorted so items with artwork come first
+ */
 function getSimilarItems(similarResults, mediaType, currentItemId) {
   if (!Array.isArray(similarResults)) {
     return [];
@@ -188,6 +201,9 @@ function getSimilarItems(similarResults, mediaType, currentItemId) {
     .slice(0, 12);
 }
 
+/**
+ * trims a character name string and returns a fallback label when the value is blank or not a string
+ */
 function formatCharacterName(characterName) {
   if (typeof characterName !== "string") {
     return "Personnage non renseigné";

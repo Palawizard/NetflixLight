@@ -4,6 +4,10 @@ const {
 } = require("../../models/viewing-history-item.model");
 const { ensureProfileScopedTables } = require("./profile-scoped-tables");
 
+/**
+ * creates the viewing_history table if it doesn't exist - runs once at module load
+ * uses a per-media primary key so each title appears only once - upsert refreshes viewed_at when rewatched
+ */
 function ensureViewingHistoryTable() {
   db.prepare(
     `CREATE TABLE IF NOT EXISTS viewing_history (
@@ -27,6 +31,9 @@ function ensureViewingHistoryTable() {
 ensureViewingHistoryTable();
 ensureProfileScopedTables();
 
+/**
+ * returns at most 12 items for a profile, sorted by most recently viewed
+ */
 function listViewingHistoryByUserId({ userId, profileId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, viewed_at, snapshot_title, snapshot_poster
@@ -39,6 +46,9 @@ function listViewingHistoryByUserId({ userId, profileId }) {
   return statement.all(userId, profileId).map(toViewingHistoryItem);
 }
 
+/**
+ * inserts or refreshes a viewing history entry for the given title
+ */
 function upsertViewingHistoryItem({
   userId,
   profileId,
@@ -75,6 +85,9 @@ function upsertViewingHistoryItem({
   });
 }
 
+/**
+ * fetches a single history entry, used internally after upsert to return the saved row
+ */
 function findViewingHistoryItemByUserAndMedia({
   userId,
   profileId,

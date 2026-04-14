@@ -1,3 +1,4 @@
+// creates the data directory if needed and runs the migration SQL to initialize the SQLite database
 const fs = require("fs");
 const path = require("path");
 const Database = require("better-sqlite3");

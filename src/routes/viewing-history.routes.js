@@ -12,6 +12,9 @@ const {
 const router = express.Router();
 const ALLOWED_MEDIA_TYPES = new Set(["movie", "tv"]);
 
+/**
+ * validates and coerces the POST body - throws a 400 api error on invalid input
+ */
 function validateViewingHistoryPayload(payload) {
   const safePayload =
     payload !== null && typeof payload === "object" ? payload : {};
@@ -61,6 +64,7 @@ function validateViewingHistoryPayload(payload) {
   };
 }
 
+// list the viewing history for the active profile
 router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     return res.status(200).json({
@@ -74,6 +78,7 @@ router.get("/", requireAuth, requireActiveProfile, (req, res, next) => {
   }
 });
 
+// record or refresh a viewing history entry for the active profile
 router.post("/", requireAuth, requireActiveProfile, (req, res, next) => {
   try {
     const payload = validateViewingHistoryPayload(req.body);

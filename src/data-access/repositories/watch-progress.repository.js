@@ -4,6 +4,9 @@ const { ensureProfileScopedTables } = require("./profile-scoped-tables");
 
 ensureProfileScopedTables();
 
+/**
+ * fetches the progress entry for a specific title, returns null if not found
+ */
 function findWatchProgressByUserAndMedia({ userId, profileId, type, tmdbId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, position_seconds, duration_seconds, updated_at, snapshot_title, snapshot_poster
@@ -14,6 +17,9 @@ function findWatchProgressByUserAndMedia({ userId, profileId, type, tmdbId }) {
   return toWatchProgress(statement.get(userId, profileId, type, tmdbId));
 }
 
+/**
+ * returns at most 12 progress entries for a profile, sorted by most recently watched
+ */
 function listWatchProgressByUserId({ userId, profileId }) {
   const statement = db.prepare(
     `SELECT media_type, tmdb_id, position_seconds, duration_seconds, updated_at, snapshot_title, snapshot_poster
@@ -26,6 +32,10 @@ function listWatchProgressByUserId({ userId, profileId }) {
   return statement.all(userId, profileId).map(toWatchProgress);
 }
 
+/**
+ * creates or updates a watch progress entry
+ * COALESCE ensures existing snapshot data is preserved when not re-supplied
+ */
 function upsertWatchProgress({
   userId,
   profileId,
@@ -72,6 +82,9 @@ function upsertWatchProgress({
   return findWatchProgressByUserAndMedia({ userId, profileId, type, tmdbId });
 }
 
+/**
+ * deletes a progress entry - no-op if it doesn't exist
+ */
 function removeWatchProgress({ userId, profileId, type, tmdbId }) {
   const statement = db.prepare(
     `DELETE FROM watch_progress

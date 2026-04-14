@@ -4,6 +4,9 @@ const { createApiError } = require("../utils/api-error");
 const DEFAULT_TIMEOUT_MS = 8000;
 const tmdbCache = new Map();
 
+/**
+ * throws a 500 api error if neither tmdb credential is configured
+ */
 function ensureTmdbCredentials() {
   if (config.tmdb.readAccessToken || config.tmdb.apiKey) {
     return;
@@ -16,6 +19,10 @@ function ensureTmdbCredentials() {
   );
 }
 
+/**
+ * builds a full tmdb URL from an endpoint path and optional query params
+ * falls back to api_key param when no bearer token is configured
+ */
 function buildTmdbUrl(endpointPath, query = {}) {
   const normalizedBaseUrl = config.tmdb.apiBaseUrl.endsWith("/")
     ? config.tmdb.apiBaseUrl
@@ -40,6 +47,9 @@ function buildTmdbUrl(endpointPath, query = {}) {
   return url;
 }
 
+/**
+ * builds the headers for a tmdb request - injects bearer token when available
+ */
 function buildTmdbHeaders(extraHeaders = {}) {
   const headers = {
     Accept: "application/json",
@@ -53,6 +63,9 @@ function buildTmdbHeaders(extraHeaders = {}) {
   return headers;
 }
 
+/**
+ * deep-clones a payload through JSON serialization - returns null/undefined as-is
+ */
 function clonePayload(payload) {
   if (payload === undefined || payload === null) {
     return payload;
@@ -61,6 +74,9 @@ function clonePayload(payload) {
   return JSON.parse(JSON.stringify(payload));
 }
 
+/**
+ * removes all expired entries from the cache based on the current timestamp
+ */
 function pruneExpiredCacheEntries(now = Date.now()) {
   for (const [cacheKey, cacheValue] of tmdbCache.entries()) {
     if (cacheValue.expiresAt <= now) {
@@ -69,6 +85,9 @@ function pruneExpiredCacheEntries(now = Date.now()) {
   }
 }
 
+/**
+ * evicts the oldest entry from the cache when the max size is reached
+ */
 function evictCacheIfNeeded() {
   const maxEntries = config.tmdb.cacheMaxEntries;
 
@@ -83,6 +102,9 @@ function evictCacheIfNeeded() {
   }
 }
 
+/**
+ * returns a cache key string for a GET request - returns null for non-GET or requests with a body
+ */
 function buildCacheKey(method, url, requestBody) {
   if (method !== "GET" || requestBody) {
     return null;
@@ -91,6 +113,9 @@ function buildCacheKey(method, url, requestBody) {
   return `${method}:${url.toString()}`;
 }
 
+/**
+ * returns the cached payload for a key if it exists and hasn't expired - null otherwise
+ */
 function getCachedPayload(cacheKey) {
   if (!cacheKey) {
     return null;
@@ -108,6 +133,9 @@ function getCachedPayload(cacheKey) {
   return clonePayload(cachedEntry.payload);
 }
 
+/**
+ * stores a cloned payload in the cache under the given key with a ttl-based expiry
+ */
 function setCachedPayload(cacheKey, payload) {
   if (!cacheKey) {
     return;
@@ -122,6 +150,9 @@ function setCachedPayload(cacheKey, payload) {
   });
 }
 
+/**
+ * parses the json body from a tmdb response - returns null if content-type is not json or parsing fails
+ */
 async function parseTmdbResponseBody(response) {
   const contentType = response.headers.get("content-type") || "";
 
@@ -136,6 +167,9 @@ async function parseTmdbResponseBody(response) {
   }
 }
 
+/**
+ * maps a non-ok tmdb response to an api error with an appropriate status code
+ */
 function mapTmdbError(response, payload) {
   const details = {
     tmdbStatus: response.status,
@@ -180,6 +214,9 @@ function mapTmdbError(response, payload) {
   );
 }
 
+/**
+ * sends a request to the tmdb api - handles auth, caching, timeout, and error mapping
+ */
 async function tmdbRequest(
   endpointPath,
   { method = "GET", query, body, headers, timeoutMs = DEFAULT_TIMEOUT_MS } = {}
@@ -234,6 +271,9 @@ async function tmdbRequest(
   return payload;
 }
 
+/**
+ * convenience wrapper around tmdbRequest for GET requests
+ */
 async function tmdbGet(endpointPath, { query, headers, timeoutMs } = {}) {
   return tmdbRequest(endpointPath, {
     method: "GET",
