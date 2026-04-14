@@ -30,7 +30,7 @@ function renderFavoritesView(state) {
           <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Favoris</p>
           <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ma liste</h1>
           <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-            Connecté en tant que ${escapeHtml(username)}. Retrouve ici les titres que tu veux garder de côté.
+            Retrouve ici les titres que tu veux garder de côté.
           </p>
         </div>
       </header>
@@ -290,7 +290,7 @@ function renderProfilesSection(profilesState) {
           Profils du compte
         </h2>
         <p class="mt-4 max-w-3xl text-base leading-8 text-white/70">
-          Crée plusieurs profils sur le même compte et choisis celui qui est actif sur cet appareil.
+          Crée plusieurs profils sur le même compte et choisis celui qui est actif.
         </p>
       </div>
 

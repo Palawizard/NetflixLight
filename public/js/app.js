@@ -236,6 +236,14 @@ function commitAppMarkup(nextMarkup) {
     return;
   }
 
+  // snapshot the live input value and cursor before the DOM is replaced -
+  // the rendered HTML uses the URL query which lags behind what the user typed during debounce
+  const searchInput = appElement.querySelector("#global-search");
+  const hadSearchFocus = searchInput !== null && searchInput === document.activeElement;
+  const liveSearchValue = hadSearchFocus ? searchInput.value : null;
+  const searchSelectionStart = hadSearchFocus ? searchInput.selectionStart : null;
+  const searchSelectionEnd = hadSearchFocus ? searchInput.selectionEnd : null;
+
   appElement.innerHTML = nextMarkup;
   lastRenderedMarkup = nextMarkup;
   translateApp(appElement, appState.ui.language);
@@ -245,6 +253,16 @@ function commitAppMarkup(nextMarkup) {
   initializeCarousels(appElement);
   initializeYoutubePlayer(appElement);
   initializeHeroPlayer(appElement);
+
+  // restore the live value (not the URL-derived one), then focus and cursor position
+  if (hadSearchFocus) {
+    const newSearchInput = appElement.querySelector("#global-search");
+    if (newSearchInput) {
+      newSearchInput.value = liveSearchValue;
+      newSearchInput.focus();
+      newSearchInput.setSelectionRange(searchSelectionStart, searchSelectionEnd);
+    }
+  }
 }
 
 // batches render calls into a single requestAnimationFrame so multiple state updates only render once

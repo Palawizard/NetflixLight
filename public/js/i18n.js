@@ -35,11 +35,11 @@ const EN_TRANSLATIONS = {
   "mon-pseudo": "my-username",
   "À l'affiche": "Now playing",
   "À la une": "Featured",
-  "Retrouve les films populaires du moment et garde de côté ceux qui te tentent.":
-    "Find popular movies right now and keep the ones you want to watch.",
+  "Retrouve les films populaires du moment.":
+    "Find popular movies right now.",
   "À suivre": "Up next",
-  "Retrouve les séries populaires du moment et garde de côté celles qui te tentent.":
-    "Find popular series right now and keep the ones you want to watch.",
+  "Retrouve les séries populaires du moment.":
+    "Find popular series right now.",
   "Ma liste": "My list",
   "Liste vide": "Empty list",
   "Aucun favori pour le moment": "No favorites yet",
@@ -60,8 +60,8 @@ const EN_TRANSLATIONS = {
   "Membre depuis": "Member since",
   Profils: "Profiles",
   "Profils du compte": "Account profiles",
-  "Crée plusieurs profils sur le même compte et choisis celui qui est actif sur cet appareil.":
-    "Create multiple profiles on the same account and choose the active one on this device.",
+  "Crée plusieurs profils sur le même compte et choisis celui qui est actif.":
+    "Create multiple profiles on the same account and choose the active one.",
   "Nom du nouveau profil": "New profile name",
   "Nouveau profil": "New profile",
   "Nom du profil": "Profile name",
@@ -187,8 +187,8 @@ const EN_TRANSLATIONS = {
   "On vérifie si ce titre est déjà dans tes favoris.":
     "Checking whether this title is already in your favorites.",
   "Notation personnelle": "Personal rating",
-  "Parcours les films et séries correspondants puis ouvre leur fiche détail.":
-    "Browse the matching movies and series, then open their detail page.",
+  "Parcours les films et séries correspondants.":
+    "Browse the matching movies and series.",
   "Découvre ce titre dans la sélection du moment.":
     "Discover this title in the current selection.",
   "Voir le détail": "View details",
@@ -203,7 +203,6 @@ const EN_TRANSLATIONS = {
   "Une erreur est survenue.": "An error occurred.",
   "Page précédente": "Previous page",
   "Page suivante": "Next page",
-  "Navigation entre les pages de résultats.": "Navigate between result pages.",
   Action: "Action",
   Aventure: "Adventure",
   Animation: "Animation",
@@ -249,9 +248,8 @@ const EN_PATTERNS = [
     replace: "Rating $1",
   },
   {
-    pattern:
-      /^Connecté en tant que (.+)\. Retrouve ici les titres que tu veux garder de côté\.$/,
-    replace: "Signed in as $1. Find the titles you want to keep here.",
+    pattern: /^Retrouve ici les titres que tu veux garder de côté\.$/,
+    replace: "Find the titles you want to keep here.",
   },
   {
     pattern:
