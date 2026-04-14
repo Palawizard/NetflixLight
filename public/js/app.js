@@ -236,13 +236,33 @@ function commitAppMarkup(nextMarkup) {
     return;
   }
 
-  // snapshot the live input value and cursor before the DOM is replaced -
-  // the rendered HTML uses the URL query which lags behind what the user typed during debounce
-  const searchInput = appElement.querySelector("#global-search");
-  const hadSearchFocus = searchInput !== null && searchInput === document.activeElement;
-  const liveSearchValue = hadSearchFocus ? searchInput.value : null;
-  const searchSelectionStart = hadSearchFocus ? searchInput.selectionStart : null;
-  const searchSelectionEnd = hadSearchFocus ? searchInput.selectionEnd : null;
+  // snapshot all user-filled inputs before the DOM is replaced so values and focus survive
+  // state-triggered re-renders (flash timeout, session updates, debounce lag, etc.)
+  const inputSnapshots = [];
+  appElement.querySelectorAll("input, textarea").forEach((input) => {
+    const isFocused = input === document.activeElement;
+    if (input.value === "" && !isFocused) {
+      return;
+    }
+    let selector;
+    if (input.id) {
+      selector = `#${input.id}`;
+    } else {
+      const form = input.closest("form[data-auth-form]");
+      if (form && input.name) {
+        selector = `form[data-auth-form="${form.dataset.authForm}"] [name="${input.name}"]`;
+      } else {
+        return;
+      }
+    }
+    inputSnapshots.push({
+      selector,
+      value: input.value,
+      focused: isFocused,
+      selectionStart: input.selectionStart,
+      selectionEnd: input.selectionEnd,
+    });
+  });
 
   appElement.innerHTML = nextMarkup;
   lastRenderedMarkup = nextMarkup;
@@ -254,15 +274,20 @@ function commitAppMarkup(nextMarkup) {
   initializeYoutubePlayer(appElement);
   initializeHeroPlayer(appElement);
 
-  // restore the live value (not the URL-derived one), then focus and cursor position
-  if (hadSearchFocus) {
-    const newSearchInput = appElement.querySelector("#global-search");
-    if (newSearchInput) {
-      newSearchInput.value = liveSearchValue;
-      newSearchInput.focus();
-      newSearchInput.setSelectionRange(searchSelectionStart, searchSelectionEnd);
+  // restore values, focus, and cursor positions after re-render
+  inputSnapshots.forEach(({ selector, value, focused, selectionStart, selectionEnd }) => {
+    const el = appElement.querySelector(selector);
+    if (!el) {
+      return;
     }
-  }
+    el.value = value;
+    if (focused) {
+      el.focus();
+      try {
+        el.setSelectionRange(selectionStart, selectionEnd);
+      } catch (_) {}
+    }
+  });
 }
 
 // batches render calls into a single requestAnimationFrame so multiple state updates only render once
