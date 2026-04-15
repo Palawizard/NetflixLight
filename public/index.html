@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#09090b" />
+    <title>NetflixLight</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <!-- applies the stored theme before the page renders to avoid a flash of unstyled content -->
+    <script>
+      (() => {
+        const storageKey = "netflixlight.theme";
+        const storedTheme = window.localStorage.getItem(storageKey);
+        const prefersLight = window.matchMedia(
+          "(prefers-color-scheme: light)"
+        ).matches;
+        const theme =
+          storedTheme === "light" || storedTheme === "dark"
+            ? storedTheme
+            : prefersLight
+              ? "light"
+              : "dark";
+
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body class="min-h-screen bg-neutral-950 text-white">
+    <div
+      data-app-background
+      class="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(244,63,94,0.18),_transparent_28%),linear-gradient(180deg,_#09090b,_#171717)]"
+    >
+      <div id="app"></div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

@@ -1,13 +1,21 @@
 {
   "name": "netflixlight",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "type": "module",
+  "description": "Application NetflixLight en Express, SQLite et vanilla JavaScript",
+  "main": "server.js",
+  "type": "commonjs",
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node server.js"
-},
+    "build:css": "tailwindcss -i ./src/styles/app.css -o ./public/css/app.css",
+    "watch:css": "tailwindcss -i ./src/styles/app.css -o ./public/css/app.css --watch",
+    "dev:server": "cross-env NODE_ENV=development nodemon server.js",
+    "dev": "concurrently -n server,css -c green,cyan \"npm:dev:server\" \"npm:watch:css\"",
+    "start": "cross-env NODE_ENV=production node server.js",
+    "db:setup": "node ./scripts/db-setup.js",
+    "db:inspect": "node ./scripts/db-inspect.js",
+    "lint": "eslint . && prettier . --check",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Palawizard/NetflixLight.git"
@@ -15,16 +23,30 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Palawizard/NetflixLight/issues"
   },
   "homepage": "https://github.com/Palawizard/NetflixLight#readme",
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.6.2",
     "dotenv": "^17.3.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "express-session": "^1.19.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.5.2",
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/cli": "^4.2.1",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.4.0",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "tailwindcss": "^4.2.1"
   }
 }

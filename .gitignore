@@ -9,6 +9,7 @@ node_modules/
 # Logs
 logs/
 *.log
+AGENTS.md
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -60,3 +61,6 @@ Thumbs.db
 *.swp
 *.swo
 
+# Local AI guides
+AUTH_*_GUIDE.md
+CLAUDE.md

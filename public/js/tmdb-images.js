@@ -1,0 +1,58 @@
+const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p";
+
+/**
+ * builds a full tmdb image URL for a given path and size token
+ */
+function buildTmdbImageUrl(path, size) {
+  if (!path) {
+    return "";
+  }
+
+  return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
+}
+
+/**
+ * builds a srcset string from a path and an array of { size, width } descriptors
+ */
+function buildTmdbSrcSet(path, sizes) {
+  if (!path || !Array.isArray(sizes)) {
+    return "";
+  }
+
+  return sizes
+    .map(({ size, width }) => `${buildTmdbImageUrl(path, size)} ${width}w`)
+    .join(", ");
+}
+
+/**
+ * renders a responsive tmdb image tag with srcset, sizes, lazy loading, and priority hints
+ */
+export function renderTmdbImage({
+  path,
+  alt,
+  className,
+  size,
+  srcSetSizes,
+  sizes,
+  loading = "lazy",
+  fetchPriority = "auto",
+}) {
+  if (!path) {
+    return "";
+  }
+
+  const srcSet = buildTmdbSrcSet(path, srcSetSizes);
+
+  return `
+    <img
+      src="${buildTmdbImageUrl(path, size)}"
+      ${srcSet ? `srcset="${srcSet}"` : ""}
+      ${sizes ? `sizes="${sizes}"` : ""}
+      alt="${alt}"
+      loading="${loading}"
+      decoding="async"
+      fetchpriority="${fetchPriority}"
+      class="${className}"
+    />
+  `;
+}
