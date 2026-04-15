@@ -34,7 +34,6 @@ function registerDomEventHandlers(dependencies) {
     selectActiveProfile,
     setAuthFormState,
     setDetailState,
-    setFlashMessage,
     setHeroState,
     setPersonalRatingFromDetail,
     scheduleSearchDebounce,
