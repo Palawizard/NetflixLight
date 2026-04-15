@@ -31,7 +31,6 @@ const EN_TRANSLATIONS = {
   "Créer un compte": "Create account",
   "Compte créé. Tu peux maintenant te connecter.":
     "Account created. You can now sign in.",
-  "Compte créé avec succès.": "Account created successfully.",
   "mon-pseudo": "my-username",
   "À l'affiche": "Now playing",
   "À la une": "Featured",
