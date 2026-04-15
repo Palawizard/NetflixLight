@@ -397,7 +397,6 @@ function registerDomEventHandlers(dependencies) {
           error: null,
           success: "Compte créé. Tu peux maintenant te connecter.",
         });
-        setFlashMessage("Compte créé avec succès.");
         navigate("/login");
       }
     } catch (error) {
