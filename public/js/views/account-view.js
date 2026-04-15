@@ -19,7 +19,6 @@ import {
 
 // renders the favorites page with a header and the full watchlist content
 function renderFavoritesView(state) {
-  const username = state.session.user?.username || "utilisateur";
   const watchlistState = state.watchlist;
   const items = getSortedWatchlistItems(watchlistState.items);
 

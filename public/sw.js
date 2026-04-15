@@ -50,8 +50,9 @@ self.addEventListener("install", (event) => {
 // on activate: delete stale caches from previous versions
 self.addEventListener("activate", (event) => {
   if (IS_LOCAL_HOST) {
-    event.waitUntil(self.registration.unregister());
-    self.clients.claim();
+    event.waitUntil(
+      self.registration.unregister().then(() => self.clients.claim())
+    );
     return;
   }
 
@@ -65,8 +66,8 @@ self.addEventListener("activate", (event) => {
             .map((cacheName) => caches.delete(cacheName))
         )
       )
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // on fetch: serve same-origin GET requests from cache first, falling back to the shell root on network failure

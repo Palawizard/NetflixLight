@@ -34,11 +34,9 @@ const EN_TRANSLATIONS = {
   "mon-pseudo": "my-username",
   "À l'affiche": "Now playing",
   "À la une": "Featured",
-  "Retrouve les films populaires du moment.":
-    "Find popular movies right now.",
+  "Retrouve les films populaires du moment.": "Find popular movies right now.",
   "À suivre": "Up next",
-  "Retrouve les séries populaires du moment.":
-    "Find popular series right now.",
+  "Retrouve les séries populaires du moment.": "Find popular series right now.",
   "Ma liste": "My list",
   "Liste vide": "Empty list",
   "Aucun favori pour le moment": "No favorites yet",
