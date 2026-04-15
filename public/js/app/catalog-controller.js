@@ -706,9 +706,7 @@ function createCatalogController(dependencies) {
       let trailerKey = null;
       try {
         const detail = await apiRequest(
-          withTmdbLanguage(
-            `api/tmdb/${randomItem.media_type}/${randomItem.id}`
-          )
+          withTmdbLanguage(`api/tmdb/${randomItem.media_type}/${randomItem.id}`)
         );
         trailerKey = pickBestHeroTrailer(detail.videos?.results);
       } catch {

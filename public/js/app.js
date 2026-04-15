@@ -275,19 +275,23 @@ function commitAppMarkup(nextMarkup) {
   initializeHeroPlayer(appElement);
 
   // restore values, focus, and cursor positions after re-render
-  inputSnapshots.forEach(({ selector, value, focused, selectionStart, selectionEnd }) => {
-    const el = appElement.querySelector(selector);
-    if (!el) {
-      return;
+  inputSnapshots.forEach(
+    ({ selector, value, focused, selectionStart, selectionEnd }) => {
+      const el = appElement.querySelector(selector);
+      if (!el) {
+        return;
+      }
+      el.value = value;
+      if (focused) {
+        el.focus();
+        try {
+          el.setSelectionRange(selectionStart, selectionEnd);
+        } catch {
+          // password inputs throw on setSelectionRange in some browsers
+        }
+      }
     }
-    el.value = value;
-    if (focused) {
-      el.focus();
-      try {
-        el.setSelectionRange(selectionStart, selectionEnd);
-      } catch (_) {}
-    }
-  });
+  );
 }
 
 // batches render calls into a single requestAnimationFrame so multiple state updates only render once
