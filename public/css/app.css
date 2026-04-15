@@ -2023,11 +2023,6 @@
       align-items: flex-end;
     }
   }
-  .sm\:justify-between {
-    @media (width >= 40rem) {
-      justify-content: space-between;
-    }
-  }
   .sm\:rounded-full {
     @media (width >= 40rem) {
       border-radius: calc(infinity * 1px);
@@ -2300,16 +2295,16 @@ html[data-theme="light"] [aria-modal="true"] .bg-white\/5 {
   background-color: rgb(255 255 255 / 0.07);
 }
 html[data-theme="light"] [aria-modal="true"] .bg-white\/10 {
-  background-color: rgb(255 255 255 / 0.10);
+  background-color: rgb(255 255 255 / 0.1);
 }
 html[data-theme="light"] [aria-modal="true"] .bg-black\/40 {
-  background-color: rgb(0 0 0 / 0.40);
+  background-color: rgb(0 0 0 / 0.4);
 }
 html[data-theme="light"] [aria-modal="true"] .border-white\/10 {
-  border-color: rgb(255 255 255 / 0.10);
+  border-color: rgb(255 255 255 / 0.1);
 }
 html[data-theme="light"] [aria-modal="true"] .border-white\/20 {
-  border-color: rgb(255 255 255 / 0.20);
+  border-color: rgb(255 255 255 / 0.2);
 }
 html[data-theme="light"] [aria-modal="true"] .text-rose-100 {
   color: #fca5a5;

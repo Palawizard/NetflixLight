@@ -23,7 +23,7 @@
 
 ## Project Goal
 
-School project - a Netflix-inspired app built with an Express backend and a vanilla JavaScript SPA frontend.
+Netflix-inspired app built with an Express backend and a vanilla JavaScript SPA frontend.
 
 It lets users:
 
@@ -92,18 +92,18 @@ SESSION_MAX_AGE_MS=86400000
 
 ### Frontend (SPA hash routes)
 
-| Path | Page | Auth required |
-|---|---|---|
-| `#/` | Home - hero, carousels, recommendations | no |
-| `#/movies` | Movies - popular + genre carousels | no |
-| `#/series` | Series - popular + genre carousels | no |
-| `#/search?q=...&page=...` | Search results | no |
-| `#/movie/:id` | Movie detail page | no |
-| `#/tv/:id` | TV show detail page | no |
-| `#/favorites` | Saved titles (watchlist) | yes |
-| `#/profile` | Account, profiles, history, ratings | yes |
-| `#/login` | Login | no |
-| `#/register` | Register | no |
+| Path                      | Page                                    | Auth required |
+| ------------------------- | --------------------------------------- | ------------- |
+| `#/`                      | Home - hero, carousels, recommendations | no            |
+| `#/movies`                | Movies - popular + genre carousels      | no            |
+| `#/series`                | Series - popular + genre carousels      | no            |
+| `#/search?q=...&page=...` | Search results                          | no            |
+| `#/movie/:id`             | Movie detail page                       | no            |
+| `#/tv/:id`                | TV show detail page                     | no            |
+| `#/favorites`             | Saved titles (watchlist)                | yes           |
+| `#/profile`               | Account, profiles, history, ratings     | yes           |
+| `#/login`                 | Login                                   | no            |
+| `#/register`              | Register                                | no            |
 
 Direct paths like `/movies`, `/series`, `/search`, `/favorites`, `/profile` are served by the Express server and redirect to their `/#/...` equivalents.
 
@@ -111,64 +111,64 @@ Direct paths like `/movies`, `/series`, `/search`, `/favorites`, `/profile` are 
 
 **Auth** - `/api/auth`
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/register` | create account |
-| `POST` | `/login` | login |
-| `GET` | `/me` | get current user |
-| `POST` | `/logout` | logout |
+| Method | Path        | Description      |
+| ------ | ----------- | ---------------- |
+| `POST` | `/register` | create account   |
+| `POST` | `/login`    | login            |
+| `GET`  | `/me`       | get current user |
+| `POST` | `/logout`   | logout           |
 
 **Profiles** - `/api/profiles` - requires auth
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/` | list profiles |
-| `POST` | `/` | create profile |
+| Method | Path | Description    |
+| ------ | ---- | -------------- |
+| `GET`  | `/`  | list profiles  |
+| `POST` | `/`  | create profile |
 
 **Watchlist** - `/api/watchlist` - requires auth + active profile
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/` | list favorites |
-| `POST` | `/` | add favorite |
+| Method   | Path         | Description     |
+| -------- | ------------ | --------------- |
+| `GET`    | `/`          | list favorites  |
+| `POST`   | `/`          | add favorite    |
 | `DELETE` | `/:type/:id` | remove favorite |
 
 **Watch progress** - `/api/watch-progress` - requires auth + active profile
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/` | list all progress entries |
-| `GET` | `/:type/:id` | get progress for one title |
-| `PUT` | `/:type/:id` | save progress |
+| Method | Path         | Description                |
+| ------ | ------------ | -------------------------- |
+| `GET`  | `/`          | list all progress entries  |
+| `GET`  | `/:type/:id` | get progress for one title |
+| `PUT`  | `/:type/:id` | save progress              |
 
 **Viewing history** - `/api/viewing-history` - requires auth + active profile
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/` | list recently viewed titles |
-| `POST` | `/` | record a viewed title |
+| Method | Path | Description                 |
+| ------ | ---- | --------------------------- |
+| `GET`  | `/`  | list recently viewed titles |
+| `POST` | `/`  | record a viewed title       |
 
 **Personal ratings** - `/api/user-ratings` - requires auth + active profile
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/` | list all ratings |
-| `GET` | `/:type/:id` | get rating for one title |
-| `PUT` | `/:type/:id` | save rating (1–5) |
-| `DELETE` | `/:type/:id` | remove rating |
+| Method   | Path         | Description              |
+| -------- | ------------ | ------------------------ |
+| `GET`    | `/`          | list all ratings         |
+| `GET`    | `/:type/:id` | get rating for one title |
+| `PUT`    | `/:type/:id` | save rating (1–5)        |
+| `DELETE` | `/:type/:id` | remove rating            |
 
 **TMDB proxy** - `/api/tmdb` - public
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/trending` | trending media (weekly) |
-| `GET` | `/movies/popular` | popular movies |
-| `GET` | `/movies/top-rated` | top rated movies |
-| `GET` | `/tv/popular` | popular TV shows |
-| `GET` | `/tv/top-rated` | top rated TV shows |
-| `GET` | `/discover` | discover by type and genre |
-| `GET` | `/search` | multi-search filtered to movie/tv |
-| `GET` | `/:type/:id` | detail payload - credits, videos, images, similar |
+| Method | Path                | Description                                       |
+| ------ | ------------------- | ------------------------------------------------- |
+| `GET`  | `/trending`         | trending media (weekly)                           |
+| `GET`  | `/movies/popular`   | popular movies                                    |
+| `GET`  | `/movies/top-rated` | top rated movies                                  |
+| `GET`  | `/tv/popular`       | popular TV shows                                  |
+| `GET`  | `/tv/top-rated`     | top rated TV shows                                |
+| `GET`  | `/discover`         | discover by type and genre                        |
+| `GET`  | `/search`           | multi-search filtered to movie/tv                 |
+| `GET`  | `/:type/:id`        | detail payload - credits, videos, images, similar |
 
 ## Features
 
@@ -280,6 +280,8 @@ netflixlight/
 │   └── utils/
 │       └── api-error.js              # ApiError class and factory helper
 ├── code-tree.sh                      # prints the project file tree
+├── docker-entrypoint.sh              # container init - runs db:setup on first boot then starts the server
+├── Dockerfile                        # production image - node:22-alpine, builds CSS, prunes devDeps
 ├── eslint.config.js                  # ESLint config
 ├── jsconfig.json                     # editor/tooling JS config
 ├── package.json                      # scripts, dependencies, dev dependencies
@@ -290,15 +292,15 @@ netflixlight/
 
 ## Useful Commands
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Dev server + Tailwind watcher |
-| `npm run dev:server` | Dev server only |
-| `npm start` | Production server |
-| `npm run build:css` | Compile Tailwind once |
-| `npm run watch:css` | Watch and recompile Tailwind |
-| `npm run db:setup` | Initialize the SQLite database |
-| `npm run db:inspect` | Print DB path and table list |
-| `npm run lint` | ESLint + Prettier check |
-| `npm run lint:fix` | Auto-fix ESLint issues |
-| `npm run format` | Prettier format all files |
+| Command              | Description                    |
+| -------------------- | ------------------------------ |
+| `npm run dev`        | Dev server + Tailwind watcher  |
+| `npm run dev:server` | Dev server only                |
+| `npm start`          | Production server              |
+| `npm run build:css`  | Compile Tailwind once          |
+| `npm run watch:css`  | Watch and recompile Tailwind   |
+| `npm run db:setup`   | Initialize the SQLite database |
+| `npm run db:inspect` | Print DB path and table list   |
+| `npm run lint`       | ESLint + Prettier check        |
+| `npm run lint:fix`   | Auto-fix ESLint issues         |
+| `npm run format`     | Prettier format all files      |
