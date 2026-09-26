@@ -85,6 +85,7 @@ OIDC_ISSUER=https://auth.palawi.fr/application/o/netflixlight/
 OIDC_CLIENT_ID=your_client_id
 OIDC_CLIENT_SECRET=your_client_secret
 OIDC_REDIRECT_URL=https://palawi.fr/netflix-light/auth/callback
+OIDC_ENROLLMENT_URL=https://auth.palawi.fr/if/flow/inscription/   # optional
 ```
 
 - `TMDB_API_READ_ACCESS_TOKEN` is preferred (Bearer auth). `TMDB_API_KEY` is the fallback.
