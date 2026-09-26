@@ -1,29 +1,16 @@
 const db = require("../sqlite/client");
 
 /**
- * looks up a user by email - used during login
+ * looks up a user by OpenID Connect subject - used after an Authentik sign-in
  */
-function findByEmail(email) {
+function findBySubject(subject) {
   const statement = db.prepare(
-    `SELECT id, email, username, password_hash, created_at
+    `SELECT id, email, username, created_at
     FROM users
-    WHERE email = ?;`
+    WHERE auth_subject = ?;`
   );
 
-  return statement.get(email);
-}
-
-/**
- * looks up a user by username - used during registration to check uniqueness
- */
-function findByUsername(username) {
-  const statement = db.prepare(
-    `SELECT id, email, username, password_hash, created_at
-    FROM users
-    WHERE username = ?;`
-  );
-
-  return statement.get(username);
+  return statement.get(subject);
 }
 
 /**
@@ -31,7 +18,7 @@ function findByUsername(username) {
  */
 function findById(id) {
   const statement = db.prepare(
-    `SELECT id, email, username, password_hash, created_at
+    `SELECT id, email, username, created_at
     FROM users
     WHERE id = ?;`
   );
@@ -40,20 +27,19 @@ function findById(id) {
 }
 
 /**
- * inserts a new user row and returns the full record by re-fetching with the inserted id
+ * inserts a user created by single sign-on (no local password) and returns the full record
  */
-function createUser({ email, username, passwordHash }) {
+function createOidcUser({ subject, email, username }) {
   const statement = db.prepare(
-    `INSERT INTO users (email, username, password_hash)
-    VALUES (?, ?, ?);`
+    `INSERT INTO users (email, username, password_hash, auth_subject)
+    VALUES (?, ?, '', ?);`
   );
 
-  const result = statement.run(email, username, passwordHash);
+  const result = statement.run(email, username, subject);
   return findById(Number(result.lastInsertRowid));
 }
 
 module.exports = {
-  findByEmail,
-  findByUsername,
-  createUser,
+  findBySubject,
+  createOidcUser,
 };

@@ -19,18 +19,6 @@ function parsePort(value, fallbackPort) {
 }
 
 /**
- * parses bcrypt salt rounds from a string env value, returns fallbackValue if invalid
- */
-function parseSaltRounds(value, fallbackValue) {
-  const parsedSaltRounds = Number.parseInt(value, 10);
-
-  if (Number.isInteger(parsedSaltRounds) && parsedSaltRounds > 0) {
-    return parsedSaltRounds;
-  }
-  return fallbackValue;
-}
-
-/**
  * parses any positive integer from a string env value, returns fallbackValue if invalid or zero
  */
 function parsePositiveInt(value, fallbackValue) {
@@ -54,7 +42,6 @@ const port = parsePort(
   process.env.PORT,
   environment === "production" ? prodPort : devPort
 );
-const bcryptSaltRounds = parseSaltRounds(process.env.BCRYPT_SALT_ROUNDS, 12);
 const sessionSecret = process.env.SESSION_SECRET || "dev_session_secret";
 const sessionCookieName = process.env.SESSION_COOKIE_NAME || "netflixlight.sid";
 const sessionMaxAgeMs = parsePositiveInt(
@@ -73,7 +60,6 @@ const config = {
   isDevelopment: environment === "development",
   isProduction: environment === "production",
   port,
-  bcryptSaltRounds,
   ports: {
     development: devPort,
     production: prodPort,
@@ -89,6 +75,14 @@ const config = {
     readAccessToken: process.env.TMDB_API_READ_ACCESS_TOKEN || "",
     cacheTtlMs: tmdbCacheTtlMs,
     cacheMaxEntries: tmdbCacheMaxEntries,
+  },
+  // single sign-on through Authentik (OpenID Connect)
+  oidc: {
+    issuer: process.env.OIDC_ISSUER || "",
+    clientId: process.env.OIDC_CLIENT_ID || "",
+    clientSecret: process.env.OIDC_CLIENT_SECRET || "",
+    // public callback URL, e.g. https://palawi.fr/netflix-light/auth/callback
+    redirectUrl: process.env.OIDC_REDIRECT_URL || "",
   },
   database: {
     client: "sqlite",

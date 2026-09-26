@@ -1,4 +1,4 @@
-const CACHE_NAME = "netflixlight-shell-v3";
+const CACHE_NAME = "netflixlight-shell-v4";
 const IS_LOCAL_HOST = ["localhost", "127.0.0.1"].includes(
   self.location.hostname
 );
@@ -71,7 +71,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // on fetch: serve same-origin GET requests from cache first, falling back to the shell root on network failure
-// API requests and non-GET methods bypass the cache entirely
+// API and sign-in (auth/) requests and non-GET methods bypass the cache entirely
 self.addEventListener("fetch", (event) => {
   if (IS_LOCAL_HOST) {
     return;
@@ -85,7 +85,10 @@ self.addEventListener("fetch", (event) => {
   }
 
   const basePath = new URL(BASE).pathname;
-  if (requestUrl.pathname.startsWith(`${basePath}api/`)) {
+  if (
+    requestUrl.pathname.startsWith(`${basePath}api/`) ||
+    requestUrl.pathname.startsWith(`${basePath}auth/`)
+  ) {
     return;
   }
 
