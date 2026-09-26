@@ -11,113 +11,66 @@ function renderLogoutFeedback(logoutState) {
   `;
 }
 
-// renders the login form with email, password fields, and auth feedback
-function renderLoginView(state) {
+// builds the Authentik sign-in link - relative so it works under any path prefix
+function buildSignInHref(state) {
+  const nextPath = state.session.redirectAfterLogin || "/profile";
+  return `auth/login?next=${encodeURIComponent(nextPath)}`;
+}
+
+// renders the sign-in card - accounts are managed by Authentik (single sign-on)
+function renderSignInCard(
+  state,
+  { eyebrow, accent, title, text, buttonLabel }
+) {
   const authState = state.ui.authForm;
 
   return `
     <section class="mx-auto w-full max-w-xl rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur sm:p-10">
-      <p class="text-sm uppercase tracking-[0.3em] text-violet-300">Connexion</p>
-      <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Connexion</h1>
-      <p class="mt-4 text-base leading-8 text-white/70">
-        Connecte-toi pour retrouver ta liste et ton compte.
-      </p>
+      <p class="text-sm uppercase tracking-[0.3em] ${accent.text}">${eyebrow}</p>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">${title}</h1>
+      <p class="mt-4 text-base leading-8 text-white/70">${text}</p>
 
       ${renderAuthFeedback(authState)}
 
-      <form data-auth-form="login" class="mt-8 space-y-5">
-        <label class="block space-y-2">
-          <span class="text-sm font-medium text-white/80">Email</span>
-          <input
-            type="email"
-            name="email"
-            required
-            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-violet-400"
-            placeholder="email@example.com"
-          />
-        </label>
-
-        <label class="block space-y-2">
-          <span class="text-sm font-medium text-white/80">Mot de passe</span>
-          <input
-            type="password"
-            name="password"
-            required
-            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-violet-400"
-            placeholder="••••••••"
-          />
-        </label>
-
-        <button
-          type="submit"
-          class="inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
-          ${authState.pending ? "disabled" : ""}
-        >
-          ${authState.pending ? "Connexion..." : "Se connecter"}
-        </button>
-      </form>
+      <a
+        href="${buildSignInHref(state)}"
+        class="mt-8 inline-flex rounded-full ${accent.button} px-5 py-3 text-sm font-medium text-white transition"
+      >
+        ${buttonLabel}
+      </a>
+      <p class="mt-6 text-sm leading-6 text-white/50">
+        Un seul compte pour toutes les apps de palawi.fr : la connexion et l'inscription se font sur auth.palawi.fr.
+      </p>
     </section>
   `;
 }
 
-// renders the registration form with username, email, password fields, and auth feedback
+// renders the login view
+function renderLoginView(state) {
+  return renderSignInCard(state, {
+    eyebrow: "Connexion",
+    accent: {
+      text: "text-violet-300",
+      button: "bg-violet-500 hover:bg-violet-400",
+    },
+    title: "Connexion",
+    text: "Connecte-toi pour retrouver ta liste et ton compte.",
+    buttonLabel: "Se connecter",
+  });
+}
+
+// renders the registration view - account creation happens on Authentik
 function renderRegisterView(state) {
-  const authState = state.ui.authForm;
-
-  return `
-    <section class="mx-auto w-full max-w-xl rounded-4xl border border-white/10 bg-white/5 p-8 shadow-xl shadow-black/20 backdrop-blur sm:p-10">
-      <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300">Inscription</p>
-      <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Inscription</h1>
-      <p class="mt-4 text-base leading-8 text-white/70">
-        Crée ton compte pour enregistrer tes envies et y revenir quand tu veux.
-      </p>
-
-      ${renderAuthFeedback(authState)}
-
-      <form data-auth-form="register" class="mt-8 space-y-5">
-        <label class="block space-y-2">
-          <span class="text-sm font-medium text-white/80">Pseudo</span>
-          <input
-            type="text"
-            name="username"
-            required
-            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-fuchsia-400"
-            placeholder="mon-pseudo"
-          />
-        </label>
-
-        <label class="block space-y-2">
-          <span class="text-sm font-medium text-white/80">Email</span>
-          <input
-            type="email"
-            name="email"
-            required
-            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-fuchsia-400"
-            placeholder="email@example.com"
-          />
-        </label>
-
-        <label class="block space-y-2">
-          <span class="text-sm font-medium text-white/80">Mot de passe</span>
-          <input
-            type="password"
-            name="password"
-            required
-            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-fuchsia-400"
-            placeholder="••••••••"
-          />
-        </label>
-
-        <button
-          type="submit"
-          class="inline-flex rounded-full bg-fuchsia-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-fuchsia-400 disabled:cursor-not-allowed disabled:opacity-60"
-          ${authState.pending ? "disabled" : ""}
-        >
-          ${authState.pending ? "Création..." : "Créer un compte"}
-        </button>
-      </form>
-    </section>
-  `;
+  return renderSignInCard(state, {
+    eyebrow: "Inscription",
+    accent: {
+      text: "text-fuchsia-300",
+      button: "bg-fuchsia-500 hover:bg-fuchsia-400",
+    },
+    title: "Inscription",
+    text: "Crée ton compte pour enregistrer tes envies et y revenir quand tu veux.",
+    buttonLabel: "Créer un compte",
+  });
 }
 
 // renders an error or success message from the auth form state - returns empty string when neither is set

@@ -3,6 +3,8 @@ const express = require("express");
 const session = require("express-session");
 const { config, missingTmdbVars } = require("./src/config/env");
 const authRoutes = require("./src/routes/auth.routes");
+const oidcRoutes = require("./src/auth/oidc");
+const { ensureSchema } = require("./src/data-access/sqlite/schema");
 const tmdbRoutes = require("./src/routes/tmdb.routes");
 const watchlistRoutes = require("./src/routes/watchlist.routes");
 const watchProgressRoutes = require("./src/routes/watch-progress.routes");
@@ -17,6 +19,8 @@ const {
   apiNotFoundHandler,
   apiErrorHandler,
 } = require("./src/middlewares/api-error.middleware");
+
+ensureSchema();
 
 const app = express();
 const publicDir = path.join(__dirname, "public");
@@ -46,6 +50,7 @@ app.use(
   })
 );
 
+app.use("/auth", oidcRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/tmdb", tmdbRoutes);
 app.use("/api/watchlist", watchlistRoutes);
