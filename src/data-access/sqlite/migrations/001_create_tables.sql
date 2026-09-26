@@ -5,8 +5,11 @@ CREATE TABLE IF NOT EXISTS users (
                                      email TEXT NOT NULL UNIQUE,
                                      username TEXT NOT NULL UNIQUE,
                                      password_hash TEXT NOT NULL,
-                                     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                                     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                                     auth_subject TEXT
     );
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_auth_subject_idx ON users(auth_subject);
 
 CREATE TABLE IF NOT EXISTS sessions (
                                         id INTEGER PRIMARY KEY AUTOINCREMENT,

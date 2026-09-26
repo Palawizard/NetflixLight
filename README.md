@@ -77,16 +77,20 @@ TMDB_CACHE_MAX_ENTRIES=500
 
 SQLITE_DB_PATH=./data/netflixlight.sqlite
 
-BCRYPT_SALT_ROUNDS=12
-
 SESSION_SECRET=change_me_in_prod
 SESSION_COOKIE_NAME=netflixlight.sid
 SESSION_MAX_AGE_MS=86400000
+
+OIDC_ISSUER=https://auth.palawi.fr/application/o/netflixlight/
+OIDC_CLIENT_ID=your_client_id
+OIDC_CLIENT_SECRET=your_client_secret
+OIDC_REDIRECT_URL=https://palawi.fr/netflix-light/auth/callback
 ```
 
 - `TMDB_API_READ_ACCESS_TOKEN` is preferred (Bearer auth). `TMDB_API_KEY` is the fallback.
 - Both are optional at startup but the catalog, search, and detail pages will not work without one of them.
 - Sessions are persisted through a custom SQLite-backed `express-session` store.
+- Sign-in and sign-up are delegated to Authentik (`auth.palawi.fr`) over OpenID Connect (code flow + PKCE, state and nonce). The app keeps a local user row linked by `users.auth_subject` and its own session. `OIDC_REDIRECT_URL` is the public callback URL: the app does not know its path prefix, so the SPA root is derived from it.
 
 ## Routes
 
@@ -102,21 +106,26 @@ SESSION_MAX_AGE_MS=86400000
 | `#/tv/:id`                | TV show detail page                     | no            |
 | `#/favorites`             | Saved titles (watchlist)                | yes           |
 | `#/profile`               | Account, profiles, history, ratings     | yes           |
-| `#/login`                 | Login                                   | no            |
-| `#/register`              | Register                                | no            |
+| `#/login`                 | Sign-in (button to Authentik)           | no            |
+| `#/register`              | Sign-up (button to Authentik)           | no            |
 
 Direct paths like `/movies`, `/series`, `/search`, `/favorites`, `/profile` are served by the Express server and redirect to their `/#/...` equivalents.
 
 ### Backend API
 
+**Single sign-on** - `/auth`
+
+| Method | Path        | Description                              |
+| ------ | ----------- | ---------------------------------------- |
+| `GET`  | `/login`    | redirect to Authentik (`?next=/profile`) |
+| `GET`  | `/callback` | OIDC callback, opens the session         |
+
 **Auth** - `/api/auth`
 
-| Method | Path        | Description      |
-| ------ | ----------- | ---------------- |
-| `POST` | `/register` | create account   |
-| `POST` | `/login`    | login            |
-| `GET`  | `/me`       | get current user |
-| `POST` | `/logout`   | logout           |
+| Method | Path      | Description      |
+| ------ | --------- | ---------------- |
+| `GET`  | `/me`     | get current user |
+| `POST` | `/logout` | logout           |
 
 **Profiles** - `/api/profiles` - requires auth
 
@@ -212,7 +221,7 @@ netflixlight/
 │   │   │   └── app-config.js        # route guards, genre IDs, section config, and app constants
 │   │   ├── views/
 │   │   │   ├── account-view.js              # favorites, account, profiles, and history pages
-│   │   │   ├── auth-view.js                 # login and register forms
+│   │   │   ├── auth-view.js                 # sign-in / sign-up cards (Authentik)
 │   │   │   ├── catalog-sections.js          # catalog section blocks and skeletons
 │   │   │   ├── detail-related-sections.js   # cast grid and similar titles carousel
 │   │   │   ├── detail-view.js               # movie/series detail page
@@ -265,7 +274,7 @@ netflixlight/
 │   │   ├── watchlist-item.model.js           # maps DB rows to watchlist objects
 │   │   └── watch-progress.model.js           # maps DB rows to progress objects
 │   ├── routes/
-│   │   ├── auth.routes.js            # register, login, me, logout
+│   │   ├── auth.routes.js            # me, logout (sign-in: src/auth/oidc.js)
 │   │   ├── profiles.routes.js        # profile list and create
 │   │   ├── tmdb.routes.js            # trending, search, discover, detail
 │   │   ├── tmdb-movies.routes.js     # popular and top-rated movies

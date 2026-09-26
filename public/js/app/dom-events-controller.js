@@ -4,35 +4,26 @@
  */
 function registerDomEventHandlers(dependencies) {
   const {
-    apiRequest,
     appElement,
-    appState,
     applyLanguagePreference,
     clearSearchDebounce,
     closeHeaderMenu,
     createProfileFromForm,
-    formatApiError,
     getCurrentPath,
     getCurrentSearchQuery,
     loadDetailPage,
     loadHomeHero,
-    loadProfiles,
-    loadUserRatings,
-    loadViewingHistory,
-    loadWatchProgress,
     loadWatchlist,
     logoutUser,
     navigate,
     openProfileCreation,
     openProfileOverlay,
     removeWatchlistItemFromList,
-    resetAuthFormState,
     resetProfileColorPickers,
     retryCatalogSection,
     runWithoutPageAnimations,
     scrollCarousel,
     selectActiveProfile,
-    setAuthFormState,
     setDetailState,
     setHeroState,
     setPersonalRatingFromDetail,
@@ -40,7 +31,6 @@ function registerDomEventHandlers(dependencies) {
     toggleFavoriteFromDetail,
     toggleThemePreference,
     updateProfileColorPicker,
-    updateState,
   } = dependencies;
 
   // handles all delegated click events using data attributes to identify the target action
@@ -335,76 +325,7 @@ function registerDomEventHandlers(dependencies) {
       return;
     }
 
-    const form = event.target.closest("[data-auth-form]");
-
-    if (!form) {
-      return;
-    }
-
-    event.preventDefault();
-
-    const mode = form.getAttribute("data-auth-form");
-    const formData = new FormData(form);
-
-    setAuthFormState({
-      pending: true,
-      error: null,
-      success: null,
-    });
-
-    try {
-      if (mode === "login") {
-        const response = await apiRequest("api/auth/login", {
-          method: "POST",
-          body: {
-            email: formData.get("email"),
-            password: formData.get("password"),
-          },
-        });
-
-        const nextPath = appState.session.redirectAfterLogin || "/profile";
-
-        updateState((state) => {
-          state.session.status = "authenticated";
-          state.session.user = response.user;
-          state.session.redirectAfterLogin = null;
-        });
-
-        await loadProfiles({ force: true });
-        await loadWatchlist({ force: true });
-        await loadWatchProgress({ force: true });
-        await loadViewingHistory({ force: true });
-        await loadUserRatings({ force: true });
-        resetAuthFormState();
-        openProfileOverlay();
-        navigate(nextPath);
-        return;
-      }
-
-      if (mode === "register") {
-        await apiRequest("api/auth/register", {
-          method: "POST",
-          body: {
-            username: formData.get("username"),
-            email: formData.get("email"),
-            password: formData.get("password"),
-          },
-        });
-
-        setAuthFormState({
-          pending: false,
-          error: null,
-          success: "Compte créé. Tu peux maintenant te connecter.",
-        });
-        navigate("/login");
-      }
-    } catch (error) {
-      setAuthFormState({
-        pending: false,
-        error: formatApiError(error),
-        success: null,
-      });
-    }
+    // sign-in forms are gone: authentication is delegated to Authentik
   });
 }
 
