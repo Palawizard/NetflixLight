@@ -21,7 +21,7 @@ function buildSignInHref(state, route) {
 // renders the sign-in card - accounts are managed by Authentik (single sign-on)
 function renderSignInCard(
   state,
-  { eyebrow, accent, title, text, buttonLabel, route }
+  { eyebrow, accent, title, text, buttonLabel, route, switchLink }
 ) {
   const authState = state.ui.authForm;
 
@@ -39,7 +39,17 @@ function renderSignInCard(
       >
         ${buttonLabel}
       </a>
-      <p class="mt-6 text-sm leading-6 text-white/50">
+      <p class="mt-6 text-sm leading-6 text-white/70">
+        ${switchLink.text}
+        <button
+          type="button"
+          data-nav-path="${switchLink.path}"
+          class="font-medium text-white underline underline-offset-4 transition hover:text-white/80"
+        >
+          ${switchLink.label}
+        </button>
+      </p>
+      <p class="mt-3 text-sm leading-6 text-white/50">
         Un seul compte pour toutes les apps de palawi.fr : la connexion et l'inscription se font sur auth.palawi.fr.
       </p>
     </section>
@@ -58,6 +68,11 @@ function renderLoginView(state) {
     text: "Connecte-toi pour retrouver ta liste et ton compte.",
     buttonLabel: "Se connecter",
     route: "login",
+    switchLink: {
+      text: "Pas encore de compte ?",
+      label: "Créer un compte",
+      path: "/register",
+    },
   });
 }
 
@@ -73,6 +88,11 @@ function renderRegisterView(state) {
     text: "Crée ton compte pour enregistrer tes envies et y revenir quand tu veux.",
     buttonLabel: "Créer un compte",
     route: "signup",
+    switchLink: {
+      text: "Déjà inscrit ?",
+      label: "Se connecter",
+      path: "/login",
+    },
   });
 }
 
