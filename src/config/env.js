@@ -83,6 +83,8 @@ const config = {
     clientSecret: process.env.OIDC_CLIENT_SECRET || "",
     // public callback URL, e.g. https://palawi.fr/netflix-light/auth/callback
     redirectUrl: process.env.OIDC_REDIRECT_URL || "",
+    // optional sign-up page, e.g. https://auth.palawi.fr/if/flow/inscription/
+    enrollmentUrl: process.env.OIDC_ENROLLMENT_URL || "",
   },
   database: {
     client: "sqlite",
