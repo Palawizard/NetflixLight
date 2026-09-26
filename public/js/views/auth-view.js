@@ -11,16 +11,17 @@ function renderLogoutFeedback(logoutState) {
   `;
 }
 
-// builds the Authentik sign-in link - relative so it works under any path prefix
-function buildSignInHref(state) {
+// builds the Authentik link - relative so it works under any path prefix
+// "signup" opens the account creation page first, "login" the sign-in page
+function buildSignInHref(state, route) {
   const nextPath = state.session.redirectAfterLogin || "/profile";
-  return `auth/login?next=${encodeURIComponent(nextPath)}`;
+  return `auth/${route}?next=${encodeURIComponent(nextPath)}`;
 }
 
 // renders the sign-in card - accounts are managed by Authentik (single sign-on)
 function renderSignInCard(
   state,
-  { eyebrow, accent, title, text, buttonLabel }
+  { eyebrow, accent, title, text, buttonLabel, route }
 ) {
   const authState = state.ui.authForm;
 
@@ -33,7 +34,7 @@ function renderSignInCard(
       ${renderAuthFeedback(authState)}
 
       <a
-        href="${buildSignInHref(state)}"
+        href="${buildSignInHref(state, route)}"
         class="mt-8 inline-flex rounded-full ${accent.button} px-5 py-3 text-sm font-medium text-white transition"
       >
         ${buttonLabel}
@@ -56,6 +57,7 @@ function renderLoginView(state) {
     title: "Connexion",
     text: "Connecte-toi pour retrouver ta liste et ton compte.",
     buttonLabel: "Se connecter",
+    route: "login",
   });
 }
 
@@ -70,6 +72,7 @@ function renderRegisterView(state) {
     title: "Inscription",
     text: "Crée ton compte pour enregistrer tes envies et y revenir quand tu veux.",
     buttonLabel: "Créer un compte",
+    route: "signup",
   });
 }
 

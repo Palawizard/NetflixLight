@@ -99,8 +99,30 @@ function upsertUser({ subject, email, preferredUsername }) {
 
 const router = express.Router();
 
-// starts the sign-in (and sign-up) on Authentik
-router.get("/login", async (req, res, next) => {
+/**
+ * wraps an authorization URL in the provider's sign-up page when OIDC_ENROLLMENT_URL is set
+ * Authentik only accepts a relative ?next=, so the sign-up page must live on the same host
+ */
+function enrollmentUrl(authorizationUrl) {
+  if (!config.oidc.enrollmentUrl) {
+    return authorizationUrl;
+  }
+  let signup;
+  try {
+    signup = new URL(config.oidc.enrollmentUrl);
+  } catch {
+    return authorizationUrl;
+  }
+  const authz = new URL(authorizationUrl);
+  if (authz.host !== signup.host) {
+    return authorizationUrl;
+  }
+  signup.searchParams.set("next", authz.pathname + authz.search);
+  return signup.href;
+}
+
+// starts the sign-in on Authentik - with signup, its account creation page comes first
+const startAuth = (signup) => async (req, res, next) => {
   try {
     const oidcConfig = await getConfiguration();
     const client = await loadClient();
@@ -124,16 +146,23 @@ router.get("/login", async (req, res, next) => {
       nonce,
     });
 
+    const target = signup
+      ? enrollmentUrl(authorizationUrl.href)
+      : authorizationUrl.href;
+
     req.session.save((error) => {
       if (error) {
         return next(error);
       }
-      return res.redirect(302, authorizationUrl.href);
+      return res.redirect(302, target);
     });
   } catch (error) {
     return next(error);
   }
-});
+};
+
+router.get("/login", startAuth(false));
+router.get("/signup", startAuth(true));
 
 // finishes the sign-in and opens the local session
 router.get("/callback", async (req, res, next) => {
@@ -195,3 +224,4 @@ router.get("/callback", async (req, res, next) => {
 });
 
 module.exports = router;
+module.exports.enrollmentUrl = enrollmentUrl;
