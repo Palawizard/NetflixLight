@@ -1,4 +1,4 @@
-const CACHE_NAME = "netflixlight-shell-v4";
+const CACHE_NAME = "netflixlight-shell-v5";
 const IS_LOCAL_HOST = ["localhost", "127.0.0.1"].includes(
   self.location.hostname
 );

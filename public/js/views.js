@@ -446,6 +446,7 @@ function renderHomeHero(heroState) {
       <button
         type="button"
         data-hero-mute
+        hidden
         aria-label="Activer le son"
         aria-pressed="true"
         class="absolute bottom-6 right-6 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-black/50 text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 hover:bg-black/70 group-hover:opacity-100"
@@ -486,6 +487,25 @@ function renderHomeHero(heroState) {
             >
               Voir le détail
             </button>
+            ${
+              trailerKey
+                ? `
+            <button
+              type="button"
+              data-hero-trailer-button
+              hidden
+              aria-controls="hero-trailer-consent"
+              aria-expanded="false"
+              class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              Bande-annonce
+            </button>
+            `
+                : ""
+            }
             <button
               type="button"
               data-retry-hero
@@ -494,6 +514,18 @@ function renderHomeHero(heroState) {
               Changer
             </button>
           </div>
+          ${
+            trailerKey
+              ? `
+          <div
+            id="hero-trailer-consent"
+            data-hero-consent-slot
+            hidden
+            class="trailer-consent-slot pointer-events-auto mt-5 grid min-h-52 w-full max-w-md overflow-hidden rounded-3xl border border-white/15 shadow-2xl shadow-black/40"
+          ></div>
+          `
+              : ""
+          }
         </div>
       </div>
     </section>

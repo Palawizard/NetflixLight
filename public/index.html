@@ -33,6 +33,28 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <!-- applies the stored language early so the shared consent banner speaks the same language -->
+    <script>
+      (() => {
+        try {
+          const storedLanguage = window.localStorage.getItem(
+            "netflixlight.language"
+          );
+
+          if (storedLanguage === "fr" || storedLanguage === "en") {
+            document.documentElement.lang = storedLanguage;
+          }
+        } catch {
+          // storage unavailable: keep the default language
+        }
+      })();
+    </script>
+    <!-- shared palawi.fr consent manager: YouTube trailers only load once allowed -->
+    <script
+      src="/consent/palawi-consent.js"
+      data-purposes="video"
+      data-providers="YouTube"
+    ></script>
     <!-- applies the stored theme before the page renders to avoid a flash of unstyled content -->
     <script>
       (() => {

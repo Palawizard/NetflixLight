@@ -1,12 +1,17 @@
 /* global YT */
 
+import { YOUTUBE_PRIVACY_HOST, gateVideo } from "./video-consent.js";
+
 let ytApiReady = false;
 let ytApiLoading = false;
 const ytReadyQueue = [];
 let currentPlayer = null;
 let inactivityTimerId = null;
+let cancelPendingGate = null;
 
 const INACTIVITY_TIMEOUT_MS = 5_000;
+// keeps the consent placeholder readable on narrow screens where the 16:9 frame is short
+const CONSENT_PLACEHOLDER_MIN_HEIGHT = "17rem";
 
 // called by the YouTube iframe API script once it finishes loading
 window.onYouTubeIframeAPIReady = function () {
@@ -17,6 +22,7 @@ window.onYouTubeIframeAPIReady = function () {
 
 /**
  * injects the YouTube iframe API script into the page - no-ops if already loading or loaded
+ * only ever reached through whenApiReady, which callers run behind gateVideo (viewer consent)
  */
 function loadYoutubeApi() {
   if (ytApiReady || ytApiLoading) {
@@ -46,11 +52,13 @@ export function whenApiReady(callback) {
 /**
  * mounts a YouTube player for the [data-youtube-player] element inside rootElement
  * destroys any currently active player before creating a new one
+ * nothing is requested from YouTube until the viewer allows embedded videos
  */
 function initializeYoutubePlayer(rootElement) {
   const container = rootElement.querySelector("[data-youtube-player]");
 
   if (!container) {
+    clearPendingGate();
     destroyCurrentPlayer();
     return;
   }
@@ -62,8 +70,36 @@ function initializeYoutubePlayer(rootElement) {
     return;
   }
 
+  clearPendingGate();
   destroyCurrentPlayer();
-  whenApiReady(() => mountPlayer(container, videoKey));
+
+  const frame = container.querySelector("[data-youtube-player-frame]");
+  const consentSlot = container.querySelector("[data-youtube-consent-slot]");
+
+  if (frame) {
+    frame.style.minHeight = CONSENT_PLACEHOLDER_MIN_HEIGHT;
+  }
+
+  cancelPendingGate = gateVideo(consentSlot, () => {
+    cancelPendingGate = null;
+    consentSlot?.remove();
+
+    if (frame) {
+      frame.style.minHeight = "";
+    }
+
+    whenApiReady(() => mountPlayer(container, videoKey));
+  });
+}
+
+/**
+ * removes a consent placeholder left over from a previous render
+ */
+function clearPendingGate() {
+  if (cancelPendingGate) {
+    cancelPendingGate();
+    cancelPendingGate = null;
+  }
 }
 
 /**
@@ -111,6 +147,7 @@ function mountPlayer(container, videoKey) {
   let lastVolumeBeforeMute = 100;
 
   const ytPlayer = new YT.Player(iframeTarget, {
+    host: YOUTUBE_PRIVACY_HOST,
     height: "100%",
     width: "100%",
     videoId: videoKey,
