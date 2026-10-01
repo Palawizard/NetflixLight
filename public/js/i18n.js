@@ -153,6 +153,14 @@ const EN_TRANSLATIONS = {
   "Personnage non renseigné": "Character unavailable",
   "Profil créé et sélectionné.": "Profile created and selected.",
   "Bande-annonce": "Trailer",
+  "La bande-annonce est hébergée sur YouTube, qui peut déposer des cookies.":
+    "The trailer is hosted on YouTube, which may set cookies.",
+  "Charger la bande-annonce": "Load the trailer",
+  "Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.":
+    "This product uses the TMDB API but is not endorsed or certified by TMDB.",
+  "Informations légales": "Legal information",
+  "Confidentialité et mentions légales": "Privacy & legal notice",
+  "Gérer les cookies": "Cookie settings",
   "À voir aussi": "More to watch",
   "Films similaires": "Similar movies",
   "Séries similaires": "Similar series",

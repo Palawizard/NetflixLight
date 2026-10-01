@@ -1,25 +1,43 @@
 /* global YT */
 
+import {
+  YOUTUBE_PRIVACY_HOST,
+  gateVideo,
+  hasVideoConsent,
+  onVideoConsent,
+} from "./video-consent.js";
 import { whenApiReady } from "./youtube-player.js";
 
 const HERO_AUTOPLAY_DELAY_MS = 2_000;
+// shorter delay when the viewer explicitly asked for the trailer
+const HERO_REQUESTED_DELAY_MS = 300;
 
 let instanceId = 0;
 let currentHeroPlayer = null;
 let heroDelayTimerId = null;
+let heroConsentCleanup = null;
+// trailer whose consent panel the viewer opened - survives re-renders of the home page
+let requestedTrailerKey = null;
 
 /**
  * initializes the hero trailer player for the [data-hero] section inside rootElement
  * tears down any previous player and waits for the YouTube API before mounting
+ * the trailer only autoplays when YouTube is already allowed - otherwise the backdrop stays and a
+ * "Bande-annonce" button opens the consent placeholder
  */
 export function initializeHeroPlayer(rootElement) {
   // invalidate any in-flight API callback from a previous call
   const myId = ++instanceId;
 
-  // tear down previous player and timer
+  // tear down previous player, timer and consent listeners
   if (heroDelayTimerId !== null) {
     clearTimeout(heroDelayTimerId);
     heroDelayTimerId = null;
+  }
+
+  if (heroConsentCleanup) {
+    heroConsentCleanup();
+    heroConsentCleanup = null;
   }
 
   if (currentHeroPlayer) {
@@ -40,14 +58,111 @@ export function initializeHeroPlayer(rootElement) {
 
   if (!videoKey) return;
 
+  const iframeTarget = section.querySelector("[data-hero-player-iframe]");
+
+  if (!iframeTarget) return;
+
+  if (requestedTrailerKey !== videoKey) {
+    requestedTrailerKey = null;
+  }
+
+  if (hasVideoConsent()) {
+    mountHeroPlayer(section, iframeTarget, videoKey, myId, {
+      autoplayDelay: requestedTrailerKey
+        ? HERO_REQUESTED_DELAY_MS
+        : HERO_AUTOPLAY_DELAY_MS,
+    });
+    return;
+  }
+
+  setupHeroConsent(section, iframeTarget, videoKey, myId);
+}
+
+/**
+ * shows the trailer button and waits for consent - either from the shared banner/settings
+ * or from the placeholder the button opens - before mounting the player
+ */
+function setupHeroConsent(section, iframeTarget, videoKey, myId) {
+  const trailerButton = section.querySelector("[data-hero-trailer-button]");
+  const consentSlot = section.querySelector("[data-hero-consent-slot]");
+  let cancelGate = null;
+  let started = false;
+
+  // mounts the player once - consent can arrive from several listeners at the same time
+  function start() {
+    if (started || instanceId !== myId) return;
+    started = true;
+    cleanup();
+
+    if (trailerButton) trailerButton.hidden = true;
+    if (consentSlot) consentSlot.hidden = true;
+
+    mountHeroPlayer(section, iframeTarget, videoKey, myId, {
+      autoplayDelay: requestedTrailerKey
+        ? HERO_REQUESTED_DELAY_MS
+        : HERO_AUTOPLAY_DELAY_MS,
+    });
+  }
+
+  // opens the consent placeholder under the hero actions
+  function openPanel() {
+    if (!consentSlot || cancelGate) return;
+    requestedTrailerKey = videoKey;
+    consentSlot.hidden = false;
+    trailerButton?.setAttribute("aria-expanded", "true");
+    cancelGate = gateVideo(consentSlot, start);
+  }
+
+  // closes the placeholder without loading anything
+  function closePanel() {
+    requestedTrailerKey = null;
+    cancelGate?.();
+    cancelGate = null;
+
+    if (consentSlot) consentSlot.hidden = true;
+    trailerButton?.setAttribute("aria-expanded", "false");
+  }
+
+  function handleTrailerClick() {
+    if (cancelGate) {
+      closePanel();
+    } else {
+      openPanel();
+    }
+  }
+
+  const unsubscribe = onVideoConsent(start);
+
+  function cleanup() {
+    unsubscribe();
+    cancelGate?.();
+    cancelGate = null;
+    trailerButton?.removeEventListener("click", handleTrailerClick);
+  }
+
+  heroConsentCleanup = cleanup;
+
+  if (trailerButton) {
+    trailerButton.hidden = false;
+    trailerButton.setAttribute("aria-expanded", "false");
+    trailerButton.addEventListener("click", handleTrailerClick);
+  }
+
+  // re-open the panel after a re-render if the viewer had asked for the trailer
+  if (requestedTrailerKey === videoKey) {
+    openPanel();
+  }
+}
+
+/**
+ * loads the YouTube API (privacy-enhanced host) and mounts the muted background trailer
+ */
+function mountHeroPlayer(section, iframeTarget, videoKey, myId, options) {
   const backdrop = section.querySelector("[data-hero-backdrop]");
   const videoLayer = section.querySelector("[data-hero-video-layer]");
-  const iframeTarget = section.querySelector("[data-hero-player-iframe]");
   const muteBtn = section.querySelector("[data-hero-mute]");
   const clickArea = section.querySelector("[data-hero-click-area]");
   const feedbackInner = section.querySelector("[data-hero-feedback-inner]");
-
-  if (!iframeTarget) return;
 
   let isMuted = true;
 
@@ -71,6 +186,7 @@ export function initializeHeroPlayer(rootElement) {
     if (instanceId !== myId) return;
 
     const ytPlayer = new YT.Player(iframeTarget, {
+      host: YOUTUBE_PRIVACY_HOST,
       height: "100%",
       width: "100%",
       videoId: videoKey,
@@ -87,11 +203,16 @@ export function initializeHeroPlayer(rootElement) {
       events: {
         onReady() {
           ytPlayer.mute();
+
+          if (muteBtn) {
+            muteBtn.hidden = false;
+          }
+
           // delay autoplay slightly so the page has time to settle after render
           heroDelayTimerId = window.setTimeout(() => {
             heroDelayTimerId = null;
             startVideo();
-          }, HERO_AUTOPLAY_DELAY_MS);
+          }, options.autoplayDelay);
         },
         onStateChange(event) {
           if (event.data === YT.PlayerState.ENDED) {

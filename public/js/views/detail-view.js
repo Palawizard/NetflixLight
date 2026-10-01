@@ -169,7 +169,7 @@ function renderDetailContent(state, item, type) {
         </div>
       </article>
 
-      ${renderYoutubeTrailerOption(trailer)}
+      ${renderYoutubeTrailerOption(trailer, backdropPath)}
       ${renderSimilarContentSection(similarItems, type, item.id)}
       ${renderMainCastSection(mainCast)}
     </section>
@@ -177,7 +177,9 @@ function renderDetailContent(state, item, type) {
 }
 
 // renders the embedded YouTube trailer player section - returns empty string if no trailer was found
-function renderYoutubeTrailerOption(trailer) {
+// the player only loads once the viewer allows YouTube: until then the consent slot shows the
+// title's backdrop with the shared consent placeholder on top
+function renderYoutubeTrailerOption(trailer, backdropPath) {
   if (!trailer) {
     return "";
   }
@@ -195,7 +197,7 @@ function renderYoutubeTrailerOption(trailer) {
         data-youtube-player="${escapeHtml(trailer.key)}"
         class="overflow-hidden rounded-3xl border border-white/10 bg-black"
       >
-        <div class="relative aspect-video w-full overflow-hidden bg-black">
+        <div data-youtube-player-frame class="relative aspect-video w-full overflow-hidden bg-black">
           <div data-youtube-player-iframe class="h-full w-full"></div>
           <div
             data-player-spinner
@@ -203,6 +205,25 @@ function renderYoutubeTrailerOption(trailer) {
             aria-hidden="true"
           >
             <div class="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+          </div>
+          <div data-youtube-consent-slot class="trailer-consent-slot absolute inset-0 z-10 grid">
+            ${
+              backdropPath
+                ? renderTmdbImage({
+                    path: backdropPath,
+                    alt: "",
+                    size: "w780",
+                    srcSetSizes: [
+                      { size: "w780", width: 780 },
+                      { size: "w1280", width: 1280 },
+                    ],
+                    sizes: "(min-width: 88rem) 84rem, 100vw",
+                    loading: "lazy",
+                    className:
+                      "trailer-consent-backdrop absolute inset-0 h-full w-full object-cover",
+                  })
+                : ""
+            }
           </div>
         </div>
 
