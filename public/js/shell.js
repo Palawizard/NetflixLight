@@ -63,7 +63,7 @@ function resetProfileColorPickers(container) {
  */
 function renderShell({ appState, content, currentPath, currentSearchQuery }) {
   return `
-    <div class="min-h-screen">
+    <div class="flex min-h-screen flex-col">
       <header data-app-header class="sticky top-0 z-20 border-b border-white/10 bg-black/30 backdrop-blur-xl">
         <div class="mx-auto grid max-w-[88rem] grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[1fr_minmax(20rem,34rem)_1fr]">
           <div class="lg:col-start-1 lg:row-start-1">
@@ -92,7 +92,40 @@ function renderShell({ appState, content, currentPath, currentSearchQuery }) {
       <main class="mx-auto flex w-full max-w-[88rem] flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10">
         ${content}
       </main>
+
+      ${renderFooter()}
     </div>
+  `;
+}
+
+/**
+ * renders the site footer - TMDB attribution, privacy policy link and cookie settings
+ * [data-palawi-consent-open] is handled by the shared palawi.fr consent script
+ */
+function renderFooter() {
+  return `
+    <footer class="border-t border-white/10">
+      <div class="mx-auto flex w-full max-w-[88rem] flex-col gap-4 px-4 py-8 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <p class="max-w-xl text-xs leading-6 text-white/50">
+          Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.
+        </p>
+        <nav class="flex flex-wrap items-center gap-x-6 gap-y-2" aria-label="Informations légales">
+          <a
+            href="/confidentialite/"
+            class="footer-link rounded-sm font-medium text-white/70 underline-offset-4 transition hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-rose-300"
+          >
+            Confidentialité et mentions légales
+          </a>
+          <button
+            type="button"
+            data-palawi-consent-open
+            class="footer-link rounded-sm font-medium text-white/70 underline-offset-4 transition hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-rose-300"
+          >
+            Gérer les cookies
+          </button>
+        </nav>
+      </div>
+    </footer>
   `;
 }
 
