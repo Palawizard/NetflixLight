@@ -60,7 +60,3 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
-
-# Local AI guides
-AUTH_*_GUIDE.md
-CLAUDE.md
