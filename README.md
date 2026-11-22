@@ -21,7 +21,7 @@
   <a href="#useful-commands">Commands</a>
 </p>
 
-## Project Goal
+## Project goal
 
 Netflix-inspired app built with an Express backend and a vanilla JavaScript SPA frontend.
 
@@ -35,13 +35,13 @@ It lets users:
 
 Stack:
 
-- **TMDB** - media data source
-- **Express 5** - backend API
-- **SQLite** via `better-sqlite3` - local persistence
-- **Tailwind CSS 4** - styling
-- **Vanilla JavaScript** - frontend SPA (no framework)
+- TMDB: media data source
+- Express 5: backend API
+- SQLite via `better-sqlite3`: local persistence
+- Tailwind CSS 4: styling
+- Vanilla JavaScript: frontend SPA (no framework)
 
-## Run Locally
+## Run locally
 
 Prerequisites: Node.js, npm, a TMDB API key or read access token.
 
@@ -164,7 +164,7 @@ Direct paths like `/movies`, `/series`, `/search`, `/favorites`, `/profile` are 
 | -------- | ------------ | ------------------------ |
 | `GET`    | `/`          | list all ratings         |
 | `GET`    | `/:type/:id` | get rating for one title |
-| `PUT`    | `/:type/:id` | save rating (1–5)        |
+| `PUT`    | `/:type/:id` | save rating (1-5)        |
 | `DELETE` | `/:type/:id` | remove rating            |
 
 **TMDB proxy** - `/api/tmdb` - public
@@ -188,7 +188,7 @@ Direct paths like `/movies`, `/series`, `/search`, `/favorites`, `/profile` are 
 - Favorites/watchlist with optimistic UI
 - Watch progress tracking per profile
 - Viewing history per profile
-- Personal rating system (1–5 stars) per profile
+- Personal rating system (1-5 stars) per profile
 - Multi-profile support - each account can have several named profiles
 - Profile-scoped data isolation - watchlist, history, progress, and ratings are per profile
 - Genre-based recommendations on the home page based on viewing history
@@ -300,7 +300,7 @@ netflixlight/
 └── server.js                         # Express app wiring and server entry point
 ```
 
-## Useful Commands
+## Useful commands
 
 | Command              | Description                    |
 | -------------------- | ------------------------------ |
